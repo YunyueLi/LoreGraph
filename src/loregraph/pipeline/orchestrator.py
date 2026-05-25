@@ -21,10 +21,11 @@ from loregraph.pipeline.pass3_cluster import Pass3Clusterer
 from loregraph.pipeline.pass4_coref import Pass4CorefResolver
 from loregraph.pipeline.pass5_relation import Pass5RelationExtractor
 from loregraph.pipeline.pass6_glucose import Pass6GlucoseExtractor
+from loregraph.pipeline.pass7_cove import Pass7CoVeVerifier
 
 log = logging.getLogger(__name__)
 
-MAX_PASS_NUM_V0_1 = 6  # v0.1 ships Pass-1..Pass-6 after this PR; Pass-7 lands in PR #6.
+MAX_PASS_NUM_V0_1 = 7  # All 7 passes are implemented as of PR #6 sub-A.
 
 
 class Orchestrator:
@@ -38,9 +39,7 @@ class Orchestrator:
             raise ValueError(f"invalid pass range [{from_pass}, {to_pass}]")
         if to_pass > MAX_PASS_NUM_V0_1:
             raise NotImplementedError(
-                f"Pass-{to_pass} is not implemented yet (v0.1 ships Pass-1.."
-                f"Pass-{MAX_PASS_NUM_V0_1}; Pass-7 lands in PR #6). "
-                "Lower --to or wait for the next release."
+                f"Pass-{to_pass} is out of range (only Pass-1..Pass-{MAX_PASS_NUM_V0_1} exist)."
             )
 
         for pass_num in range(from_pass, to_pass + 1):
@@ -60,6 +59,7 @@ class Orchestrator:
                 4: self._run_pass_4_coref,
                 5: self._run_pass_5_relation,
                 6: self._run_pass_6_glucose,
+                7: self._run_pass_7_cove,
             }[pass_num]()
         except Exception as exc:
             await repo.upsert_pass_run(
@@ -181,6 +181,12 @@ class Orchestrator:
             "edges": total_edges,
             **extractor.usage.to_dict(),
         }
+
+    async def _run_pass_7_cove(self) -> dict:
+        verifier = Pass7CoVeVerifier(self.ctx.llm)
+        stats = await verifier.verify_book(session=self.ctx.session, book_id=self.ctx.book_id)
+        self.ctx.usage.merge_from(verifier.usage)
+        return {**stats.to_dict(), **verifier.usage.to_dict()}
 
     async def _run_pass_6_glucose(self) -> dict:
         chunks = await repo.list_chunks(self.ctx.session, self.ctx.book_id)

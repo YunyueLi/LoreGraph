@@ -62,6 +62,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     when a LLM-driven pass actually runs.
   - Lint config: ignore B008 globally — Typer/FastAPI/Click all rely on
     `arg: T = framework.Option(...)` defaults.
+- **PR #6 sub-A — Pass-7 CoVe verification gate**:
+  - `pipeline/pass7_cove.py` — Chain-of-Verification audit. Samples N edges
+    and N glucose_facts per book, checks each for literal-substring match
+    of evidence_span against the chunk, then asks the LLM "does this span
+    really support the claim?" Records `edges_*`, `glucose_*`,
+    `literal_match_rate`, `supported_rate` into `pass_runs.stats`.
+  - Hard gate: if `literal_match_rate < 0.95` the pass raises `CoVeGateError`
+    and the pass_run row is marked FAILED. v0.1 records — does not auto-purge
+    — unsupported claims; remediation is a v0.2 concern.
+  - `llm/prompts/pass7_cove_{system,user}.j2`.
+  - `pipeline/orchestrator.py`: dispatch + stats for Pass-7;
+    `MAX_PASS_NUM_V0_1` 6 → 7. CLI default `--to` 6 → 7.
+  - Tests: 3 cases — gate passes on supported claims, gate fails on
+    paraphrased evidence_span flood, stats dict shape contract.
 - **PR #5 — Pass-5 typed relations, Pass-6 GLUCOSE implicit info**:
   - `pipeline/pass5_relation.py` — 5-class edge extractor (STRUCTURAL /
     INTERACTS / ASSERTS / INFLUENCES / PREDICTS). Uses each chunk's
