@@ -21,9 +21,13 @@ from loregraph.models.atoms import ChunkCreate
 from loregraph.utils.tokens import count_tokens
 
 # Match "Chapter 12", "CHAPTER IV", "Chapter the First", optionally with title.
+# The number-or-ordinal alternative accepts:
+#   - roman numerals (IVXLCDM+)
+#   - arabic digits
+#   - an ordinal word, with an optional leading "the" article ("the First")
 CHAPTER_HEADER_RE = re.compile(
     r"^[ \t]*(?:CHAPTER|Chapter)\s+"
-    r"(?:[IVXLCDM]+|\d+|[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)"
+    r"(?:[IVXLCDM]+|\d+|(?:[Tt]he\s+)?[A-Z][a-z]+)"
     r"\.?(?:[ \t]*[\-:—][^\n]*)?[ \t]*$",
     flags=re.MULTILINE,
 )
