@@ -70,6 +70,12 @@ async def insert_mentions(
     return [Mention.model_validate(r) for r in rows]
 
 
+async def list_mentions(session: AsyncSession, book_id: int) -> list[Mention]:
+    stmt = select(orm.Mention).where(orm.Mention.book_id == book_id).order_by(orm.Mention.id)
+    rows = (await session.execute(stmt)).scalars().all()
+    return [Mention.model_validate(r) for r in rows]
+
+
 async def assign_mention_entity(session: AsyncSession, mention_id: int, entity_id: int) -> None:
     """Pass-4 hook: bind a mention to its canonical entity."""
     await session.execute(

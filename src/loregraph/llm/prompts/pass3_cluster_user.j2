@@ -1,0 +1,16 @@
+Entity type: **{{ entity_type }}**
+
+A: "{{ a_surface }}"
+B: "{{ b_surface }}"
+
+{% if a_contexts -%}
+Sample evidence spans where A appears:
+{% for ctx in a_contexts %}- {{ ctx }}
+{% endfor %}
+{% endif -%}
+{% if b_contexts %}
+Sample evidence spans where B appears:
+{% for ctx in b_contexts %}- {{ ctx }}
+{% endfor %}
+{% endif %}
+Do A and B refer to the same {{ entity_type }}? Return JSON only.

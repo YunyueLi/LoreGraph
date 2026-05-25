@@ -17,10 +17,12 @@ from loregraph.models.runs import PassRunCreate
 from loregraph.pipeline.context import PipelineContext
 from loregraph.pipeline.pass1_chunk import ChunkerConfig, Pass1Chunker
 from loregraph.pipeline.pass2_entity import Pass2EntityExtractor
+from loregraph.pipeline.pass3_cluster import Pass3Clusterer
+from loregraph.pipeline.pass4_coref import Pass4CorefResolver
 
 log = logging.getLogger(__name__)
 
-MAX_PASS_NUM_V0_1 = 2  # v0.1 ships Pass-1 and Pass-2. Later passes raise.
+MAX_PASS_NUM_V0_1 = 4  # v0.1 ships Pass-1..Pass-4. Later passes raise.
 
 
 class Orchestrator:
@@ -51,6 +53,8 @@ class Orchestrator:
             stats = await {
                 1: self._run_pass_1_chunk,
                 2: self._run_pass_2_entity,
+                3: self._run_pass_3_cluster,
+                4: self._run_pass_4_coref,
             }[pass_num]()
         except Exception as exc:
             await repo.upsert_pass_run(
@@ -118,6 +122,36 @@ class Orchestrator:
             "mentions": len(all_mentions),
             **extractor.usage.to_dict(),
         }
+
+    async def _run_pass_3_cluster(self) -> dict:
+        mentions = await repo.list_mentions(self.ctx.session, self.ctx.book_id)
+        if not mentions:
+            raise RuntimeError("Pass-3 needs mentions from Pass-2. Run --from 2 first.")
+
+        clusterer = Pass3Clusterer(self.ctx.llm)
+        entities_in = await clusterer.cluster_book(book_id=self.ctx.book_id, mentions=mentions)
+        entities_out = await repo.insert_entities(self.ctx.session, entities_in)
+
+        self.ctx.usage.merge_from(clusterer.usage)
+
+        return {
+            "mentions_seen": len(mentions),
+            "entities_created": len(entities_out),
+            **clusterer.usage.to_dict(),
+        }
+
+    async def _run_pass_4_coref(self) -> dict:
+        entities = await repo.list_entities(self.ctx.session, self.ctx.book_id)
+        if not entities:
+            raise RuntimeError("Pass-4 needs canonical entities from Pass-3. Run --from 3 first.")
+        mentions = await repo.list_mentions(self.ctx.session, self.ctx.book_id)
+        if not mentions:
+            raise RuntimeError("Pass-4 needs mentions from Pass-2. Run --from 2 first.")
+
+        resolver = Pass4CorefResolver()
+        return await resolver.resolve_book(
+            session=self.ctx.session, entities=entities, mentions=mentions
+        )
 
 
 def make_llm_client_from_env() -> LLMClient:
