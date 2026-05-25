@@ -6,11 +6,15 @@ from loregraph.pipeline.context import PipelineContext
 from loregraph.pipeline.orchestrator import Orchestrator
 from loregraph.pipeline.pass1_chunk import ChunkerConfig, Pass1Chunker
 from loregraph.pipeline.pass2_entity import Pass2EntityExtractor
+from loregraph.pipeline.pass3_cluster import Pass3Clusterer
+from loregraph.pipeline.pass4_coref import Pass4CorefResolver
 
 __all__ = [
     "ChunkerConfig",
     "Orchestrator",
     "Pass1Chunker",
     "Pass2EntityExtractor",
+    "Pass3Clusterer",
+    "Pass4CorefResolver",
     "PipelineContext",
 ]

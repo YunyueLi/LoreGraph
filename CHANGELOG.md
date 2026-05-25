@@ -62,3 +62,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     when a LLM-driven pass actually runs.
   - Lint config: ignore B008 globally — Typer/FastAPI/Click all rely on
     `arg: T = framework.Option(...)` defaults.
+- **PR #4 — Pass-3 character clustering, Pass-4 coreference binder**:
+  - `utils/clustering.py`: `is_candidate_pair` (exact / substring / word
+    overlap / edit ratio gate) + `generate_candidate_pairs` + `UnionFind`
+    with path compression and union-by-rank.
+  - `pipeline/pass3_cluster.py`: book-wide clustering. Groups mentions by
+    `EntityType`, dedupes by surface form, gates candidate pairs cheaply,
+    LLM-judges each survivor, union-finds the "same" edges, picks the
+    most-mentioned surface form as `canonical_name`, the rest become
+    aliases. Stable `canonical_id = ent_<sha1(type:name)[:12]>`.
+  - `pipeline/pass4_coref.py`: deterministic surface-form binder — fills
+    every `mentions.entity_id`. Pronoun-level coref deferred to v0.2.
+  - `llm/prompts/pass3_cluster_{system,user}.j2`: pairwise same-entity
+    judge prompt with sample-context plumbing.
+  - `db/repository.py`: new `list_mentions(book_id)`.
+  - `pipeline/orchestrator.py`: dispatch + stats for Pass-3 and Pass-4.
+    `MAX_PASS_NUM_V0_1` raised to 4; CLI default `--to` raised to 4.
+  - Tests: 14 new `unit/test_clustering.py` cases (gate + UnionFind) + 2
+    integration tests under `tests/integration/test_pass3_pass4.py`
+    covering cluster aliasing and Pass-4 entity_id assignment.
