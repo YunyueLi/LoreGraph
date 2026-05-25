@@ -96,12 +96,30 @@ def extract(
 
 @app.command()
 def view(
-    book_id: int = typer.Option(..., "--book-id"),
-    port: int = typer.Option(8000, "--port"),
+    host: str = typer.Option("127.0.0.1", "--host", help="Bind address."),
+    port: int = typer.Option(8000, "--port", help="HTTP port."),
+    reload: bool = typer.Option(False, "--reload", help="Auto-reload on code change."),
+    book_id: int | None = typer.Option(
+        None,
+        "--book-id",
+        help="Optional: print a direct link to this book's graph.",
+    ),
 ) -> None:
-    """Launch the web UI (PR #6 — not implemented in v0.1.0.devN)."""
-    typer.echo("view: not implemented yet (PR #6)")
-    raise typer.Exit(code=1)
+    """Launch the FastAPI + React web UI."""
+    import uvicorn
+
+    base = f"http://{host}:{port}"
+    console.print(f"[green]Starting LoreGraph[/] at [bold]{base}[/]")
+    if book_id is not None:
+        console.print(f"  Graph: {base}/?book_id={book_id}")
+    console.print(f"  API : {base}/api/books")
+    console.print(f"  Docs: {base}/docs")
+    uvicorn.run(
+        "loregraph.web.server:app",
+        host=host,
+        port=port,
+        reload=reload,
+    )
 
 
 @app.command()
