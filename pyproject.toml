@@ -101,7 +101,9 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "N", "B", "SIM", "RUF"]
-ignore = ["E501"]
+# B008: Typer / FastAPI / Click all rely on `arg: T = framework.Option(...)`
+# defaults; the rule fires false positives across our CLI and (future) web layer.
+ignore = ["E501", "B008"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["N802", "N803"]
