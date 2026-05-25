@@ -74,6 +74,24 @@ Layer cake:
 └──────────────────────────────────────────┘
 ```
 
+## Deploy your own demo
+
+Three free-tier services + your Anthropic key get you a public,
+shareable graph explorer:
+
+```
+Cloudflare Pages (React SPA)
+       │
+       ▼  via VITE_API_BASE
+Render web service (FastAPI + LoreGraph)
+       │
+       ▼
+Neon serverless Postgres + pgvector
+```
+
+Step-by-step in [`docs/deployment.md`](docs/deployment.md). ~15 minutes
+end-to-end if you already have Anthropic billing set up.
+
 ## Roadmap
 
 | Version | Phase | Scope |
