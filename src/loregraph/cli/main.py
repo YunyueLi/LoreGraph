@@ -1,13 +1,21 @@
-"""LoreGraph CLI entrypoint.
-
-In v0.1.0.dev0 every subcommand is a stub that prints which PR will implement it.
-"""
+"""LoreGraph CLI entrypoint."""
 
 from __future__ import annotations
 
+import asyncio
+import logging
+from pathlib import Path
+
 import typer
+from rich.console import Console
+from rich.table import Table
 
 from loregraph import __version__
+from loregraph.cli._runner import (
+    run_extract,
+    run_ingest,
+    run_status,
+)
 
 app = typer.Typer(
     name="loregraph",
@@ -15,6 +23,7 @@ app = typer.Typer(
     no_args_is_help=True,
     add_completion=False,
 )
+console = Console()
 
 
 def _version_callback(value: bool) -> None:
@@ -33,62 +42,88 @@ def _root(
         is_eager=True,
         help="Show version and exit.",
     ),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable debug logging."),
 ) -> None:
-    """loregraph — knowledge graphs from closed-world fiction."""
+    """LoreGraph — knowledge graphs from closed-world fiction."""
+    logging.basicConfig(
+        level=logging.DEBUG if verbose else logging.INFO,
+        format="%(asctime)s %(levelname)-5s %(name)s :: %(message)s",
+    )
 
 
 @app.command()
 def init() -> None:
-    """Scaffold a loregraph.yaml and run database migrations."""
-    typer.echo("init: not implemented yet (PR #2)")
-    raise typer.Exit(code=1)
+    """Print the bootstrap checklist (DB + .env) for a fresh clone."""
+    typer.echo(
+        "loregraph init — bootstrap checklist:\n"
+        "  1. Copy .env.example to .env and set ANTHROPIC_API_KEY\n"
+        "  2. docker compose up -d\n"
+        "  3. alembic upgrade head\n"
+        "  4. loregraph ingest <path> --title <name>\n"
+        "  5. loregraph extract --book-id <id>\n"
+    )
 
 
 @app.command()
 def ingest(
-    path: str = typer.Argument(..., help="Path to the input text file."),
+    path: Path = typer.Argument(..., exists=True, dir_okay=False, readable=True),
     title: str = typer.Option(..., "--title", help="Book title."),
     author: str = typer.Option("", "--author", help="Book author."),
+    language: str = typer.Option("en", "--language", help="Two-letter language code."),
 ) -> None:
     """Ingest a closed-world text into the database."""
-    typer.echo(
-        f"ingest: path={path!r} title={title!r} author={author!r} — not implemented yet (PR #3)"
+    book_id = asyncio.run(
+        run_ingest(
+            path=path.resolve(),
+            title=title,
+            author=author,
+            language=language,
+        )
     )
-    raise typer.Exit(code=1)
+    console.print(f"[green]Ingested[/]: book_id=[bold]{book_id}[/], title={title!r}")
 
 
 @app.command()
 def extract(
     book_id: int = typer.Option(..., "--book-id", help="ID of the ingested book."),
     from_pass: int = typer.Option(1, "--from", min=1, max=7, help="First pass to run."),
-    to_pass: int = typer.Option(7, "--to", min=1, max=7, help="Last pass to run."),
-    resume: bool = typer.Option(False, "--resume", help="Resume after the last completed pass."),
+    to_pass: int = typer.Option(2, "--to", min=1, max=7, help="Last pass to run."),
 ) -> None:
-    """Run the 7-Pass extraction pipeline on an ingested book."""
-    typer.echo(
-        f"extract: book_id={book_id} from=pass{from_pass} to=pass{to_pass} "
-        f"resume={resume} — not implemented yet (PR #3+)"
-    )
-    raise typer.Exit(code=1)
+    """Run the 7-Pass extraction pipeline (v0.1 ships Pass-1 and Pass-2)."""
+    asyncio.run(run_extract(book_id=book_id, from_pass=from_pass, to_pass=to_pass))
+    console.print(f"[green]Extraction done[/]: book_id={book_id}, passes={from_pass}-{to_pass}")
 
 
 @app.command()
 def view(
-    book_id: int = typer.Option(..., "--book-id", help="ID of the extracted book."),
-    port: int = typer.Option(8000, "--port", help="Web UI port."),
+    book_id: int = typer.Option(..., "--book-id"),
+    port: int = typer.Option(8000, "--port"),
 ) -> None:
-    """Launch the FastAPI + React web UI for an extracted book."""
-    typer.echo(f"view: book_id={book_id} port={port} — not implemented yet (PR #6)")
+    """Launch the web UI (PR #6 — not implemented in v0.1.0.devN)."""
+    typer.echo("view: not implemented yet (PR #6)")
     raise typer.Exit(code=1)
 
 
 @app.command()
-def status(
-    book_id: int = typer.Option(..., "--book-id", help="ID of the book."),
-) -> None:
-    """Show pass-by-pass extraction status, cost, and match rate."""
-    typer.echo(f"status: book_id={book_id} — not implemented yet (PR #3)")
-    raise typer.Exit(code=1)
+def status(book_id: int = typer.Option(..., "--book-id", help="ID of the book.")) -> None:
+    """Show pass-by-pass extraction status, cost, and counts."""
+    runs = asyncio.run(run_status(book_id=book_id))
+    if not runs:
+        console.print(f"No pass runs recorded yet for book_id={book_id}.")
+        return
+    table = Table(title=f"Pass runs · book_id={book_id}")
+    table.add_column("Pass", justify="right")
+    table.add_column("Status")
+    table.add_column("Stats summary")
+    table.add_column("Error", overflow="fold")
+    for r in runs:
+        summary = ", ".join(
+            f"{k}={v}"
+            for k, v in r.stats.items()
+            if k in {"chunks", "mentions", "chunks_processed", "elapsed_sec"}
+        )
+        table.add_row(str(r.pass_num), r.status.value, summary, r.error or "")
+    console.print(table)
 
 
 if __name__ == "__main__":

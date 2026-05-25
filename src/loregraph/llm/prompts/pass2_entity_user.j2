@@ -1,0 +1,14 @@
+{% if already_extracted -%}
+You already extracted the following entities from this chunk. Do **not** repeat them. Find any you missed (commonly: implicit-place Objects, minor characters, sub-events nested inside a larger one, Concept references that didn't get a Concept tag).
+
+Already extracted:
+{% for ent in already_extracted %}- {{ ent.type }}: {{ ent.surface_form }}
+{% endfor %}
+
+{% endif -%}
+Chunk text:
+"""
+{{ chunk_text }}
+"""
+
+Return the JSON object now.

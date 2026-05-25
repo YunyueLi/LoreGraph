@@ -21,11 +21,15 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    anthropic_api_key: str = Field(..., alias="ANTHROPIC_API_KEY")
+    anthropic_api_key: str | None = Field(
+        default=None,
+        alias="ANTHROPIC_API_KEY",
+        description="Required for LLM-driven passes. Other commands work without it.",
+    )
     database_url: str = Field(
-        ...,
+        default="postgresql+asyncpg://loregraph:loregraph@localhost:5432/loregraph",
         alias="DATABASE_URL",
-        description="SQLAlchemy async URL, e.g. postgresql+asyncpg://user:pw@host:5432/db",
+        description="SQLAlchemy async URL.",
     )
     model: str = Field("claude-sonnet-4-6", alias="LOREGRAPH_MODEL")
     log_level: str = Field("INFO", alias="LOREGRAPH_LOG_LEVEL")

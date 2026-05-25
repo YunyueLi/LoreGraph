@@ -31,3 +31,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Unit tests covering Pydantic model validation (10 cases).
   - Integration tests via `testcontainers[postgresql]` covering Pydantic ↔ ORM
     round-trip for every model.
+- **PR #3 — LLM client, Pass-1 chunker, Pass-2 entity extractor**:
+  - `utils/tokens.py` (tiktoken cl100k counter) and `utils/spans.py` (literal
+    evidence-span matcher used by Pass-7).
+  - `llm/client.py` — async Anthropic wrapper with prompt-caching baked in
+    (`cache_control: ephemeral` on the system block) and a `LLMUsage`
+    accumulator for cost / token telemetry.
+  - `llm/parser.py` — fenced-JSON extractor + Pydantic schema validation.
+  - `llm/gleaning.py` — bounded retry loop ("what did you miss?"), capped
+    at 2 rounds.
+  - `llm/prompts/pass2_entity_*.j2` — Jinja2 templates for the entity
+    extraction prompt (system + user split for cache efficiency).
+  - `pipeline/pass1_chunk.py` — deterministic chapter-aware chunker:
+    600–1200 token chunks, 20% overlap, `atom_id = chNN_pPPP`.
+  - `pipeline/pass2_entity.py` — LLM entity extractor for the 4 ontological
+    types; drops mentions whose `evidence_span` is not literal in the chunk.
+  - `pipeline/orchestrator.py` — pass dispatcher writing to `pass_runs` with
+    duration / token / count stats.
+  - `pipeline/context.py` — per-run context (book_id, session, LLM, usage).
+  - CLI: real implementations of `ingest`, `extract`, `status` (Typer +
+    Rich table for status). `view` still stubbed (PR #6).
+  - `examples/yellow_wallpaper/input.txt` — Project Gutenberg #1952 text
+    (Charlotte Perkins Gilman, 1892, public domain) as the v0.1 demo book.
+  - Tests: unit (chunking, spans, parser); integration (Pass-1 persists
+    chunks, Pass-2 extracts mentions and rejects non-literal evidence_spans
+    via an `unittest.mock`-patched LLM).
+  - Config tightening: `ANTHROPIC_API_KEY` and `DATABASE_URL` are now
+    optional at Settings load time so `loregraph status` / `init` work
+    without secrets; `LLMClient.__init__` raises if the key is missing
+    when a LLM-driven pass actually runs.
+  - Lint config: ignore B008 globally — Typer/FastAPI/Click all rely on
+    `arg: T = framework.Option(...)` defaults.
