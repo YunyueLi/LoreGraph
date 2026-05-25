@@ -29,24 +29,28 @@ def upgrade() -> None:
     op.execute("CREATE EXTENSION IF NOT EXISTS vector")
 
     # ---- enum types ----
-    entity_type = postgresql.ENUM(
-        "Agent", "Object", "Event", "Concept", name="entity_type"
-    )
+    entity_type = postgresql.ENUM("Agent", "Object", "Event", "Concept", name="entity_type")
     entity_type.create(op.get_bind(), checkfirst=True)
 
     relation_type = postgresql.ENUM(
-        "STRUCTURAL", "INTERACTS", "ASSERTS", "INFLUENCES", "PREDICTS",
+        "STRUCTURAL",
+        "INTERACTS",
+        "ASSERTS",
+        "INFLUENCES",
+        "PREDICTS",
         name="relation_type",
     )
     relation_type.create(op.get_bind(), checkfirst=True)
 
-    inference_depth = postgresql.ENUM(
-        "explicit", "one_step", "multi_step", name="inference_depth"
-    )
+    inference_depth = postgresql.ENUM("explicit", "one_step", "multi_step", name="inference_depth")
     inference_depth.create(op.get_bind(), checkfirst=True)
 
     glucose_dim = postgresql.ENUM(
-        "cause", "emotion", "location", "possession", "attribute",
+        "cause",
+        "emotion",
+        "location",
+        "possession",
+        "attribute",
         name="glucose_dim",
     )
     glucose_dim.create(op.get_bind(), checkfirst=True)
@@ -54,9 +58,7 @@ def upgrade() -> None:
     glucose_time = postgresql.ENUM("before", "after", name="glucose_time")
     glucose_time.create(op.get_bind(), checkfirst=True)
 
-    pass_status = postgresql.ENUM(
-        "pending", "running", "done", "failed", name="pass_status"
-    )
+    pass_status = postgresql.ENUM("pending", "running", "done", "failed", name="pass_status")
     pass_status.create(op.get_bind(), checkfirst=True)
 
     # ---- books ----
@@ -95,9 +97,7 @@ def upgrade() -> None:
         sa.Column("embedding", Vector(_VECTOR_DIM), nullable=True),
         sa.UniqueConstraint("book_id", "atom_id", name="chunks_book_atom_uq"),
     )
-    op.create_index(
-        "chunks_book_chapter_idx", "chunks", ["book_id", "chapter", "seq"]
-    )
+    op.create_index("chunks_book_chapter_idx", "chunks", ["book_id", "chapter", "seq"])
 
     # ---- entities ----
     op.create_table(
@@ -130,9 +130,7 @@ def upgrade() -> None:
             server_default="{}",
         ),
         sa.Column("embedding", Vector(_VECTOR_DIM), nullable=True),
-        sa.UniqueConstraint(
-            "book_id", "canonical_id", name="entities_book_canonical_uq"
-        ),
+        sa.UniqueConstraint("book_id", "canonical_id", name="entities_book_canonical_uq"),
     )
     op.create_index("entities_book_type_idx", "entities", ["book_id", "type"])
     op.create_index(
@@ -230,9 +228,7 @@ def upgrade() -> None:
             nullable=False,
             server_default=sa.func.now(),
         ),
-        sa.CheckConstraint(
-            "confidence >= 0 AND confidence <= 1", name="edges_conf_range"
-        ),
+        sa.CheckConstraint("confidence >= 0 AND confidence <= 1", name="edges_conf_range"),
     )
     op.create_index("edges_src_idx", "edges", ["src_entity_id"])
     op.create_index("edges_dst_idx", "edges", ["dst_entity_id"])
@@ -278,9 +274,7 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column("confidence", sa.Float, nullable=False),
-        sa.CheckConstraint(
-            "confidence >= 0 AND confidence <= 1", name="glucose_conf_range"
-        ),
+        sa.CheckConstraint("confidence >= 0 AND confidence <= 1", name="glucose_conf_range"),
     )
     op.create_index(
         "glucose_entity_idx",
@@ -313,9 +307,7 @@ def upgrade() -> None:
             server_default="{}",
         ),
         sa.Column("error", sa.Text, nullable=True),
-        sa.CheckConstraint(
-            "pass_num BETWEEN 1 AND 7", name="pass_runs_pass_num_range"
-        ),
+        sa.CheckConstraint("pass_num BETWEEN 1 AND 7", name="pass_runs_pass_num_range"),
         sa.UniqueConstraint("book_id", "pass_num", name="pass_runs_book_pass_uq"),
     )
 
