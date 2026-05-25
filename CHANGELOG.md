@@ -62,6 +62,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     when a LLM-driven pass actually runs.
   - Lint config: ignore B008 globally — Typer/FastAPI/Click all rely on
     `arg: T = framework.Option(...)` defaults.
+- **PR #6 sub-D — deployment configuration**:
+  - `render.yaml` blueprint: one-click FastAPI deploy on Render (free
+    tier), with `alembic upgrade head` in the build step and pgvector
+    via Neon.
+  - `docs/deployment.md`: 5-step walkthrough — Neon → Render → Cloudflare
+    Pages → seed demo data → pin URL on GitHub via `gh repo edit
+    --homepage`. ~15 min end-to-end.
+  - Frontend `VITE_API_BASE` env var so a Pages-deployed SPA can point
+    at a separately-hosted Render API.
+  - Server reads `LOREGRAPH_CORS_ORIGINS` to lock down CORS in
+    production. `.env.example` documents it. Defaults to `*` for dev.
+  - README adds a "Deploy your own demo" section linking the guide.
 - **PR #6 sub-C — React + Vite + Cytoscape + Tailwind frontend**:
   - Single-page graph explorer under `src/loregraph/web/frontend/`.
   - Stack: React 19 + Vite 6 + TypeScript 5.7 + Tailwind 3.4 + TanStack
