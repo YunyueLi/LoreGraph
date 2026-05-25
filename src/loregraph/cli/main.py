@@ -1,4 +1,4 @@
-"""loregraph CLI entrypoint.
+"""LoreGraph CLI entrypoint.
 
 In v0.1.0.dev0 every subcommand is a stub that prints which PR will implement it.
 """

@@ -1,8 +1,8 @@
-# loregraph — Repo Conventions
+# LoreGraph — Repo Conventions
 
 ## What this repo is
 
-loregraph extracts knowledge graphs from **closed-world fictional texts** (novels, scripts, screenplays) via a 7-Pass LLM pipeline. v0.1 covers Phase 0 (config) + Phase 1 (the 7-Pass extraction). See [`docs/architecture.md`](docs/architecture.md) for the full design.
+LoreGraph extracts knowledge graphs from **closed-world fictional texts** (novels, scripts, screenplays) via a 7-Pass LLM pipeline. v0.1 covers Phase 0 (config) + Phase 1 (the 7-Pass extraction). See [`docs/architecture.md`](docs/architecture.md) for the full design.
 
 ## Code conventions
 

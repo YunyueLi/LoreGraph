@@ -67,9 +67,9 @@ dev = [
 loregraph = "loregraph.cli.main:app"
 
 [project.urls]
-Homepage = "https://github.com/YunyueLi/loregraph"
-Repository = "https://github.com/YunyueLi/loregraph"
-Issues = "https://github.com/YunyueLi/loregraph/issues"
+Homepage = "https://github.com/YunyueLi/LoreGraph"
+Repository = "https://github.com/YunyueLi/LoreGraph"
+Issues = "https://github.com/YunyueLi/LoreGraph/issues"
 
 [tool.hatch.version]
 path = "src/loregraph/__version__.py"

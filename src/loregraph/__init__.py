@@ -1,4 +1,4 @@
-"""loregraph: Knowledge graphs from closed-world fiction."""
+"""LoreGraph: Knowledge graphs from closed-world fiction."""
 
 from __future__ import annotations
 
