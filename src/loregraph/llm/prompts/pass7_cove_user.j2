@@ -1,0 +1,18 @@
+Chunk text:
+"""
+{{ chunk_text }}
+"""
+
+Claim type: **{{ claim_type }}**
+
+{% if claim_type == "edge" -%}
+Claim: `{{ src_name }}` --[ {{ relation }} ]--> `{{ dst_name }}`
+{%- elif claim_type == "glucose_fact" -%}
+Claim about `{{ entity_name }}`: {{ statement }}
+(dimension: **{{ dimension }}**, time: **{{ time_aspect }}**, inference_depth: **{{ inference_depth }}**)
+{%- endif %}
+
+Cited evidence_span (a literal substring of the chunk):
+"{{ evidence_span }}"
+
+Does this evidence_span genuinely support the claim? Return JSON only.
