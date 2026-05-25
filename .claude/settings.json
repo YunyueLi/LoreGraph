@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv run pytest:*)",
+      "Bash(uv run ruff:*)",
+      "Bash(uv run mypy:*)",
+      "Bash(uv run alembic:*)",
+      "Bash(uv run litgraph:*)",
+      "Bash(uv pip:*)",
+      "Bash(uv sync:*)",
+      "Bash(uv venv:*)",
+      "Bash(docker compose:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker logs:*)",
+      "Bash(git status)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Bash(git add:*)",
+      "Bash(git show:*)",
+      "Bash(psql:*)",
+      "Bash(ls:*)",
+      "Bash(tree:*)",
+      "Bash(rg:*)",
+      "Bash(cat:*)"
+    ]
+  }
+}

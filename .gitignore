@@ -1,0 +1,73 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+build/
+dist/
+*.egg
+wheels/
+share/python-wheels/
+MANIFEST
+
+# Virtualenv
+.venv/
+venv/
+env/
+ENV/
+
+# uv
+.uv-cache/
+
+# Test / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# Type / lint caches
+.mypy_cache/
+.ruff_cache/
+.dmypy.json
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+
+# Databases / data artifacts
+*.db
+*.sqlite
+*.sqlite3
+data/
+.litgraph-cache/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Frontend (web UI)
+node_modules/
+src/litgraph/web/static/
+src/litgraph/web/frontend/dist/
+src/litgraph/web/frontend/.vite/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs / runtime
+*.log
+
+# Private reference docs (pencil .pen files, etc.)
+*.pen
