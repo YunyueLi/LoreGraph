@@ -15,7 +15,7 @@ labels: bug
 # Commands you ran
 ```
 
-- litgraph version (`litgraph --version`):
+- loregraph version (`loregraph --version`):
 - Python version:
 - OS:
 - Source text: **public-domain only** — please link to Project Gutenberg / LOC / etc. Do not paste copyrighted material.
@@ -27,7 +27,7 @@ labels: bug
 
 ## Logs
 
-<details><summary>litgraph output</summary>
+<details><summary>loregraph output</summary>
 
 ```
 paste here

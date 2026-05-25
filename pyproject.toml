@@ -3,7 +3,7 @@ requires = ["hatchling>=1.24"]
 build-backend = "hatchling.build"
 
 [project]
-name = "litgraph"
+name = "loregraph"
 description = "Knowledge graphs from closed-world fiction, with evidence on every edge."
 readme = "README.md"
 license = "Apache-2.0"
@@ -64,22 +64,22 @@ dev = [
 ]
 
 [project.scripts]
-litgraph = "litgraph.cli.main:app"
+loregraph = "loregraph.cli.main:app"
 
 [project.urls]
-Homepage = "https://github.com/YunyueLi/litgraph"
-Repository = "https://github.com/YunyueLi/litgraph"
-Issues = "https://github.com/YunyueLi/litgraph/issues"
+Homepage = "https://github.com/YunyueLi/loregraph"
+Repository = "https://github.com/YunyueLi/loregraph"
+Issues = "https://github.com/YunyueLi/loregraph/issues"
 
 [tool.hatch.version]
-path = "src/litgraph/__version__.py"
+path = "src/loregraph/__version__.py"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/litgraph"]
+packages = ["src/loregraph"]
 
 [tool.hatch.build.targets.sdist]
 include = [
-    "src/litgraph",
+    "src/loregraph",
     "migrations",
     "docs",
     "README.md",
@@ -111,7 +111,7 @@ asyncio_mode = "auto"
 markers = [
     "unit: fast unit tests with no external deps",
     "integration: tests requiring postgres",
-    "e2e: end-to-end pipeline tests; live LLM if LITGRAPH_E2E_LIVE=1",
+    "e2e: end-to-end pipeline tests; live LLM if LOREGRAPH_E2E_LIVE=1",
 ]
 addopts = "--strict-markers -m unit"
 testpaths = ["tests"]

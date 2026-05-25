@@ -1,4 +1,4 @@
-"""litgraph CLI entrypoint.
+"""loregraph CLI entrypoint.
 
 In v0.1.0.dev0 every subcommand is a stub that prints which PR will implement it.
 """
@@ -7,10 +7,10 @@ from __future__ import annotations
 
 import typer
 
-from litgraph import __version__
+from loregraph import __version__
 
 app = typer.Typer(
-    name="litgraph",
+    name="loregraph",
     help="Knowledge graphs from closed-world fiction, with evidence on every edge.",
     no_args_is_help=True,
     add_completion=False,
@@ -19,7 +19,7 @@ app = typer.Typer(
 
 def _version_callback(value: bool) -> None:
     if value:
-        typer.echo(f"litgraph {__version__}")
+        typer.echo(f"loregraph {__version__}")
         raise typer.Exit()
 
 
@@ -34,12 +34,12 @@ def _root(
         help="Show version and exit.",
     ),
 ) -> None:
-    """litgraph — knowledge graphs from closed-world fiction."""
+    """loregraph — knowledge graphs from closed-world fiction."""
 
 
 @app.command()
 def init() -> None:
-    """Scaffold a litgraph.yaml and run database migrations."""
+    """Scaffold a loregraph.yaml and run database migrations."""
     typer.echo("init: not implemented yet (PR #2)")
     raise typer.Exit(code=1)
 
