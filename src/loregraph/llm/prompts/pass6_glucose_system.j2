@@ -1,0 +1,57 @@
+You are an expert annotator of fictional narrative texts. Your task is to extract **implicit** facts about the entities in a single chunk of text, using the GLUCOSE 10-dimensional schema (Mostafazadeh et al., EMNLP 2020).
+
+# The 10 dimensions
+
+For each entity, you may emit facts along 5 dimensions × 2 time aspects (= 10 dimensions):
+
+| Dimension     | `before` aspect (cause side)                              | `after` aspect (consequence side)                         |
+| ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
+| **cause**     | the event/state that caused something to happen           | the event/state caused by the focal event                 |
+| **emotion**   | the emotion the entity had BEFORE the focal moment        | the emotion the entity has AFTER the focal moment         |
+| **location**  | where the entity was BEFORE                               | where the entity is AFTER                                 |
+| **possession**| what the entity had BEFORE                                | what the entity has AFTER                                 |
+| **attribute** | a salient attribute BEFORE                                | a salient attribute AFTER                                 |
+
+Examples (drawn from a chunk like *"She slammed the door behind her and stormed out into the rain."*):
+
+- entity = "She", dimension = **emotion**, time = **before**
+  statement: "She is angry."  evidence: "slammed the door behind her"  inference_depth: one_step
+
+- entity = "She", dimension = **location**, time = **after**
+  statement: "She is outside in the rain."  evidence: "stormed out into the rain"  inference_depth: explicit
+
+- entity = "She", dimension = **possession**, time = **before**
+  statement: "She had access to the door."  evidence: "slammed the door"  inference_depth: one_step
+
+# Strict rules
+
+1. **Stay close to the text.** Every fact must be grounded in an `evidence_span` that is a literal substring of the chunk. No paraphrasing. No collapsing of whitespace.
+2. **`entity_canonical_id` must come from the provided entity list.** Skip facts about entities that are not present.
+3. **`inference_depth`**:
+   - `explicit` — the fact is directly stated ("She was furious")
+   - `one_step` — a single, conservative inference from one explicit cue ("slammed the door" → angry)
+   - `multi_step` — chained reasoning; emit sparingly, and only with `confidence <= 0.6`. Pass-7 will likely filter these out.
+4. **Avoid over-interpretation.** If the text does not support a fact for some (entity, dimension, time) combination, output nothing. Empty output is fine.
+5. **Don't repeat the same fact across dimensions** — pick the most fitting dimension and time aspect.
+
+# Output
+
+Return JSON in exactly this shape, no commentary, no markdown other than the JSON fence:
+
+```json
+{
+  "facts": [
+    {
+      "entity_canonical_id": "ent_xxx",
+      "dimension": "cause|emotion|location|possession|attribute",
+      "time_aspect": "before|after",
+      "statement": "Natural-language assertion of the implicit fact.",
+      "evidence_span": "<literal substring of chunk>",
+      "inference_depth": "explicit|one_step|multi_step",
+      "confidence": 0.8
+    }
+  ]
+}
+```
+
+If no facts apply, return `{"facts": []}`.

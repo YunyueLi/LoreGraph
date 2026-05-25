@@ -62,6 +62,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     when a LLM-driven pass actually runs.
   - Lint config: ignore B008 globally — Typer/FastAPI/Click all rely on
     `arg: T = framework.Option(...)` defaults.
+- **PR #5 — Pass-5 typed relations, Pass-6 GLUCOSE implicit info**:
+  - `pipeline/pass5_relation.py` — 5-class edge extractor (STRUCTURAL /
+    INTERACTS / ASSERTS / INFLUENCES / PREDICTS). Uses each chunk's
+    canonical entities (from Pass-3/4) as the endpoint candidate set;
+    drops edges with unknown endpoints, non-literal evidence_span, or
+    self-loops.
+  - `pipeline/pass6_glucose.py` — 10-dim GLUCOSE implicit-info extractor.
+    Surfaces cause / emotion / location / possession / attribute facts in
+    both `before` and `after` aspects, each carrying
+    `inference_depth ∈ {explicit, one_step, multi_step}` so Pass-7 can
+    filter deeper inferences if their literal-match rate dips.
+  - `llm/prompts/pass5_relation_{system,user}.j2` and
+    `llm/prompts/pass6_glucose_{system,user}.j2`: split for prompt cache.
+  - `db/repository.py`: `list_entities_in_chunk(chunk_id)` — used by
+    both passes to scope the LLM's candidate set per chunk.
+  - `pipeline/orchestrator.py`: dispatch + stats for Pass-5 and Pass-6.
+    `MAX_PASS_NUM_V0_1` 4 → 6; CLI default `--to` 4 → 6.
+  - Tests: integration suites for both passes covering happy path,
+    unknown-endpoint rejection, and non-literal evidence_span rejection;
+    persistence round-trip for edges and glucose_facts.
 - **PR #4 — Pass-3 character clustering, Pass-4 coreference binder**:
   - `utils/clustering.py`: `is_candidate_pair` (exact / substring / word
     overlap / edit ratio gate) + `generate_candidate_pairs` + `UnionFind`

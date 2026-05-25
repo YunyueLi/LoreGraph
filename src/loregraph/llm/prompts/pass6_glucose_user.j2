@@ -1,0 +1,12 @@
+Chunk text:
+"""
+{{ chunk_text }}
+"""
+
+Entities present in this chunk (use these canonical_ids; skip any other entity):
+
+{% for ent in entities -%}
+- `{{ ent.canonical_id }}` — **{{ ent.type }}** — {{ ent.canonical_name }}{% if ent.aliases %} (aka {{ ent.aliases|join(", ") }}){% endif %}
+{% endfor %}
+
+Extract every well-supported implicit fact along the 10 GLUCOSE dimensions. Return the JSON object now.
