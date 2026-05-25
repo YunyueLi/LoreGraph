@@ -1,4 +1,4 @@
-# loregraph
+# LoreGraph
 
 > Knowledge graphs from closed-world fiction, with evidence on every edge.
 
@@ -6,13 +6,13 @@
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
 [![Status](https://img.shields.io/badge/status-alpha-orange.svg)](#roadmap)
 
-**loregraph** extracts entities, relations, events, and implicit story-level facts from a single closed-world fictional text (novel, screenplay, script) into a queryable knowledge graph — with every claim traceable to a literal span in the original text.
+**LoreGraph** extracts entities, relations, events, and implicit story-level facts from a single closed-world fictional text (novel, screenplay, script) into a queryable knowledge graph — with every claim traceable to a literal span in the original text.
 
-## Why loregraph
+## Why LoreGraph
 
 Mainstream GraphRAG pipelines target the open web, where contradictions can be resolved by adding more sources. Fiction is **closed-world**: the answer to "what does this character believe?" must come from the text alone, every inference must cite a span, and the graph must support multi-character viewpoints, foreshadowing, and counterfactual continuations.
 
-loregraph implements a **7-Pass extraction pipeline** synthesizing best practices from BookNLP, GLUCOSE, Microsoft GraphRAG, HippoRAG 2, and Zep, with a strict evidence-span match policy as a hallucination guardrail.
+LoreGraph implements a **7-Pass extraction pipeline** synthesizing best practices from BookNLP, GLUCOSE, Microsoft GraphRAG, HippoRAG 2, and Zep, with a strict evidence-span match policy as a hallucination guardrail.
 
 ## The 7-Pass Pipeline
 
@@ -41,7 +41,7 @@ graph LR
 > **Prerequisites**: Python 3.11+, Docker, an Anthropic API key.
 
 ```bash
-git clone https://github.com/YunyueLi/loregraph.git
+git clone https://github.com/YunyueLi/LoreGraph.git
 cd loregraph
 cp .env.example .env                     # add your ANTHROPIC_API_KEY
 docker compose up -d                     # postgres + pgvector
@@ -85,7 +85,7 @@ Layer cake:
 
 ## Academic references
 
-loregraph synthesizes design choices from a body of prior work. BibTeX in [`docs/references.bib`](docs/references.bib).
+LoreGraph synthesizes design choices from a body of prior work. BibTeX in [`docs/references.bib`](docs/references.bib).
 
 - Bamman, Lewke, Mansoor. *An Annotated Dataset of Coreference in English Literature*. LREC 2020. (LitBank)
 - Sims, Park, Bamman. *Literary Event Detection*. ACL 2019.

@@ -1,12 +1,12 @@
-# loregraph Architecture
+# LoreGraph Architecture
 
 ## Overview
 
-loregraph builds a queryable knowledge graph from a single closed-world fictional text (novel, screenplay, script) via a 7-Pass LLM extraction pipeline. Every node and edge is traceable to a literal span in the original text.
+LoreGraph builds a queryable knowledge graph from a single closed-world fictional text (novel, screenplay, script) via a 7-Pass LLM extraction pipeline. Every node and edge is traceable to a literal span in the original text.
 
 ## Design ancestry
 
-loregraph is a re-architecture of an internal design called **WMG (World Memory Graph)**, originally targeted at open-world prediction. It is adapted here for **closed-world** texts, where:
+LoreGraph is a re-architecture of an internal design called **WMG (World Memory Graph)**, originally targeted at open-world prediction. It is adapted here for **closed-world** texts, where:
 
 - No external data sources are available.
 - Every claim must cite a literal span from the source.
