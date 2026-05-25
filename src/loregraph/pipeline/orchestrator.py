@@ -20,10 +20,11 @@ from loregraph.pipeline.pass2_entity import Pass2EntityExtractor
 from loregraph.pipeline.pass3_cluster import Pass3Clusterer
 from loregraph.pipeline.pass4_coref import Pass4CorefResolver
 from loregraph.pipeline.pass5_relation import Pass5RelationExtractor
+from loregraph.pipeline.pass6_glucose import Pass6GlucoseExtractor
 
 log = logging.getLogger(__name__)
 
-MAX_PASS_NUM_V0_1 = 5  # v0.1 ships Pass-1..Pass-5 after this PR.
+MAX_PASS_NUM_V0_1 = 6  # v0.1 ships Pass-1..Pass-6 after this PR; Pass-7 lands in PR #6.
 
 
 class Orchestrator:
@@ -37,8 +38,9 @@ class Orchestrator:
             raise ValueError(f"invalid pass range [{from_pass}, {to_pass}]")
         if to_pass > MAX_PASS_NUM_V0_1:
             raise NotImplementedError(
-                f"Pass-{to_pass} is not implemented yet (v0.1 ships only "
-                f"Pass-1 and Pass-2). Lower --to or wait for the next release."
+                f"Pass-{to_pass} is not implemented yet (v0.1 ships Pass-1.."
+                f"Pass-{MAX_PASS_NUM_V0_1}; Pass-7 lands in PR #6). "
+                "Lower --to or wait for the next release."
             )
 
         for pass_num in range(from_pass, to_pass + 1):
@@ -57,6 +59,7 @@ class Orchestrator:
                 3: self._run_pass_3_cluster,
                 4: self._run_pass_4_coref,
                 5: self._run_pass_5_relation,
+                6: self._run_pass_6_glucose,
             }[pass_num]()
         except Exception as exc:
             await repo.upsert_pass_run(
@@ -176,6 +179,30 @@ class Orchestrator:
             "chunks_processed": len(chunks),
             "chunks_with_edges": chunks_with_edges,
             "edges": total_edges,
+            **extractor.usage.to_dict(),
+        }
+
+    async def _run_pass_6_glucose(self) -> dict:
+        chunks = await repo.list_chunks(self.ctx.session, self.ctx.book_id)
+        if not chunks:
+            raise RuntimeError("Pass-6 needs chunks. Run --from 1 first.")
+
+        extractor = Pass6GlucoseExtractor(self.ctx.llm)
+        total_facts = 0
+        chunks_with_facts = 0
+        for chunk in chunks:
+            chunk_entities = await repo.list_entities_in_chunk(self.ctx.session, chunk.id)
+            facts_in = await extractor.extract_chunk(chunk, chunk_entities)
+            if facts_in:
+                facts_out = await repo.insert_glucose_facts(self.ctx.session, facts_in)
+                total_facts += len(facts_out)
+                chunks_with_facts += 1
+
+        self.ctx.usage.merge_from(extractor.usage)
+        return {
+            "chunks_processed": len(chunks),
+            "chunks_with_facts": chunks_with_facts,
+            "facts": total_facts,
             **extractor.usage.to_dict(),
         }
 
