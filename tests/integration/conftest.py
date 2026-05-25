@@ -1,4 +1,11 @@
-"""Integration test fixtures — Postgres via testcontainers."""
+"""Integration test fixtures — Postgres via testcontainers.
+
+A fresh SQLAlchemy engine is created per test so that every async resource
+lives on the test's own event loop. The Postgres container, however, is
+session-scoped — the schema is bootstrapped once and tables are truncated
+between tests for isolation. This trades a small engine-init cost per test
+for full event-loop safety.
+"""
 
 from __future__ import annotations
 
@@ -7,11 +14,35 @@ from collections.abc import AsyncIterator
 
 import pytest
 import pytest_asyncio
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from testcontainers.postgres import PostgresContainer
 
-from loregraph.db.engine import init_engine, reset_engine, session_scope
+from loregraph.db.engine import (
+    get_session_factory,
+    init_engine,
+    reset_engine,
+)
 from loregraph.db.schema import Base
+
+_ENUMS: list[tuple[str, list[str]]] = [
+    ("entity_type", ["Agent", "Object", "Event", "Concept"]),
+    ("relation_type", ["STRUCTURAL", "INTERACTS", "ASSERTS", "INFLUENCES", "PREDICTS"]),
+    ("inference_depth", ["explicit", "one_step", "multi_step"]),
+    ("glucose_dim", ["cause", "emotion", "location", "possession", "attribute"]),
+    ("glucose_time", ["before", "after"]),
+    ("pass_status", ["pending", "running", "done", "failed"]),
+]
+
+_TABLES_IN_TRUNCATE_ORDER = [
+    "pass_runs",
+    "glucose_facts",
+    "edges",
+    "mentions",
+    "entities",
+    "chunks",
+    "books",
+]
 
 
 @pytest.fixture(scope="session")
@@ -25,50 +56,50 @@ def pg_container() -> PostgresContainer:
         driver="asyncpg",
     )
     container.start()
-    yield container
-    container.stop()
-
-
-@pytest_asyncio.fixture(scope="session")
-async def engine_setup(pg_container: PostgresContainer) -> AsyncIterator[None]:
-    """Initialise the engine + create all tables. Session-scoped."""
-    os.environ["DATABASE_URL"] = pg_container.get_connection_url()
-    os.environ.setdefault("ANTHROPIC_API_KEY", "sk-ant-test")
-
-    # Fresh import-time settings — clear any cached singletons.
-    await reset_engine()
-    engine = init_engine()
-
-    # CREATE EXTENSION before any Vector column is referenced.
-    async with engine.begin() as conn:
-        from sqlalchemy import text
-
-        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-        # Enums + tables come from the ORM metadata; we skip Alembic here for
-        # speed, and have a separate test that runs alembic upgrade head.
-        for enum in (
-            "CREATE TYPE entity_type AS ENUM ('Agent','Object','Event','Concept')",
-            "CREATE TYPE relation_type AS ENUM "
-            "('STRUCTURAL','INTERACTS','ASSERTS','INFLUENCES','PREDICTS')",
-            "CREATE TYPE inference_depth AS ENUM ('explicit','one_step','multi_step')",
-            "CREATE TYPE glucose_dim AS ENUM "
-            "('cause','emotion','location','possession','attribute')",
-            "CREATE TYPE glucose_time AS ENUM ('before','after')",
-            "CREATE TYPE pass_status AS ENUM ('pending','running','done','failed')",
-        ):
-            await conn.execute(text(enum))
-        await conn.run_sync(Base.metadata.create_all)
-
-    yield
-
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-    await reset_engine()
+    try:
+        yield container
+    finally:
+        container.stop()
 
 
 @pytest_asyncio.fixture
-async def session(engine_setup: None) -> AsyncIterator[AsyncSession]:
-    """Per-test session that rolls back at the end for isolation."""
-    async with session_scope() as s:
-        yield s
-        await s.rollback()
+async def session(pg_container: PostgresContainer) -> AsyncIterator[AsyncSession]:
+    """Per-test session:
+
+    * resets the engine singleton so the new engine binds to *this* test's
+      event loop;
+    * idempotently installs the vector extension, enum types, and tables;
+    * truncates all tables for isolation;
+    * yields a session that is rolled back at teardown.
+    """
+    os.environ["DATABASE_URL"] = pg_container.get_connection_url()
+    os.environ.setdefault("ANTHROPIC_API_KEY", "sk-ant-test")
+
+    await reset_engine()
+    engine = init_engine()
+
+    async with engine.begin() as conn:
+        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+        for name, values in _ENUMS:
+            quoted_values = ", ".join(f"'{v}'" for v in values)
+            await conn.execute(
+                text(
+                    f"DO $$ BEGIN "
+                    f"CREATE TYPE {name} AS ENUM ({quoted_values}); "
+                    f"EXCEPTION WHEN duplicate_object THEN null; END $$;"
+                )
+            )
+        await conn.run_sync(Base.metadata.create_all)
+
+    async with engine.begin() as conn:
+        truncate_list = ", ".join(_TABLES_IN_TRUNCATE_ORDER)
+        await conn.execute(text(f"TRUNCATE {truncate_list} RESTART IDENTITY CASCADE"))
+
+    factory = get_session_factory()
+    async with factory() as s:
+        try:
+            yield s
+        finally:
+            await s.rollback()
+
+    await reset_engine()
