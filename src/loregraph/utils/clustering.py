@@ -13,10 +13,20 @@ from difflib import SequenceMatcher
 
 # ---------- Candidate gating ----------
 
+# English stopwords + frequent function words. Without filtering, pairs like
+# ("the rose", "the knife") trip the word-overlap gate via "the" alone.
+_STOPWORDS = frozenset(
+    {"the", "a", "an", "of", "and", "or", "to", "in", "on", "at", "by", "for"}
+)
+
+
+def _content_words(s: str) -> set[str]:
+    return {w for w in s.lower().split() if w and w not in _STOPWORDS}
+
 
 def _word_overlap(a: str, b: str) -> float:
-    a_words = {w for w in a.lower().split() if w}
-    b_words = {w for w in b.lower().split() if w}
+    a_words = _content_words(a)
+    b_words = _content_words(b)
     if not a_words or not b_words:
         return 0.0
     common = len(a_words & b_words)
