@@ -1,21 +1,21 @@
 services:
   postgres:
     image: pgvector/pgvector:pg17
-    container_name: litgraph-postgres
+    container_name: loregraph-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: litgraph
-      POSTGRES_PASSWORD: litgraph
-      POSTGRES_DB: litgraph
+      POSTGRES_USER: loregraph
+      POSTGRES_PASSWORD: loregraph
+      POSTGRES_DB: loregraph
     ports:
       - "5432:5432"
     volumes:
-      - litgraph_pgdata:/var/lib/postgresql/data
+      - loregraph_pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U litgraph"]
+      test: ["CMD-SHELL", "pg_isready -U loregraph"]
       interval: 5s
       timeout: 5s
       retries: 10
 
 volumes:
-  litgraph_pgdata:
+  loregraph_pgdata:

@@ -1,12 +1,12 @@
-# litgraph Architecture
+# loregraph Architecture
 
 ## Overview
 
-litgraph builds a queryable knowledge graph from a single closed-world fictional text (novel, screenplay, script) via a 7-Pass LLM extraction pipeline. Every node and edge is traceable to a literal span in the original text.
+loregraph builds a queryable knowledge graph from a single closed-world fictional text (novel, screenplay, script) via a 7-Pass LLM extraction pipeline. Every node and edge is traceable to a literal span in the original text.
 
 ## Design ancestry
 
-litgraph is a re-architecture of an internal design called **WMG (World Memory Graph)**, originally targeted at open-world prediction. It is adapted here for **closed-world** texts, where:
+loregraph is a re-architecture of an internal design called **WMG (World Memory Graph)**, originally targeted at open-world prediction. It is adapted here for **closed-world** texts, where:
 
 - No external data sources are available.
 - Every claim must cite a literal span from the source.
@@ -41,13 +41,13 @@ See [`references.bib`](references.bib) for the full bibliography.
 
 | Path | Responsibility |
 |---|---|
-| `src/litgraph/models/` | Pydantic data models (Chunk, Mention, Entity, Edge, GlucoseFact) |
-| `src/litgraph/db/` | SQLAlchemy schema + async repository |
-| `src/litgraph/llm/` | Anthropic client wrapper + prompt templates + gleaning |
-| `src/litgraph/pipeline/` | One file per pass + `orchestrator.py` |
-| `src/litgraph/cli/` | Typer commands |
-| `src/litgraph/web/` | FastAPI routes + React frontend |
-| `src/litgraph/utils/` | Token counting, span matching, logging |
+| `src/loregraph/models/` | Pydantic data models (Chunk, Mention, Entity, Edge, GlucoseFact) |
+| `src/loregraph/db/` | SQLAlchemy schema + async repository |
+| `src/loregraph/llm/` | Anthropic client wrapper + prompt templates + gleaning |
+| `src/loregraph/pipeline/` | One file per pass + `orchestrator.py` |
+| `src/loregraph/cli/` | Typer commands |
+| `src/loregraph/web/` | FastAPI routes + React frontend |
+| `src/loregraph/utils/` | Token counting, span matching, logging |
 | `migrations/` | Alembic SQL migrations |
 | `tests/{unit,integration,e2e}/` | Three test tiers |
 

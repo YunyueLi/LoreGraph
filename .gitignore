@@ -48,7 +48,7 @@ coverage.xml
 *.sqlite
 *.sqlite3
 data/
-.litgraph-cache/
+.loregraph-cache/
 
 # IDE
 .idea/
@@ -58,9 +58,9 @@ data/
 
 # Frontend (web UI)
 node_modules/
-src/litgraph/web/static/
-src/litgraph/web/frontend/dist/
-src/litgraph/web/frontend/.vite/
+src/loregraph/web/static/
+src/loregraph/web/frontend/dist/
+src/loregraph/web/frontend/.vite/
 
 # OS
 .DS_Store

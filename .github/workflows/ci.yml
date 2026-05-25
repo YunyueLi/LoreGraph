@@ -36,18 +36,18 @@ jobs:
       postgres:
         image: pgvector/pgvector:pg17
         env:
-          POSTGRES_USER: litgraph
-          POSTGRES_PASSWORD: litgraph
-          POSTGRES_DB: litgraph
+          POSTGRES_USER: loregraph
+          POSTGRES_PASSWORD: loregraph
+          POSTGRES_DB: loregraph
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U litgraph"
+          --health-cmd "pg_isready -U loregraph"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
     env:
-      DATABASE_URL: postgresql+asyncpg://litgraph:litgraph@localhost:5432/litgraph
+      DATABASE_URL: postgresql+asyncpg://loregraph:loregraph@localhost:5432/loregraph
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v3

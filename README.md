@@ -1,4 +1,4 @@
-# litgraph
+# loregraph
 
 > Knowledge graphs from closed-world fiction, with evidence on every edge.
 
@@ -6,13 +6,13 @@
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
 [![Status](https://img.shields.io/badge/status-alpha-orange.svg)](#roadmap)
 
-**litgraph** extracts entities, relations, events, and implicit story-level facts from a single closed-world fictional text (novel, screenplay, script) into a queryable knowledge graph — with every claim traceable to a literal span in the original text.
+**loregraph** extracts entities, relations, events, and implicit story-level facts from a single closed-world fictional text (novel, screenplay, script) into a queryable knowledge graph — with every claim traceable to a literal span in the original text.
 
-## Why litgraph
+## Why loregraph
 
 Mainstream GraphRAG pipelines target the open web, where contradictions can be resolved by adding more sources. Fiction is **closed-world**: the answer to "what does this character believe?" must come from the text alone, every inference must cite a span, and the graph must support multi-character viewpoints, foreshadowing, and counterfactual continuations.
 
-litgraph implements a **7-Pass extraction pipeline** synthesizing best practices from BookNLP, GLUCOSE, Microsoft GraphRAG, HippoRAG 2, and Zep, with a strict evidence-span match policy as a hallucination guardrail.
+loregraph implements a **7-Pass extraction pipeline** synthesizing best practices from BookNLP, GLUCOSE, Microsoft GraphRAG, HippoRAG 2, and Zep, with a strict evidence-span match policy as a hallucination guardrail.
 
 ## The 7-Pass Pipeline
 
@@ -41,15 +41,15 @@ graph LR
 > **Prerequisites**: Python 3.11+, Docker, an Anthropic API key.
 
 ```bash
-git clone https://github.com/YunyueLi/litgraph.git
-cd litgraph
+git clone https://github.com/YunyueLi/loregraph.git
+cd loregraph
 cp .env.example .env                     # add your ANTHROPIC_API_KEY
 docker compose up -d                     # postgres + pgvector
 uv pip install -e ".[dev]"
 uv run alembic upgrade head              # initialise schema
-uv run litgraph ingest examples/alice/input.txt --title "Alice"
-uv run litgraph extract --book-id 1
-uv run litgraph view --book-id 1         # opens browser to graph UI
+uv run loregraph ingest examples/alice/input.txt --title "Alice"
+uv run loregraph extract --book-id 1
+uv run loregraph view --book-id 1         # opens browser to graph UI
 ```
 
 Many of these commands print `not implemented yet` in v0.1.0.dev0 — see [Roadmap](#roadmap).
@@ -85,7 +85,7 @@ Layer cake:
 
 ## Academic references
 
-litgraph synthesizes design choices from a body of prior work. BibTeX in [`docs/references.bib`](docs/references.bib).
+loregraph synthesizes design choices from a body of prior work. BibTeX in [`docs/references.bib`](docs/references.bib).
 
 - Bamman, Lewke, Mansoor. *An Annotated Dataset of Coreference in English Literature*. LREC 2020. (LitBank)
 - Sims, Park, Bamman. *Literary Event Detection*. ACL 2019.
