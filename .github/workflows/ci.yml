@@ -22,8 +22,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
-          cache-dependency-path: src/loregraph/web/frontend/package-lock.json
+        # No npm cache: package-lock.json is not committed yet (will land
+        # after the first deploy generates one). Re-download is ~30s.
       - name: Install (ci, fall back to install when lockfile absent)
         run: |
           if [ -f package-lock.json ]; then
