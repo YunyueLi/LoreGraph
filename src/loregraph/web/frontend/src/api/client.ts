@@ -6,7 +6,11 @@ import type {
   GraphResponse,
 } from "../types";
 
-const API_BASE = ""; // same-origin in production; Vite proxy in dev
+// In dev: Vite proxies /api to localhost:8000.
+// In production: VITE_API_BASE points at the deployed FastAPI host
+// (e.g. "https://loregraph-api.onrender.com"). If unset, calls go to
+// the same origin — works for the all-in-one `loregraph view` setup.
+const API_BASE: string = import.meta.env.VITE_API_BASE ?? "";
 
 async function fetchJson<T>(path: string): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {

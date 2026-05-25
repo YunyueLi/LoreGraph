@@ -1,0 +1,41 @@
+# Render.com Blueprint for the LoreGraph FastAPI backend.
+#
+# After `render blueprint launch` (or the "New Blueprint" UI flow), Render
+# will create one web service from this spec. You will be prompted to
+# fill in two secret environment variables:
+#
+#   ANTHROPIC_API_KEY      — your Claude key (required for extraction)
+#   DATABASE_URL           — Neon postgres connection string with `+asyncpg`
+#                            driver, e.g.
+#                            postgresql+asyncpg://USER:PWD@HOST/DB?sslmode=require
+#
+# The build step also runs `alembic upgrade head` against the live DB.
+
+services:
+  - type: web
+    name: loregraph
+    runtime: python
+    plan: free
+    region: oregon          # cheapest free region; change if you want
+    pythonVersion: "3.11"
+    buildCommand: |
+      pip install -e .
+      alembic upgrade head
+    startCommand: |
+      uvicorn loregraph.web.server:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      # ---- secrets (you fill these in the Render UI) ----
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      # ---- public configuration ----
+      - key: LOREGRAPH_LOG_LEVEL
+        value: INFO
+      - key: LOREGRAPH_CORS_ORIGINS
+        # Replace with your Cloudflare Pages URL once known.
+        value: "https://loregraph.pages.dev"
+      - key: LOREGRAPH_MODEL
+        value: claude-sonnet-4-6

@@ -13,6 +13,7 @@ The app exposes:
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -28,6 +29,14 @@ log = logging.getLogger(__name__)
 _STATIC_DIR = Path(__file__).parent / "static"
 
 
+def _resolve_cors_origins() -> list[str]:
+    """LOREGRAPH_CORS_ORIGINS is a comma-separated list, or '*' for dev."""
+    raw = os.environ.get("LOREGRAPH_CORS_ORIGINS", "*").strip()
+    if raw == "*" or not raw:
+        return ["*"]
+    return [origin.strip() for origin in raw.split(",") if origin.strip()]
+
+
 def create_app(*, enable_cors: bool = True) -> FastAPI:
     """Build the FastAPI app. Pure factory — call from CLI or tests."""
     app = FastAPI(
@@ -37,12 +46,14 @@ def create_app(*, enable_cors: bool = True) -> FastAPI:
     )
 
     if enable_cors:
+        origins = _resolve_cors_origins()
         app.add_middleware(
             CORSMiddleware,
-            allow_origins=["*"],  # tighten in production
+            allow_origins=origins,
             allow_methods=["GET"],
             allow_headers=["*"],
         )
+        log.info("CORS allow_origins: %s", origins)
 
     @app.get("/healthz", tags=["meta"])
     async def healthz() -> JSONResponse:
