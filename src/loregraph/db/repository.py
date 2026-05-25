@@ -101,6 +101,19 @@ async def list_entities(session: AsyncSession, book_id: int) -> list[Entity]:
     return [Entity.model_validate(r) for r in rows]
 
 
+async def list_entities_in_chunk(session: AsyncSession, chunk_id: int) -> list[Entity]:
+    """Entities that have at least one mention inside `chunk_id` after Pass-4."""
+    stmt = (
+        select(orm.Entity)
+        .join(orm.Mention, orm.Mention.entity_id == orm.Entity.id)
+        .where(orm.Mention.chunk_id == chunk_id)
+        .distinct()
+        .order_by(orm.Entity.id)
+    )
+    rows = (await session.execute(stmt)).scalars().all()
+    return [Entity.model_validate(r) for r in rows]
+
+
 # ---------- Edge ----------
 
 

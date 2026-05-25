@@ -19,10 +19,11 @@ from loregraph.pipeline.pass1_chunk import ChunkerConfig, Pass1Chunker
 from loregraph.pipeline.pass2_entity import Pass2EntityExtractor
 from loregraph.pipeline.pass3_cluster import Pass3Clusterer
 from loregraph.pipeline.pass4_coref import Pass4CorefResolver
+from loregraph.pipeline.pass5_relation import Pass5RelationExtractor
 
 log = logging.getLogger(__name__)
 
-MAX_PASS_NUM_V0_1 = 4  # v0.1 ships Pass-1..Pass-4. Later passes raise.
+MAX_PASS_NUM_V0_1 = 5  # v0.1 ships Pass-1..Pass-5 after this PR.
 
 
 class Orchestrator:
@@ -55,6 +56,7 @@ class Orchestrator:
                 2: self._run_pass_2_entity,
                 3: self._run_pass_3_cluster,
                 4: self._run_pass_4_coref,
+                5: self._run_pass_5_relation,
             }[pass_num]()
         except Exception as exc:
             await repo.upsert_pass_run(
@@ -152,6 +154,30 @@ class Orchestrator:
         return await resolver.resolve_book(
             session=self.ctx.session, entities=entities, mentions=mentions
         )
+
+    async def _run_pass_5_relation(self) -> dict:
+        chunks = await repo.list_chunks(self.ctx.session, self.ctx.book_id)
+        if not chunks:
+            raise RuntimeError("Pass-5 needs chunks. Run --from 1 first.")
+
+        extractor = Pass5RelationExtractor(self.ctx.llm)
+        total_edges = 0
+        chunks_with_edges = 0
+        for chunk in chunks:
+            chunk_entities = await repo.list_entities_in_chunk(self.ctx.session, chunk.id)
+            edges_in = await extractor.extract_chunk(chunk, chunk_entities)
+            if edges_in:
+                edges_out = await repo.insert_edges(self.ctx.session, edges_in)
+                total_edges += len(edges_out)
+                chunks_with_edges += 1
+
+        self.ctx.usage.merge_from(extractor.usage)
+        return {
+            "chunks_processed": len(chunks),
+            "chunks_with_edges": chunks_with_edges,
+            "edges": total_edges,
+            **extractor.usage.to_dict(),
+        }
 
 
 def make_llm_client_from_env() -> LLMClient:
