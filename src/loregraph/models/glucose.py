@@ -1,6 +1,6 @@
 """GlucoseFact: implicit information attached to an entity (Pass-6 output).
 
-Each fact lives in one of 5 dimensions × 2 time aspects (= 10 dimensions
+Each fact lives in one of 5 dimensions x 2 time aspects (= 10 dimensions
 total in the original GLUCOSE schema, Mostafazadeh et al. EMNLP 2020).
 """
 

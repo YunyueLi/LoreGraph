@@ -52,8 +52,7 @@ def ingest(
 ) -> None:
     """Ingest a closed-world text into the database."""
     typer.echo(
-        f"ingest: path={path!r} title={title!r} author={author!r} "
-        "— not implemented yet (PR #3)"
+        f"ingest: path={path!r} title={title!r} author={author!r} — not implemented yet (PR #3)"
     )
     raise typer.Exit(code=1)
 

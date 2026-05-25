@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from pydantic import ValidationError
@@ -157,7 +157,7 @@ def test_pass_run_pass_num_bounds() -> None:
 
 @pytest.mark.unit
 def test_pass_run_with_timestamps_round_trip() -> None:
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=UTC)
     pr = PassRun(
         id=1,
         book_id=1,

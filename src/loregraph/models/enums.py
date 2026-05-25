@@ -6,10 +6,10 @@ and Postgres ENUM columns.
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 
-class EntityType(str, Enum):
+class EntityType(StrEnum):
     """The 4 top-level ontological categories.
 
     Synthesized from WMG (Pillar 1) and LitBank (Bamman 2020): every node
@@ -22,7 +22,7 @@ class EntityType(str, Enum):
     CONCEPT = "Concept"
 
 
-class RelationType(str, Enum):
+class RelationType(StrEnum):
     """The 5 relation classes produced by Pass-5.
 
     See `docs/7-pass-pipeline.md` for the semantics of each.
@@ -35,7 +35,7 @@ class RelationType(str, Enum):
     PREDICTS = "PREDICTS"
 
 
-class InferenceDepth(str, Enum):
+class InferenceDepth(StrEnum):
     """How many inference steps separate a claim from its source text."""
 
     EXPLICIT = "explicit"
@@ -43,7 +43,7 @@ class InferenceDepth(str, Enum):
     MULTI_STEP = "multi_step"
 
 
-class GlucoseDim(str, Enum):
+class GlucoseDim(StrEnum):
     """Five GLUCOSE dimensions (Mostafazadeh et al. EMNLP 2020)."""
 
     CAUSE = "cause"
@@ -53,14 +53,14 @@ class GlucoseDim(str, Enum):
     ATTRIBUTE = "attribute"
 
 
-class GlucoseTime(str, Enum):
+class GlucoseTime(StrEnum):
     """Cause-side (`before`) vs consequence-side (`after`) of an event."""
 
     BEFORE = "before"
     AFTER = "after"
 
 
-class PassStatus(str, Enum):
+class PassStatus(StrEnum):
     """Lifecycle of a single pass run on a book."""
 
     PENDING = "pending"
