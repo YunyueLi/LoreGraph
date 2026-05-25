@@ -13,8 +13,9 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noEmit": true,
-    "emitDeclarationOnly": false
+    "emitDeclarationOnly": true,
+    "declaration": true,
+    "outDir": "./.tsbuildcache"
   },
   "include": ["vite.config.ts"]
 }
