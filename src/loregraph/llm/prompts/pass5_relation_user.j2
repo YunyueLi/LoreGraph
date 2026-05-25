@@ -1,0 +1,12 @@
+Chunk text:
+"""
+{{ chunk_text }}
+"""
+
+Entities present in this chunk (use these canonical_ids when emitting edges; skip any relation that would involve an entity not in this list):
+
+{% for ent in entities -%}
+- `{{ ent.canonical_id }}` — **{{ ent.type }}** — {{ ent.canonical_name }}{% if ent.aliases %} (aka {{ ent.aliases|join(", ") }}){% endif %}
+{% endfor %}
+
+Extract every edge between two entities in this list that is supported by the chunk. Return the JSON object now.

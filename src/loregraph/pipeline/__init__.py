@@ -8,6 +8,7 @@ from loregraph.pipeline.pass1_chunk import ChunkerConfig, Pass1Chunker
 from loregraph.pipeline.pass2_entity import Pass2EntityExtractor
 from loregraph.pipeline.pass3_cluster import Pass3Clusterer
 from loregraph.pipeline.pass4_coref import Pass4CorefResolver
+from loregraph.pipeline.pass5_relation import Pass5RelationExtractor
 
 __all__ = [
     "ChunkerConfig",
@@ -16,5 +17,6 @@ __all__ = [
     "Pass2EntityExtractor",
     "Pass3Clusterer",
     "Pass4CorefResolver",
+    "Pass5RelationExtractor",
     "PipelineContext",
 ]
