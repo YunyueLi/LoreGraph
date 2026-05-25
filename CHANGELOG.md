@@ -62,6 +62,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     when a LLM-driven pass actually runs.
   - Lint config: ignore B008 globally — Typer/FastAPI/Click all rely on
     `arg: T = framework.Option(...)` defaults.
+- **PR #6 sub-C — React + Vite + Cytoscape + Tailwind frontend**:
+  - Single-page graph explorer under `src/loregraph/web/frontend/`.
+  - Stack: React 19 + Vite 6 + TypeScript 5.7 + Tailwind 3.4 + TanStack
+    Query 5 + Cytoscape.js (cose-bilkent layout).
+  - Components: `Header` (book selector + GitHub link), `GraphView`
+    (typed-coloured nodes sized by mention_count; relation-coloured edges
+    with arrowheads), `EvidencePanel` (hover-on-empty teaches the user
+    how to read the graph; entity / chunk click shows aliases, outgoing
+    + incoming edges with evidence_span quotes, GLUCOSE implicit facts).
+  - URL state: `?book_id=N` is shareable.
+  - Build: `npm run build` outputs to `src/loregraph/web/static/`, which
+    FastAPI auto-mounts at `/`. In dev, `npm run dev` runs Vite on :5173
+    and proxies `/api` to :8000.
+  - CI: new `frontend-build` GitHub Actions job runs `npm ci || npm
+    install`, `npm run typecheck`, `npm run build`.
+- **PR #6 sub-B — FastAPI backend** (graph + entity + chunk panels +
+  `loregraph view` CLI implementation; see commit `5d93153`).
 - **PR #6 sub-A — Pass-7 CoVe verification gate**:
   - `pipeline/pass7_cove.py` — Chain-of-Verification audit. Samples N edges
     and N glucose_facts per book, checks each for literal-substring match

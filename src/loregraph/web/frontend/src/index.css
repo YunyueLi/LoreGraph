@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply bg-white border border-ink-200 rounded-lg shadow-sm;
+  }
+  .chip {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium;
+  }
+  .chip-agent {
+    @apply chip bg-blue-50 text-accent-agent;
+  }
+  .chip-object {
+    @apply chip bg-teal-50 text-accent-object;
+  }
+  .chip-event {
+    @apply chip bg-amber-50 text-accent-event;
+  }
+  .chip-concept {
+    @apply chip bg-violet-50 text-accent-concept;
+  }
+  .chip-relation {
+    @apply chip bg-ink-100 text-ink-700 font-mono;
+  }
+}
