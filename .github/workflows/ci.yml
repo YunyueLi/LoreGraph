@@ -16,14 +16,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
-        with:
-          enable-cache: true
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: pyproject.toml
       - name: Install
-        run: uv pip install --system -e ".[dev]"
+        run: pip install -e ".[dev]"
       - name: Ruff lint
         run: ruff check .
       - name: Ruff format check
@@ -48,17 +47,21 @@ jobs:
           --health-retries 10
     env:
       DATABASE_URL: postgresql+asyncpg://loregraph:loregraph@localhost:5432/loregraph
+      ANTHROPIC_API_KEY: sk-ant-ci-dummy
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
-        with:
-          enable-cache: true
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: pyproject.toml
       - name: Install
-        run: uv pip install --system -e ".[dev]"
+        run: pip install -e ".[dev]"
+      - name: Enable pgvector extension
+        run: |
+          PGPASSWORD=loregraph psql -h localhost -U loregraph -d loregraph \
+            -c "CREATE EXTENSION IF NOT EXISTS vector;"
       - name: Unit tests
         run: pytest -m "unit"
       - name: Integration tests
-        run: pytest -m "integration" || echo "integration tests TBD"
+        run: pytest -m "integration"
