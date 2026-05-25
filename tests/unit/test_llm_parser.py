@@ -35,6 +35,16 @@ def test_extract_unfenced_falls_through() -> None:
 
 
 @pytest.mark.unit
+def test_extract_fence_with_inline_whitespace() -> None:
+    """Closing fences sometimes appear indented; we should still match."""
+    text = """```json
+    {"name": "Dan", "n": 4}
+    ```"""
+    parsed = parse_into(_Item, text)
+    assert parsed == _Item(name="Dan", n=4)
+
+
+@pytest.mark.unit
 def test_parse_into_validates() -> None:
     parsed = parse_into(_Item, '```json\n{"name": "x", "n": 7}\n```')
     assert parsed == _Item(name="x", n=7)

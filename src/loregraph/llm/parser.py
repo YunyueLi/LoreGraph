@@ -16,8 +16,14 @@ from pydantic import BaseModel, ValidationError
 T = TypeVar("T", bound=BaseModel)
 
 
+# Accept inline whitespace on either side of the closing fence, so a
+# model that indents the body of its code block doesn't trip parsing:
+#
+#     ```json
+#         {...}
+#     ```
 _FENCED_JSON_RE = re.compile(
-    r"```(?:json)?\s*\n(?P<body>.*?)\n```",
+    r"```(?:json)?[ \t]*\n(?P<body>.*?)\n[ \t]*```",
     flags=re.DOTALL | re.IGNORECASE,
 )
 
