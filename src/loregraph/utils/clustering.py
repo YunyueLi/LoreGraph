@@ -15,9 +15,7 @@ from difflib import SequenceMatcher
 
 # English stopwords + frequent function words. Without filtering, pairs like
 # ("the rose", "the knife") trip the word-overlap gate via "the" alone.
-_STOPWORDS = frozenset(
-    {"the", "a", "an", "of", "and", "or", "to", "in", "on", "at", "by", "for"}
-)
+_STOPWORDS = frozenset({"the", "a", "an", "of", "and", "or", "to", "in", "on", "at", "by", "for"})
 
 
 def _content_words(s: str) -> set[str]:
