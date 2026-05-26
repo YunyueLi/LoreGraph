@@ -12,7 +12,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from loregraph.db import repository as repo
-from loregraph.llm.client import LLMClient
+from loregraph.llm.client import LLMClient, make_llm_client
 from loregraph.models.enums import PassStatus
 from loregraph.models.runs import PassRunCreate
 from loregraph.pipeline.context import PipelineContext
@@ -215,5 +215,5 @@ class Orchestrator:
 
 
 def make_llm_client_from_env() -> LLMClient:
-    """Convenience constructor for CLI / scripts."""
-    return LLMClient()
+    """Convenience constructor for CLI / scripts. Reads LOREGRAPH_LLM_PROVIDER."""
+    return make_llm_client()
