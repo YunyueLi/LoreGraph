@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pydantic import BaseModel
@@ -76,7 +77,7 @@ class Pass2EntityExtractor:
         async def initial() -> list[_ExtractedEntity]:
             return await _call_with_context([])
 
-        async def retry(found: list) -> list[_ExtractedEntity]:
+        async def retry(found: list[Any]) -> list[_ExtractedEntity]:
             return await _call_with_context(list(found))
 
         def dedupe_key(item: object) -> tuple[str, str]:

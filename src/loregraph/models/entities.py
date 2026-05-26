@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict, Field
 
 from loregraph.models.enums import EntityType
@@ -44,7 +46,7 @@ class EntityCreate(BaseModel):
     canonical_name: str
     aliases: list[str] = Field(default_factory=list)
     note_md: str = ""
-    attributes: dict = Field(default_factory=dict)
+    attributes: dict[str, Any] = Field(default_factory=dict)
 
 
 class Entity(EntityCreate):

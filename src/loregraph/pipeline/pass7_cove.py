@@ -24,6 +24,7 @@ import logging
 import random
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pydantic import BaseModel, Field
@@ -79,7 +80,7 @@ class CoVeStats:
             return 1.0
         return (self.edges_supported + self.glucose_supported) / sampled
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "edges_total": self.edges_total,
             "edges_sampled": self.edges_sampled,
@@ -162,7 +163,7 @@ class Pass7CoVeVerifier:
 
     # ---- sampling ----
 
-    async def _sample_edges(self, session: AsyncSession, book_id: int) -> list[dict]:
+    async def _sample_edges(self, session: AsyncSession, book_id: int) -> list[dict[str, Any]]:
         stmt = (
             select(orm.Edge, orm.Chunk, orm.Entity)
             .join(orm.Chunk, orm.Chunk.id == orm.Edge.chunk_id)
@@ -190,7 +191,7 @@ class Pass7CoVeVerifier:
             for edge, chunk, src in sample
         ]
 
-    async def _sample_glucose(self, session: AsyncSession, book_id: int) -> list[dict]:
+    async def _sample_glucose(self, session: AsyncSession, book_id: int) -> list[dict[str, Any]]:
         stmt = (
             select(orm.GlucoseFact, orm.Chunk, orm.Entity)
             .join(orm.Chunk, orm.Chunk.id == orm.GlucoseFact.chunk_id)
@@ -229,7 +230,7 @@ class Pass7CoVeVerifier:
 
     # ---- LLM judging ----
 
-    async def _judge_edge(self, row: dict) -> bool:
+    async def _judge_edge(self, row: dict[str, Any]) -> bool:
         return await self._judge(
             row,
             extra={
@@ -239,7 +240,7 @@ class Pass7CoVeVerifier:
             },
         )
 
-    async def _judge_glucose(self, row: dict) -> bool:
+    async def _judge_glucose(self, row: dict[str, Any]) -> bool:
         return await self._judge(
             row,
             extra={
@@ -251,7 +252,7 @@ class Pass7CoVeVerifier:
             },
         )
 
-    async def _judge(self, row: dict, *, extra: dict) -> bool:
+    async def _judge(self, row: dict[str, Any], *, extra: dict[str, Any]) -> bool:
         user_prompt = self._user_template.render(
             chunk_text=row["chunk_text"],
             claim_type=row["claim_type"],

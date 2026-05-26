@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Iterator
 from difflib import SequenceMatcher
+from typing import Any
 
 # ---------- Candidate gating ----------
 
@@ -79,16 +80,16 @@ class UnionFind:
     pairs into clusters.
     """
 
-    def __init__(self, items: Iterable) -> None:
-        self._parent: dict = {item: item for item in items}
-        self._rank: dict = dict.fromkeys(self._parent, 0)
+    def __init__(self, items: Iterable[Any]) -> None:
+        self._parent: dict[Any, Any] = {item: item for item in items}
+        self._rank: dict[Any, int] = dict.fromkeys(self._parent, 0)
 
-    def add(self, item) -> None:
+    def add(self, item: Any) -> None:
         if item not in self._parent:
             self._parent[item] = item
             self._rank[item] = 0
 
-    def find(self, item):
+    def find(self, item: Any) -> Any:
         root = item
         while self._parent[root] != root:
             root = self._parent[root]
@@ -99,7 +100,7 @@ class UnionFind:
             item = nxt
         return root
 
-    def union(self, a, b) -> None:
+    def union(self, a: Any, b: Any) -> None:
         ra, rb = self.find(a), self.find(b)
         if ra == rb:
             return
@@ -109,8 +110,8 @@ class UnionFind:
         if self._rank[ra] == self._rank[rb]:
             self._rank[ra] += 1
 
-    def components(self) -> list[set]:
-        clusters: dict = {}
+    def components(self) -> list[set[Any]]:
+        clusters: dict[Any, set[Any]] = {}
         for item in self._parent:
             root = self.find(item)
             clusters.setdefault(root, set()).add(item)

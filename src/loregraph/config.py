@@ -43,5 +43,5 @@ def get_settings() -> Settings:
     """Return the process-wide Settings, instantiated lazily."""
     global _settings
     if _settings is None:
-        _settings = Settings()
+        _settings = Settings()  # type: ignore[call-arg]  # pydantic-settings reads env
     return _settings

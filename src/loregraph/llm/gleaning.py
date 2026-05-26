@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass(slots=True)
@@ -24,11 +25,11 @@ class GleaningConfig:
 
 async def glean(
     *,
-    initial: Callable[[], Awaitable[list]],
-    retry: Callable[[list], Awaitable[list]],
+    initial: Callable[[], Awaitable[list[Any]]],
+    retry: Callable[[list[Any]], Awaitable[list[Any]]],
     dedupe_key: Callable[[object], object],
     config: GleaningConfig | None = None,
-) -> list:
+) -> list[Any]:
     """Run an initial extraction + up to N follow-up rounds.
 
     Parameters
@@ -48,8 +49,8 @@ async def glean(
     if cfg.max_rounds < 1:
         raise ValueError("max_rounds must be >= 1")
 
-    found: list = list(await initial())
-    seen: set = {dedupe_key(item) for item in found}
+    found: list[Any] = list(await initial())
+    seen: set[Any] = {dedupe_key(item) for item in found}
 
     for _round in range(cfg.max_rounds - 1):
         new_items = await retry(found)

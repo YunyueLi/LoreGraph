@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -15,7 +16,7 @@ class PassRunCreate(BaseModel):
     book_id: int
     pass_num: int = Field(..., ge=1, le=7)
     status: PassStatus = PassStatus.PENDING
-    stats: dict = Field(default_factory=dict)
+    stats: dict[str, Any] = Field(default_factory=dict)
     error: str | None = None
 
 
