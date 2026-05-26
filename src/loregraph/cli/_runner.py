@@ -8,7 +8,7 @@ from pathlib import Path
 
 from loregraph.db import init_engine, session_scope
 from loregraph.db import repository as repo
-from loregraph.llm.client import LLMClient
+from loregraph.llm.client import LLMClient, make_llm_client
 from loregraph.models.atoms import BookCreate
 from loregraph.models.runs import PassRun
 from loregraph.pipeline.context import PipelineContext
@@ -38,7 +38,7 @@ async def run_extract(*, book_id: int, from_pass: int, to_pass: int) -> None:
     # is permitted to receive a not-yet-ready client and lazy-init at first use.
     llm: LLMClient | None = None
     if to_pass >= 2:
-        llm = LLMClient()
+        llm = make_llm_client()
     async with session_scope() as session:
         ctx = PipelineContext(
             book_id=book_id,

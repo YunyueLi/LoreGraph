@@ -18,6 +18,8 @@ keywords = [
     "llm",
     "extraction",
     "claude",
+    "gpt",
+    "deepseek",
     "graphrag",
 ]
 classifiers = [
@@ -34,6 +36,7 @@ classifiers = [
 dynamic = ["version"]
 dependencies = [
     "anthropic>=0.40.0",
+    "openai>=1.50",
     "pydantic>=2.7",
     "pydantic-settings>=2.3",
     "sqlalchemy[asyncio]>=2.0.30",
