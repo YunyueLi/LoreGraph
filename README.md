@@ -67,62 +67,23 @@ loregraph view --book-id 1                            # opens http://localhost:8
 
 After `loregraph extract` finishes, the database holds typed entities, typed relations, and 10-dimensional implicit facts — every one of them anchored to a literal span:
 
-```mermaid
-graph LR
-    A["the narrator<br/>Agent"]:::agent
-    J["John<br/>Agent · physician husband"]:::agent
-    R["the upper room<br/>Object · Place"]:::object
-    W["the yellow wallpaper<br/>Object"]:::object
-    T["the rest cure<br/>Concept · Ideology"]:::concept
-
-    J -- "MARRIED_TO<br/>(STRUCTURAL)" --> A
-    J -- "PRESCRIBES<br/>(INTERACTS)" --> T
-    T -- "CONFINES<br/>(INFLUENCES)" --> A
-    A -- "LIVES_IN<br/>(STRUCTURAL)" --> R
-    R -- "CONTAINS<br/>(STRUCTURAL)" --> W
-    W -- "TORMENTS<br/>(INFLUENCES)" --> A
-
-    classDef agent fill:#e8f0f8,stroke:#3a6fa5,stroke-width:1.5px,color:#0f172a
-    classDef object fill:#e4f3f3,stroke:#0e7a7a,stroke-width:1.5px,color:#0f172a
-    classDef concept fill:#efe7f8,stroke:#6d4e94,stroke-width:1.5px,color:#0f172a
-```
+<div align="center">
+  <img src="assets/demo-graph.svg" alt="A fragment of an extracted knowledge graph showing typed entities (Agent / Object / Event / Concept), typed relations (STRUCTURAL / INTERACTS / SYMBOLIZES / PREDICTS / INFLUENCES / CAUSES), and a callout proving every edge cites a literal evidence_span from a specific chunk." width="100%" />
+</div>
 
 Click any node or edge in the web UI and you see its full provenance:
 
-```
-┌─ Selected: the yellow wallpaper                                ┐
-│  Object · 14 mentions across 6 chunks                           │
-│                                                                 │
-│  ▌ Outgoing edges                                               │
-│    TORMENTS → the narrator                                      │
-│      ❝ I never saw a worse paper in my life ❞   (explicit, .92) │
-│                                                                 │
-│  ▌ Implicit (GLUCOSE) facts                                     │
-│    emotion · after · one_step                                   │
-│      "she feels surveilled by the pattern"                      │
-│      ❝ I think there are women behind that paper ❞              │
-│                                                                 │
-│    attribute · explicit                                         │
-│      "yellow, stained, peeling"                                 │
-│      ❝ stained with time and damp ❞                             │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-**Every line resolves to a literal substring of the chunk the claim came from — verified by Pass-7.**
+<div align="center">
+  <img src="assets/evidence-panel.svg" alt="LoreGraph web UI mockup: a browser window showing the graph view on the left and a detail panel on the right. The panel displays the selected entity's canonical name, type chip, mention count, aliases, outgoing edges with evidence quotes, and GLUCOSE implicit facts — each marked verified by Pass-7." width="100%" />
+</div>
 
 ---
 
 ## 🔬 The 7-Pass pipeline
 
-```mermaid
-graph LR
-  P1["Pass-1<br/>Chunk"] --> P2["Pass-2<br/>Entity"]
-  P2 --> P3["Pass-3<br/>Cluster"]
-  P3 --> P4["Pass-4<br/>Coref"]
-  P4 --> P5["Pass-5<br/>Relation+Event"]
-  P5 --> P6["Pass-6<br/>GLUCOSE"]
-  P6 --> P7["Pass-7<br/>CoVe verify"]
-```
+<div align="center">
+  <img src="assets/7-pass-pipeline.svg" alt="Seven sequential passes: Chunk → Entity → Cluster → Coref → Relation → GLUCOSE → CoVe. Pass-7 is highlighted as the verification gate that requires ≥ 95% evidence-span literal match to pass." width="100%" />
+</div>
 
 | Pass | Job | Key technique |
 |---|---|---|
@@ -138,48 +99,17 @@ graph LR
 
 ## 🧬 What's in the graph
 
-**4 entity types**
-
-|  | Type | Example referents |
-|---|---|---|
-| 🧑 | **Agent** | individuals · groups acting as a unit · mythic figures |
-| 📦 | **Object** | physical things · places · documents · artifacts |
-| ⚡ | **Event** | *realis* triggers — actually-happened events; never hypothetical, generic, negated, or imagined |
-| 💭 | **Concept** | themes · named relationships · predictions · symbolic motifs |
-
-**5 relation classes**
-
-| Class | When to use |
-|---|---|
-| `STRUCTURAL` | stable membership / location / ownership / part-of |
-| `INTERACTS` | direct action between entities · event participation |
-| `ASSERTS` | claims / beliefs / statements one entity makes ABOUT another |
-| `INFLUENCES` | causal effect |
-| `PREDICTS` | foreshadowing · prophecy · forward-looking statements |
-
-**10-dimensional implicit information** (GLUCOSE, Mostafazadeh et al. EMNLP 2020 *Best Paper*):
-
-`{cause, emotion, location, possession, attribute}` × `{before, after}`
-
-Every fact carries `inference_depth ∈ {explicit, one_step, multi_step}` so Pass-7 can scrutinise deep inferences harder than shallow ones.
+<div align="center">
+  <img src="assets/ontology.svg" alt="LoreGraph ontology overview: four entity-type cards (Agent / Object / Event / Concept) with example referents, five relation-class cards with use cases, and the GLUCOSE 10-dim implicit-fact schema (5 dimensions × 2 time aspects + inference_depth tag)." width="100%" />
+</div>
 
 ---
 
 ## 🏗️ Architecture
 
-```
-┌──────────────────────────────────────────────┐
-│  Web UI       FastAPI + React + Cytoscape    │  interactive graph + evidence panel
-├──────────────────────────────────────────────┤
-│  CLI          Typer                          │  loregraph ingest | extract | view | status
-├──────────────────────────────────────────────┤
-│  Pipeline     7-Pass orchestrator            │  per-pass dispatch + cost telemetry
-├──────────────────────────────────────────────┤
-│  LLM          Anthropic SDK + prompt cache   │  single client, 80%+ cache discount
-├──────────────────────────────────────────────┤
-│  Storage      SQLAlchemy 2.0 + PG+pgvector   │  canonical entities + 6 ENUM types
-└──────────────────────────────────────────────┘
-```
+<div align="center">
+  <img src="assets/architecture.svg" alt="Five-layer architecture: Web UI (FastAPI + React + Cytoscape), CLI (Typer), Pipeline (7-Pass orchestrator), LLM (Anthropic SDK + prompt cache), Storage (SQLAlchemy 2.0 + Postgres + pgvector). One LLM gateway, one storage backend, evidence-grounded edges throughout." width="100%" />
+</div>
 
 Full design rationale, paper-by-paper mapping, and the WMG → LoreGraph ancestry are in [**`docs/architecture.md`**](docs/architecture.md).
 
@@ -206,16 +136,11 @@ Full design rationale, paper-by-paper mapping, and the WMG → LoreGraph ancestr
 
 ## 🚢 Deploy your own demo
 
-Three free-tier services + your Anthropic key get a shareable public demo in **~15 minutes**:
+<div align="center">
+  <img src="assets/deploy-flow.svg" alt="Deployment topology: Cloudflare Pages serves the React SPA, calling a Render web service running FastAPI + LoreGraph, which connects to a Neon serverless Postgres + pgvector. Final step: `gh repo edit --homepage` pins the live URL on the GitHub About card." width="100%" />
+</div>
 
-```
-   Cloudflare Pages   ──→   Render web service     ──→   Neon Postgres
-   (React SPA)              (FastAPI + LoreGraph)        (serverless + pgvector)
-        │
-        └── pin on the GitHub repo via  gh repo edit --homepage <url>
-```
-
-Step-by-step walkthrough, including how to seed the demo with public-domain books: [**`docs/deployment.md`**](docs/deployment.md).
+Three free-tier services + your Anthropic key get a shareable public demo in **~15 minutes**. Step-by-step walkthrough, including how to seed the demo with public-domain books: [**`docs/deployment.md`**](docs/deployment.md).
 
 ---
 
