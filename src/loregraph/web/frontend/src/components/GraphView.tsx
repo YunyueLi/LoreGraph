@@ -4,24 +4,32 @@ import cytoscape, { Core, EventObjectNode, EventObjectEdge } from "cytoscape";
 import coseBilkent from "cytoscape-cose-bilkent";
 import type { GraphResponse } from "../types";
 
-if (!(cytoscape as unknown as { _coseBilkentRegistered?: boolean })._coseBilkentRegistered) {
+if (
+  !(cytoscape as unknown as { _coseBilkentRegistered?: boolean })
+    ._coseBilkentRegistered
+) {
   cytoscape.use(coseBilkent);
   (cytoscape as unknown as { _coseBilkentRegistered?: boolean })._coseBilkentRegistered = true;
 }
 
-const ENTITY_COLORS: Record<string, string> = {
-  Agent: "#3a6fa5",
-  Object: "#0e7a7a",
-  Event: "#b17304",
-  Concept: "#6d4e94",
-};
+// ────────────────────────────────────────────────────────────────────
+// Shape encodes ontological type. Color stays uniform (ink on paper)
+// except for the gold PREDICTS edge and selected highlights. Matches
+// the README/SVG figure language exactly.
+// ────────────────────────────────────────────────────────────────────
 
-const RELATION_COLORS: Record<string, string> = {
-  STRUCTURAL: "#475569",
-  INTERACTS: "#3a6fa5",
-  ASSERTS: "#0e7a7a",
-  INFLUENCES: "#b17304",
-  PREDICTS: "#1e8848",
+type NodeShape =
+  | "ellipse"
+  | "round-rectangle"
+  | "diamond"
+  | "hexagon"
+  | "rectangle";
+
+const ENTITY_SHAPES: Record<string, NodeShape> = {
+  Agent: "ellipse",
+  Object: "round-rectangle",
+  Event: "diamond",
+  Concept: "hexagon",
 };
 
 interface GraphViewProps {
@@ -66,67 +74,104 @@ export default function GraphView({ data, onSelectNode, onSelectEdge }: GraphVie
       container: containerRef.current,
       elements,
       style: [
+        // ── nodes · shape encodes type, fill stays neutral ──
         {
           selector: "node",
           style: {
             label: "data(label)",
-            "background-color": (ele: cytoscape.NodeSingular) =>
-              ENTITY_COLORS[ele.data("type") as string] ?? "#64748b",
-            color: "#0f172a",
+            shape: ((ele: cytoscape.NodeSingular) =>
+              ENTITY_SHAPES[ele.data("type") as string] ?? "ellipse") as unknown as NodeShape,
+            "background-color": "#fafafa",
+            "border-color": "#1a1a1a",
+            "border-width": 1.5,
+            color: "#1a1a1a",
             "text-valign": "bottom",
-            "text-margin-y": 4,
+            "text-margin-y": 6,
             "font-size": "11px",
             "font-family": "Inter, system-ui, sans-serif",
+            "font-weight": 500,
+            "text-outline-color": "#ffffff",
+            "text-outline-width": 2,
             width: (ele: cytoscape.NodeSingular) =>
-              Math.min(60, 14 + Math.sqrt((ele.data("mentionCount") as number) ?? 1) * 4),
+              Math.min(64, 18 + Math.sqrt((ele.data("mentionCount") as number) ?? 1) * 4),
             height: (ele: cytoscape.NodeSingular) =>
-              Math.min(60, 14 + Math.sqrt((ele.data("mentionCount") as number) ?? 1) * 4),
-            "border-width": 1,
-            "border-color": "#1e293b",
+              Math.min(64, 18 + Math.sqrt((ele.data("mentionCount") as number) ?? 1) * 4),
           },
         },
         {
           selector: "node:selected",
           style: {
+            "border-color": "#b8954a",
             "border-width": 3,
-            "border-color": "#0f172a",
+            "background-color": "#ffffff",
           },
         },
+
+        // ── edges · base style (overridden below per relation) ──
         {
           selector: "edge",
           style: {
-            width: 1.5,
-            "line-color": (ele: cytoscape.EdgeSingular) =>
-              RELATION_COLORS[ele.data("relation") as string] ?? "#94a3b8",
-            "target-arrow-color": (ele: cytoscape.EdgeSingular) =>
-              RELATION_COLORS[ele.data("relation") as string] ?? "#94a3b8",
+            "line-color": "#1a1a1a",
+            "target-arrow-color": "#1a1a1a",
             "target-arrow-shape": "triangle",
             "curve-style": "bezier",
-            opacity: 0.75,
+            "arrow-scale": 0.9,
+            opacity: 0.78,
+            width: 1.2,
             label: "data(relation)",
             "font-size": "9px",
             "font-family": "JetBrains Mono, monospace",
-            color: "#475569",
+            "font-weight": 600,
+            color: "#666666",
             "text-rotation": "autorotate",
             "text-background-color": "#ffffff",
-            "text-background-opacity": 0.85,
+            "text-background-opacity": 1,
             "text-background-padding": "2",
+            "text-margin-y": -2,
           },
         },
+
+        // ── per-relation styling · line weight + dash pattern encodes type ──
+        { selector: 'edge[relation = "STRUCTURAL"]', style: { width: 1.2 } },
+        { selector: 'edge[relation = "INTERACTS"]', style: { width: 2.4 } },
+        {
+          selector: 'edge[relation = "ASSERTS"]',
+          style: { "line-style": "dashed", "line-dash-pattern": [2, 3] },
+        },
+        {
+          selector: 'edge[relation = "INFLUENCES"]',
+          style: { "line-style": "dashed", "line-dash-pattern": [6, 3] },
+        },
+        {
+          selector: 'edge[relation = "PREDICTS"]',
+          style: {
+            "line-color": "#b8954a",
+            "target-arrow-color": "#b8954a",
+            color: "#8a6f37",
+            "line-style": "dashed",
+            "line-dash-pattern": [6, 3],
+            width: 1.8,
+            opacity: 1,
+          },
+        },
+
         {
           selector: "edge:selected",
           style: {
+            "line-color": "#b8954a",
+            "target-arrow-color": "#b8954a",
             width: 3,
             opacity: 1,
+            color: "#8a6f37",
           },
         },
       ],
       layout: {
         name: "cose-bilkent",
         // @ts-expect-error: cose-bilkent layout options not in core typing
-        nodeRepulsion: 4500,
-        idealEdgeLength: 100,
-        edgeElasticity: 0.45,
+        nodeRepulsion: 5000,
+        idealEdgeLength: 110,
+        edgeElasticity: 0.42,
         animate: false,
         randomize: true,
       },
@@ -151,5 +196,5 @@ export default function GraphView({ data, onSelectNode, onSelectEdge }: GraphVie
     };
   }, [data, onSelectNode, onSelectEdge]);
 
-  return <div ref={containerRef} className="w-full h-full bg-ink-50" />;
+  return <div ref={containerRef} className="w-full h-full bg-paper" />;
 }

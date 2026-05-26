@@ -25,14 +25,12 @@ export default function App() {
   );
   const [selection, setSelection] = useState<Selection>({ mode: null });
 
-  // Auto-select first book once books load and no URL preselection.
   useEffect(() => {
     if (booksQ.data && booksQ.data.length > 0 && selectedBookId === null) {
       setSelectedBookId(booksQ.data[0].id);
     }
   }, [booksQ.data, selectedBookId]);
 
-  // Reflect selection in URL so the link is shareable.
   useEffect(() => {
     if (selectedBookId === null) return;
     const url = new URL(window.location.href);
@@ -43,7 +41,7 @@ export default function App() {
   const graphQ = useBookGraph(selectedBookId);
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden">
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-paper">
       <Header
         books={booksQ.data ?? []}
         selectedBookId={selectedBookId}
@@ -53,32 +51,36 @@ export default function App() {
         }}
       />
       <main className="flex flex-1 min-h-0">
-        <div className="flex-1 min-w-0 relative">
+        <div className="flex-1 min-w-0 relative bg-paper">
           {booksQ.isLoading && (
-            <Centered>Loading books…</Centered>
-          )}
-          {booksQ.data && booksQ.data.length === 0 && (
             <Centered>
-              <div className="text-center max-w-md">
-                <h2 className="text-lg font-semibold text-ink-700 mb-2">
-                  No books ingested yet
-                </h2>
-                <p className="text-sm text-ink-500 leading-relaxed">
-                  Run <code className="font-mono bg-ink-100 px-1.5 rounded">loregraph ingest &lt;file&gt; --title &quot;…&quot;</code>{" "}
-                  in your shell, then{" "}
-                  <code className="font-mono bg-ink-100 px-1.5 rounded">loregraph extract --book-id 1</code>.
-                </p>
+              <span className="font-serif italic text-body text-ink-muted">
+                Loading books…
+              </span>
+            </Centered>
+          )}
+
+          {booksQ.data && booksQ.data.length === 0 && <EmptyState />}
+
+          {graphQ.isLoading && selectedBookId !== null && (
+            <Centered>
+              <span className="font-serif italic text-body text-ink-muted">
+                Loading graph…
+              </span>
+            </Centered>
+          )}
+
+          {graphQ.isError && (
+            <Centered>
+              <div className="text-center">
+                <div className="section-label mb-1">Error</div>
+                <div className="font-serif italic text-body text-ink-muted">
+                  Failed to load graph.
+                </div>
               </div>
             </Centered>
           )}
-          {graphQ.isLoading && selectedBookId !== null && (
-            <Centered>Loading graph…</Centered>
-          )}
-          {graphQ.isError && (
-            <Centered>
-              <span className="text-red-600">Failed to load graph.</span>
-            </Centered>
-          )}
+
           {graphQ.data && (
             <GraphView
               data={graphQ.data}
@@ -112,8 +114,34 @@ export default function App() {
 
 function Centered({ children }: { children: React.ReactNode }) {
   return (
-    <div className="absolute inset-0 flex items-center justify-center p-6 text-ink-500">
+    <div className="absolute inset-0 flex items-center justify-center p-6">
       {children}
     </div>
+  );
+}
+
+function EmptyState() {
+  return (
+    <Centered>
+      <div className="max-w-lg text-center">
+        <div className="section-label mb-1">No books yet</div>
+        <div className="h-px bg-gold mb-6 mx-auto w-16"></div>
+        <p className="font-serif italic text-large text-ink-muted leading-relaxed mb-8">
+          The shelf is empty. Feed a closed-world text to LoreGraph and it
+          will return the graph that lives inside it.
+        </p>
+        <div className="inline-block text-left bg-surface border border-ink-soft px-5 py-4 font-mono text-caption text-ink leading-loose">
+          <div>
+            <span className="text-ink-whisper">$</span> loregraph ingest{" "}
+            <span className="text-gold-deep">&lt;file&gt;</span> --title{" "}
+            <span className="text-gold-deep">&quot;…&quot;</span>
+          </div>
+          <div>
+            <span className="text-ink-whisper">$</span> loregraph extract
+            --book-id <span className="text-gold-deep">1</span>
+          </div>
+        </div>
+      </div>
+    </Centered>
   );
 }

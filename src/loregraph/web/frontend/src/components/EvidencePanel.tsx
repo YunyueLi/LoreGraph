@@ -1,6 +1,5 @@
 import { useEntityDetail, useChunkDetail } from "../api/client";
 import type { EntityType, RelationType } from "../types";
-import { X, Quote } from "lucide-react";
 
 interface EvidencePanelProps {
   mode: "entity" | "chunk" | null;
@@ -10,19 +9,73 @@ interface EvidencePanelProps {
   onClose: () => void;
 }
 
-function entityChip(type: EntityType) {
-  const cls = {
-    Agent: "chip-agent",
-    Object: "chip-object",
-    Event: "chip-event",
-    Concept: "chip-concept",
-  }[type];
-  return <span className={cls}>{type}</span>;
+// ────────────────────────────────────────────────────────────────────
+// Type & relation chips
+// ────────────────────────────────────────────────────────────────────
+
+function ShapeGlyph({ type }: { type: EntityType }) {
+  const props = {
+    width: 14,
+    height: 14,
+    fill: "#fafafa",
+    stroke: "#1a1a1a",
+    strokeWidth: 1.4,
+  };
+  if (type === "Agent") {
+    return (
+      <svg {...props} viewBox="0 0 20 20">
+        <circle cx="10" cy="10" r="7" />
+      </svg>
+    );
+  }
+  if (type === "Object") {
+    return (
+      <svg {...props} viewBox="0 0 20 20">
+        <rect x="3" y="3" width="14" height="14" />
+      </svg>
+    );
+  }
+  if (type === "Event") {
+    return (
+      <svg {...props} viewBox="0 0 20 20">
+        <polygon points="10,2 18,10 10,18 2,10" />
+      </svg>
+    );
+  }
+  return (
+    <svg {...props} viewBox="0 0 20 20">
+      <polygon points="6,3 14,3 18,10 14,17 6,17 2,10" />
+    </svg>
+  );
 }
 
-function relationChip(relation: RelationType) {
-  return <span className="chip-relation">{relation}</span>;
+function EntityChip({ type }: { type: EntityType }) {
+  return (
+    <span className="chip-ink inline-flex items-center gap-1.5">
+      <ShapeGlyph type={type} />
+      {type}
+    </span>
+  );
 }
+
+function RelationChip({ relation }: { relation: RelationType }) {
+  const isPrediction = relation === "PREDICTS";
+  return (
+    <span
+      className={
+        isPrediction
+          ? "inline-flex items-center px-2 py-0.5 text-[10px] font-bold font-mono uppercase tracking-wider bg-gold text-ink"
+          : "chip-relation"
+      }
+    >
+      {relation}
+    </span>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Panel
+// ────────────────────────────────────────────────────────────────────
 
 export default function EvidencePanel(props: EvidencePanelProps) {
   const { mode, entityDbId, chunkId, highlightEdgeDbId, onClose } = props;
@@ -30,96 +83,119 @@ export default function EvidencePanel(props: EvidencePanelProps) {
   const entityQ = useEntityDetail(mode === "entity" ? entityDbId : null);
   const chunkQ = useChunkDetail(mode === "chunk" ? chunkId : null);
 
+  // ── empty state · how to read the graph ──
   if (mode === null) {
     return (
-      <aside className="w-[420px] border-l border-ink-200 bg-white p-6 overflow-y-auto">
-        <div className="text-sm text-ink-500 leading-relaxed">
-          <h2 className="font-semibold text-ink-700 mb-3">How to read this graph</h2>
-          <ul className="space-y-2 list-disc list-inside">
-            <li>
-              <strong>Nodes</strong> are typed entities — colour by type, size by mention
-              count.
-            </li>
-            <li>
-              <strong>Edges</strong> are typed relations between entities (the 5 relation
-              classes from the WMG ontology).
-            </li>
-            <li>
-              Click any node or edge to see the original chunk text and every
-              evidence-grounded claim associated with it.
-            </li>
-          </ul>
+      <aside className="w-[460px] border-l border-ink-soft bg-paper overflow-y-auto">
+        <div className="p-8 space-y-6">
+          <div>
+            <div className="section-label">How to read this graph</div>
+            <div className="section-rule"></div>
+          </div>
+          <p className="font-serif italic text-body text-ink-muted leading-relaxed">
+            Every node is a typed entity, every edge a typed relation. Each
+            claim is anchored to a literal span of the source text.
+          </p>
+          <div className="space-y-4">
+            <Legend type="Agent" label="Agent" hint="characters, groups" />
+            <Legend type="Object" label="Object" hint="places, things, documents" />
+            <Legend type="Event" label="Event" hint="realis triggers — what happened" />
+            <Legend type="Concept" label="Concept" hint="themes, predictions, motifs" />
+          </div>
+          <p className="text-caption text-ink-whisper italic">
+            Click any node or edge to inspect its source.
+          </p>
         </div>
       </aside>
     );
   }
 
+  // ── entity detail ──
   if (mode === "entity") {
-    if (entityQ.isLoading) return <PanelShell onClose={onClose}>Loading…</PanelShell>;
+    if (entityQ.isLoading)
+      return (
+        <PanelShell onClose={onClose}>
+          <Loading>Loading entity…</Loading>
+        </PanelShell>
+      );
     if (entityQ.isError || !entityQ.data)
-      return <PanelShell onClose={onClose}>Failed to load entity.</PanelShell>;
+      return (
+        <PanelShell onClose={onClose}>
+          <Failed>Failed to load entity.</Failed>
+        </PanelShell>
+      );
 
     const { entity, mention_count, outgoing_edges, incoming_edges, glucose_facts } =
       entityQ.data;
 
     return (
       <PanelShell onClose={onClose}>
-        <div className="flex items-baseline gap-2 mb-1">
-          <h2 className="text-xl font-bold text-ink-900">{entity.canonical_name}</h2>
-          {entityChip(entity.type)}
+        <div className="flex items-center gap-3 mb-1">
+          <h2 className="text-large font-bold text-ink leading-tight">
+            {entity.canonical_name}
+          </h2>
+          <EntityChip type={entity.type} />
         </div>
-        <div className="text-xs text-ink-500 font-mono mb-4">
-          {entity.canonical_id} · {mention_count} mentions
+        <div className="text-caption text-ink-whisper font-mono mb-6">
+          {entity.canonical_id}  ·  {mention_count} mentions
         </div>
+
         {entity.aliases.length > 0 && (
-          <div className="mb-4">
-            <div className="text-xs uppercase tracking-wide text-ink-400 font-mono mb-1">
-              Aliases
+          <Section title="Aliases">
+            <div className="font-serif text-body text-ink leading-relaxed">
+              {entity.aliases.join("  ·  ")}
             </div>
-            <div className="flex flex-wrap gap-1.5">
-              {entity.aliases.map((a) => (
-                <span key={a} className="text-sm text-ink-700">
-                  {a}
-                </span>
-              ))}
-            </div>
-          </div>
+          </Section>
         )}
+
         {outgoing_edges.length > 0 && (
-          <Section title="Outgoing edges">
+          <Section title={`Outgoing edges  ·  ${outgoing_edges.length}`}>
             {outgoing_edges.map((e) => (
               <EdgeRow key={e.id} relation={e.relation} evidence={e.evidence_span} />
             ))}
           </Section>
         )}
+
         {incoming_edges.length > 0 && (
-          <Section title="Incoming edges">
+          <Section title={`Incoming edges  ·  ${incoming_edges.length}`}>
             {incoming_edges.map((e) => (
               <EdgeRow key={e.id} relation={e.relation} evidence={e.evidence_span} />
             ))}
           </Section>
         )}
+
         {glucose_facts.length > 0 && (
-          <Section title="Implicit (GLUCOSE) facts">
+          <Section title={`Implicit facts  ·  GLUCOSE  ·  ${glucose_facts.length}`}>
             {glucose_facts.map((f) => (
-              <div key={f.id} className="mb-3 last:mb-0">
-                <div className="text-xs font-mono text-ink-400 mb-0.5">
-                  {f.dimension} · {f.time_aspect} · {f.inference_depth}
+              <div key={f.id} className="mb-4 last:mb-0">
+                <div className="text-tiny text-ink-whisper font-mono uppercase tracking-wider mb-1">
+                  {f.dimension}  ·  {f.time_aspect}  ·  {f.inference_depth}
                 </div>
-                <div className="text-sm text-ink-800">{f.statement}</div>
-                <Evidence>{f.evidence_span}</Evidence>
+                <div className="text-body text-ink mb-1.5">{f.statement}</div>
+                <Quote>{f.evidence_span}</Quote>
               </div>
             ))}
           </Section>
         )}
+
+        <VerifiedFooter />
       </PanelShell>
     );
   }
 
-  // mode === "chunk"
-  if (chunkQ.isLoading) return <PanelShell onClose={onClose}>Loading…</PanelShell>;
+  // ── chunk detail ──
+  if (chunkQ.isLoading)
+    return (
+      <PanelShell onClose={onClose}>
+        <Loading>Loading chunk…</Loading>
+      </PanelShell>
+    );
   if (chunkQ.isError || !chunkQ.data)
-    return <PanelShell onClose={onClose}>Failed to load chunk.</PanelShell>;
+    return (
+      <PanelShell onClose={onClose}>
+        <Failed>Failed to load chunk.</Failed>
+      </PanelShell>
+    );
 
   const { chunk, mentions, edges_in_chunk, glucose_facts_in_chunk } = chunkQ.data;
   const highlightedEdge = highlightEdgeDbId
@@ -128,34 +204,40 @@ export default function EvidencePanel(props: EvidencePanelProps) {
 
   return (
     <PanelShell onClose={onClose}>
-      <div className="flex items-baseline gap-2 mb-1">
-        <h2 className="text-lg font-bold text-ink-900">{chunk.atom_id}</h2>
-        <span className="text-xs text-ink-400 font-mono">
-          ch {chunk.chapter} · seq {chunk.seq} · {chunk.token_count} tokens
-        </span>
+      <div className="flex items-baseline gap-3 mb-1">
+        <h2 className="text-large font-bold font-mono text-ink leading-tight">
+          {chunk.atom_id}
+        </h2>
+      </div>
+      <div className="text-caption text-ink-whisper font-mono mb-6">
+        chapter {chunk.chapter}  ·  seq {chunk.seq}  ·  {chunk.token_count} tokens
       </div>
 
       {highlightedEdge && (
-        <div className="mb-3 p-3 rounded border border-amber-200 bg-amber-50">
-          <div className="text-xs font-mono text-ink-500 mb-1">Selected edge</div>
-          <div className="text-sm text-ink-900">{relationChip(highlightedEdge.relation)}</div>
-          <Evidence>{highlightedEdge.evidence_span}</Evidence>
+        <div className="mb-6 border-l-2 border-gold bg-surface p-4">
+          <div className="text-tiny text-gold-deep font-bold uppercase tracking-caps mb-2">
+            Selected edge
+          </div>
+          <div className="mb-2">
+            <RelationChip relation={highlightedEdge.relation} />
+          </div>
+          <Quote>{highlightedEdge.evidence_span}</Quote>
         </div>
       )}
 
       <Section title="Chunk text">
-        <div className="text-sm text-ink-800 leading-relaxed whitespace-pre-wrap">
+        <div className="text-body text-ink leading-relaxed whitespace-pre-wrap font-serif">
           {chunk.text}
         </div>
       </Section>
 
       {mentions.length > 0 && (
-        <Section title={`Mentions (${mentions.length})`}>
-          <div className="flex flex-wrap gap-1.5">
+        <Section title={`Mentions  ·  ${mentions.length}`}>
+          <div className="flex flex-wrap gap-x-3 gap-y-1.5">
             {mentions.map((m) => (
-              <span key={m.id} className="text-xs text-ink-600 font-mono">
-                {m.surface_form} <span className="text-ink-400">·</span>{" "}
-                {m.type.slice(0, 3).toLowerCase()}
+              <span key={m.id} className="text-caption text-ink-muted font-mono">
+                {m.surface_form}{" "}
+                <span className="text-ink-whisper">{m.type.toLowerCase()}</span>
               </span>
             ))}
           </div>
@@ -163,7 +245,7 @@ export default function EvidencePanel(props: EvidencePanelProps) {
       )}
 
       {edges_in_chunk.length > 0 && (
-        <Section title={`Edges (${edges_in_chunk.length})`}>
+        <Section title={`Edges in this chunk  ·  ${edges_in_chunk.length}`}>
           {edges_in_chunk.map((e) => (
             <EdgeRow key={e.id} relation={e.relation} evidence={e.evidence_span} />
           ))}
@@ -171,20 +253,26 @@ export default function EvidencePanel(props: EvidencePanelProps) {
       )}
 
       {glucose_facts_in_chunk.length > 0 && (
-        <Section title={`Implicit facts (${glucose_facts_in_chunk.length})`}>
+        <Section title={`Implicit facts  ·  ${glucose_facts_in_chunk.length}`}>
           {glucose_facts_in_chunk.map((f) => (
-            <div key={f.id} className="mb-2 last:mb-0">
-              <div className="text-xs font-mono text-ink-400">
-                {f.dimension} · {f.time_aspect}
+            <div key={f.id} className="mb-3 last:mb-0">
+              <div className="text-tiny text-ink-whisper font-mono uppercase tracking-wider mb-0.5">
+                {f.dimension}  ·  {f.time_aspect}
               </div>
-              <div className="text-sm text-ink-800">{f.statement}</div>
+              <div className="text-body text-ink">{f.statement}</div>
             </div>
           ))}
         </Section>
       )}
+
+      <VerifiedFooter />
     </PanelShell>
   );
 }
+
+// ────────────────────────────────────────────────────────────────────
+// Sub-components
+// ────────────────────────────────────────────────────────────────────
 
 function PanelShell({
   children,
@@ -194,46 +282,80 @@ function PanelShell({
   onClose: () => void;
 }) {
   return (
-    <aside className="w-[420px] border-l border-ink-200 bg-white overflow-y-auto">
-      <div className="sticky top-0 flex justify-end p-2 bg-white/95 backdrop-blur border-b border-ink-100">
+    <aside className="w-[460px] border-l border-ink-soft bg-paper overflow-y-auto">
+      <div className="sticky top-0 flex justify-end p-2 bg-paper/95 backdrop-blur border-b border-ink-soft">
         <button
           onClick={onClose}
-          className="p-1 rounded hover:bg-ink-100 text-ink-500"
+          className="px-2 py-1 text-tiny font-bold uppercase tracking-caps text-ink-whisper hover:text-ink"
           aria-label="Close"
         >
-          <X size={16} />
+          close ✕
         </button>
       </div>
-      <div className="p-5">{children}</div>
+      <div className="p-8">{children}</div>
     </aside>
   );
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="mb-5 last:mb-0">
-      <h3 className="text-xs uppercase tracking-wide text-ink-400 font-mono mb-2">
-        {title}
-      </h3>
+    <div className="section">
+      <div className="section-label">{title}</div>
+      <div className="section-rule"></div>
       {children}
+    </div>
+  );
+}
+
+function Legend({
+  type,
+  label,
+  hint,
+}: {
+  type: EntityType;
+  label: string;
+  hint: string;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <ShapeGlyph type={type} />
+      <span className="text-body text-ink font-medium w-20">{label}</span>
+      <span className="font-serif italic text-caption text-ink-whisper">{hint}</span>
     </div>
   );
 }
 
 function EdgeRow({ relation, evidence }: { relation: RelationType; evidence: string }) {
   return (
-    <div className="mb-2 last:mb-0 flex items-start gap-2">
-      <span className="mt-0.5">{relationChip(relation)}</span>
-      <Evidence>{evidence}</Evidence>
+    <div className="mb-4 last:mb-0">
+      <div className="mb-1.5">
+        <RelationChip relation={relation} />
+      </div>
+      <Quote>{evidence}</Quote>
     </div>
   );
 }
 
-function Evidence({ children }: { children: React.ReactNode }) {
+function Quote({ children }: { children: React.ReactNode }) {
+  return <div className="quote text-[13.5px]">{children}</div>;
+}
+
+function Loading({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-1.5 mt-1">
-      <Quote size={11} className="text-ink-300 mt-1 flex-shrink-0" />
-      <span className="text-sm text-ink-600 italic leading-snug">{children}</span>
+    <div className="text-body text-ink-muted italic font-serif">{children}</div>
+  );
+}
+
+function Failed({ children }: { children: React.ReactNode }) {
+  return <div className="text-body text-ink-muted">{children}</div>;
+}
+
+function VerifiedFooter() {
+  return (
+    <div className="mt-8 pt-4 border-t border-ink-soft">
+      <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gold text-ink text-tiny font-bold uppercase tracking-caps">
+        ✓  Pass-7 verified
+      </div>
     </div>
   );
 }
