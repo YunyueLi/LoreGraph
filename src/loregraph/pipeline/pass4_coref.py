@@ -17,6 +17,7 @@ prompt explicitly tells the LLM not to mark bare pronouns as Agents.
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -39,7 +40,7 @@ class Pass4CorefResolver:
         session: AsyncSession,
         entities: list[Entity],
         mentions: list[Mention],
-    ) -> dict:
+    ) -> dict[str, Any]:
         """Assign mentions.entity_id in-place; return counters."""
         if not entities or not mentions:
             return {"resolved": 0, "unresolved": 0, "mentions_total": len(mentions)}

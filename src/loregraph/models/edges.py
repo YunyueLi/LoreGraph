@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -20,7 +21,7 @@ class EdgeCreate(BaseModel):
     evidence_span: str = Field(..., description="Literal substring of chunks.text.")
     confidence: float = Field(..., ge=0.0, le=1.0)
     inference_depth: InferenceDepth = InferenceDepth.EXPLICIT
-    attributes: dict = Field(default_factory=dict)
+    attributes: dict[str, Any] = Field(default_factory=dict)
 
 
 class Edge(EdgeCreate):

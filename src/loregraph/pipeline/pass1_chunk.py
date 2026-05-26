@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from typing import Any
 
 from loregraph.models.atoms import ChunkCreate
 from loregraph.utils.tokens import count_tokens
@@ -64,7 +65,7 @@ def _split_into_chapters(text: str) -> list[_ChapterSpan]:
 
 def _split_chapter_text(
     chapter_text: str, chapter_start: int, chapter_num: int, cfg: ChunkerConfig
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Split one chapter's text into chunk dicts.
 
     Paragraph-aware: never split mid-paragraph except when a single
@@ -85,7 +86,7 @@ def _split_chapter_text(
     if buf:
         units.append(buf)
 
-    chunks: list[dict] = []
+    chunks: list[dict[str, Any]] = []
     current = ""
     current_start_in_chapter = 0
     cursor_in_chapter = 0

@@ -13,7 +13,7 @@ All passes route through this class. Reasons:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 from anthropic import AsyncAnthropic
 from anthropic.types import Message
@@ -111,7 +111,7 @@ class LLMClient:
         if stop_sequences:
             params["stop_sequences"] = stop_sequences
 
-        return await self._client.messages.create(**params)
+        return cast(Message, await self._client.messages.create(**params))
 
     @staticmethod
     def extract_text(msg: Message) -> str:

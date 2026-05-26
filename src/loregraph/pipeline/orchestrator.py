@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 from datetime import UTC, datetime
+from typing import Any
 
 from loregraph.db import repository as repo
 from loregraph.llm.client import LLMClient
@@ -92,7 +93,7 @@ class Orchestrator:
         )
         log.info("Pass-%d done in %.1fs", pass_num, (finished - started).total_seconds())
 
-    async def _run_pass_1_chunk(self) -> dict:
+    async def _run_pass_1_chunk(self) -> dict[str, Any]:
         book = await repo.get_book(self.ctx.session, self.ctx.book_id)
         if book is None or book.source_path is None:
             raise RuntimeError(
@@ -109,7 +110,7 @@ class Orchestrator:
 
         return {"chunks": len(chunks_out)}
 
-    async def _run_pass_2_entity(self) -> dict:
+    async def _run_pass_2_entity(self) -> dict[str, Any]:
         chunks = await repo.list_chunks(self.ctx.session, self.ctx.book_id)
         if not chunks:
             raise RuntimeError("Pass-2 needs chunks from Pass-1. Run with --from 1 first.")
@@ -128,7 +129,7 @@ class Orchestrator:
             **extractor.usage.to_dict(),
         }
 
-    async def _run_pass_3_cluster(self) -> dict:
+    async def _run_pass_3_cluster(self) -> dict[str, Any]:
         mentions = await repo.list_mentions(self.ctx.session, self.ctx.book_id)
         if not mentions:
             raise RuntimeError("Pass-3 needs mentions from Pass-2. Run --from 2 first.")
@@ -145,7 +146,7 @@ class Orchestrator:
             **clusterer.usage.to_dict(),
         }
 
-    async def _run_pass_4_coref(self) -> dict:
+    async def _run_pass_4_coref(self) -> dict[str, Any]:
         entities = await repo.list_entities(self.ctx.session, self.ctx.book_id)
         if not entities:
             raise RuntimeError("Pass-4 needs canonical entities from Pass-3. Run --from 3 first.")
@@ -158,7 +159,7 @@ class Orchestrator:
             session=self.ctx.session, entities=entities, mentions=mentions
         )
 
-    async def _run_pass_5_relation(self) -> dict:
+    async def _run_pass_5_relation(self) -> dict[str, Any]:
         chunks = await repo.list_chunks(self.ctx.session, self.ctx.book_id)
         if not chunks:
             raise RuntimeError("Pass-5 needs chunks. Run --from 1 first.")
@@ -182,13 +183,13 @@ class Orchestrator:
             **extractor.usage.to_dict(),
         }
 
-    async def _run_pass_7_cove(self) -> dict:
+    async def _run_pass_7_cove(self) -> dict[str, Any]:
         verifier = Pass7CoVeVerifier(self.ctx.llm)
         stats = await verifier.verify_book(session=self.ctx.session, book_id=self.ctx.book_id)
         self.ctx.usage.merge_from(verifier.usage)
         return {**stats.to_dict(), **verifier.usage.to_dict()}
 
-    async def _run_pass_6_glucose(self) -> dict:
+    async def _run_pass_6_glucose(self) -> dict[str, Any]:
         chunks = await repo.list_chunks(self.ctx.session, self.ctx.book_id)
         if not chunks:
             raise RuntimeError("Pass-6 needs chunks. Run --from 1 first.")
