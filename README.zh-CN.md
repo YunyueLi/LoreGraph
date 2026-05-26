@@ -66,7 +66,7 @@
 ```bash
 git clone https://github.com/YunyueLi/LoreGraph.git
 cd LoreGraph
-cp .env.example .env                                  # 填入 ANTHROPIC_API_KEY
+cp .env.example .env                                  # 选 provider 并填 key（见下）
 docker compose up -d                                  # postgres + pgvector
 pip install -e ".[dev]" && alembic upgrade head
 
@@ -75,7 +75,45 @@ loregraph extract --book-id 1
 loregraph view --book-id 1                            # 浏览器打开 http://localhost:8000
 ```
 
-> 一篇短篇小说（约 6000 词）跑完 7-Pass 大约 **$0.20 – 1.00** 的 Anthropic 调用费（含 prompt cache 折扣）。
+> 一篇短篇小说（约 6000 词）跑完 7-Pass：Anthropic 含 prompt cache 折扣约 **$0.20 – 1.00**；DeepSeek / 通义 / Gemini Flash 通常 **便宜 3–10 倍**；本地 Ollama / vLLM **完全免费**（代价是模型小、推理慢）。
+
+---
+
+## 🔌 自带 LLM · 多 provider 支持
+
+LoreGraph 兼容任何**说 Anthropic native 或 OpenAI-compatible chat-completions** 的 LLM。换 provider 只需要改一个环境变量：
+
+```bash
+# Anthropic Claude（默认 · 保留 prompt caching）
+LOREGRAPH_LLM_PROVIDER=anthropic
+ANTHROPIC_API_KEY=sk-ant-...
+
+# DeepSeek
+LOREGRAPH_LLM_PROVIDER=deepseek
+DEEPSEEK_API_KEY=sk-...
+
+# 本地 Ollama，免 key
+LOREGRAPH_LLM_PROVIDER=ollama
+LOREGRAPH_LLM_MODEL=llama3.2          # 可选 override
+
+# 任何 OpenAI-compatible 端点
+LOREGRAPH_LLM_PROVIDER=openai_compatible
+LOREGRAPH_LLM_BASE_URL=https://your.endpoint/v1
+LOREGRAPH_LLM_API_KEY=...
+LOREGRAPH_LLM_MODEL=your-model
+```
+
+内置 provider preset（每个都带默认模型）：
+
+| 类别 | Provider |
+|---|---|
+| **国际头部** | `anthropic` · `openai` · `gemini` · `grok` |
+| **国内** | `deepseek` · `kimi`（月之暗面）· `zhipu`（智谱 GLM）· `qwen`（通义千问 DashScope）|
+| **开源模型托管** | `groq` · `together` · `fireworks` · `mistral` |
+| **本地** | `ollama` · `vllm` |
+| **自定义** | `openai_compatible` |
+
+API key 解析链：`LOREGRAPH_LLM_API_KEY`（通用）→ provider 各自的 env（`OPENAI_API_KEY` / `DEEPSEEK_API_KEY` / `MOONSHOT_API_KEY` / …）→ 无。Anthropic 保留原生 prompt caching；OpenAI auto-cache 和 DeepSeek context cache 在 provider 暴露 `cached_tokens` 时自动累积。
 
 ---
 
