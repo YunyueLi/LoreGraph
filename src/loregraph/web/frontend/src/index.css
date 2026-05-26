@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ════════════════════════════════════════════════════════════════════
+   LoreGraph design tokens (in lock-step with the README figures):
+   #ffffff paper · #1a1a1a ink · #b8954a gold · #fafafa surface ·
+   #666 muted · #999 whisper · #e8e8e8 soft · #cfcfcf ghost.
+   ════════════════════════════════════════════════════════════════════ */
+
 @layer base {
   html,
   body,
@@ -9,28 +15,65 @@
     height: 100%;
     margin: 0;
   }
+  body {
+    background: #ffffff;
+    color: #1a1a1a;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "ss01", "cv11", "cv02";
+  }
+  ::selection {
+    background: #b8954a;
+    color: #ffffff;
+  }
 }
 
 @layer components {
-  .panel {
-    @apply bg-white border border-ink-200 rounded-lg shadow-sm;
-  }
+  /* ── Chips · neutral by default; gold reserved for true emphasis ── */
   .chip {
-    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium;
+    @apply inline-flex items-center px-2 py-0.5 text-[10px] font-bold uppercase tracking-caps;
   }
-  .chip-agent {
-    @apply chip bg-blue-50 text-accent-agent;
+  .chip-ink {
+    @apply chip bg-surface border border-ink-soft text-ink;
   }
-  .chip-object {
-    @apply chip bg-teal-50 text-accent-object;
-  }
-  .chip-event {
-    @apply chip bg-amber-50 text-accent-event;
-  }
-  .chip-concept {
-    @apply chip bg-violet-50 text-accent-concept;
+  .chip-gold {
+    @apply chip bg-gold text-ink;
   }
   .chip-relation {
-    @apply chip bg-ink-100 text-ink-700 font-mono;
+    @apply inline-flex items-center px-2 py-0.5 text-[10px] font-bold font-mono uppercase tracking-wider bg-surface border border-ink-soft text-ink;
+  }
+
+  /* ── Section header pattern (small caps + gold underline) ── */
+  .section-label {
+    @apply text-[10px] font-bold uppercase tracking-caps text-gold-deep;
+  }
+  .section-rule {
+    height: 1px;
+    background: #b8954a;
+    @apply mb-3 mt-1;
+  }
+  .section {
+    @apply mb-6 last:mb-0;
+  }
+
+  /* ── Literary quote (Fraunces italic) ── */
+  .quote {
+    @apply font-serif italic text-ink-muted leading-relaxed;
+  }
+  .quote::before {
+    content: "“";
+    @apply font-serif italic text-gold text-lg leading-none align-middle mr-1;
+  }
+  .quote::after {
+    content: "”";
+    @apply font-serif italic text-gold text-lg leading-none align-middle ml-1;
+  }
+
+  /* ── Card / panel surfaces ── */
+  .card {
+    @apply bg-surface border border-ink-soft;
+  }
+  .hairline {
+    @apply border-ink-soft;
   }
 }
