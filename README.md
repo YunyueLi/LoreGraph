@@ -25,7 +25,9 @@ where every claim is anchored to a literal span of the source text.
 
 <br>
 
-[**Quick start**](#-quick-start) · [**What you get**](#-what-you-get) · [**Pipeline**](#-the-7-pass-pipeline) · [**Deploy**](#-deploy-your-own-demo) · [**Roadmap**](#-roadmap) · [**简体中文**](README.zh-CN.md)
+**English**  ·  [简体中文](README.zh-CN.md)
+
+[**Quick start**](#-quick-start) · [**What you get**](#-what-you-get) · [**Pipeline**](#-the-7-pass-pipeline) · [**Deploy**](#-deploy-your-own-demo) · [**Roadmap**](#-roadmap)
 
 <br>
 
