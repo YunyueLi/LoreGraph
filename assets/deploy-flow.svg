@@ -1,63 +1,69 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 420" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, system-ui, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 460" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, system-ui, sans-serif">
   <defs>
-    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-      <path d="M0,0 L10,5 L0,10 Z" fill="#1a1a1a"/>
-    </marker>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#1a1a1a"/></marker>
   </defs>
 
-  <rect width="960" height="420" fill="#f3ede0"/>
+  <rect width="1200" height="460" fill="#f3ede0"/>
 
-  <!-- Title -->
-  <text x="480" y="44" text-anchor="middle" font-size="22" font-weight="700" fill="#1a1a1a">Deploy your own demo</text>
-  <text x="480" y="68" text-anchor="middle" font-size="13" fill="#666666" font-style="italic">Three free-tier services + your Anthropic key — public URL in ~15 minutes.</text>
+  <!-- ════════ Title ════════ -->
+  <text x="600" y="56" text-anchor="middle" font-size="22" font-weight="700" fill="#1a1a1a">Figure 6 · Deployment topology</text>
+  <text x="600" y="80" text-anchor="middle" font-size="13" fill="#666666" font-style="italic">Three free-tier services + an Anthropic key — public URL in ~15 minutes.</text>
+  <line x1="80" y1="104" x2="1120" y2="104" stroke="#1a1a1a" stroke-width="0.6" opacity="0.3"/>
 
-  <!-- Cloudflare Pages -->
+  <!-- ════════ Three service cards ════════ -->
+  <!-- All cards equal size, equal spacing — 320×196, gap 40 -->
+
+  <!-- Card 1 · Cloudflare Pages -->
   <g>
-    <rect x="50" y="120" width="260" height="180" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.4"/>
-    <rect x="50" y="120" width="260" height="6" fill="#b8954a"/>
-    <text x="180" y="158" text-anchor="middle" font-size="11" font-weight="700" fill="#8a6f37" letter-spacing="2">FRONTEND</text>
-    <text x="180" y="192" text-anchor="middle" font-size="20" font-weight="700" fill="#1a1a1a">Cloudflare Pages</text>
-    <text x="180" y="218" text-anchor="middle" font-size="13" fill="#666666">React + Vite + Cytoscape SPA</text>
-    <line x1="80" y1="234" x2="280" y2="234" stroke="#e6dbc7"/>
-    <text x="180" y="256" text-anchor="middle" font-size="12" fill="#1a1a1a" font-family="ui-monospace, monospace">npm run build → /static</text>
-    <text x="180" y="276" text-anchor="middle" font-size="11" fill="#999999" font-style="italic">free tier · global CDN</text>
+    <rect x="80" y="148" width="320" height="196" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.4"/>
+    <text x="100" y="176" font-size="10" font-weight="700" letter-spacing="2.5" fill="#8a6f37">FRONTEND</text>
+    <line x1="100" y1="184" x2="220" y2="184" stroke="#b8954a" stroke-width="1"/>
+    <text x="100" y="216" font-size="18" font-weight="700" fill="#1a1a1a">Cloudflare Pages</text>
+    <text x="100" y="236" font-size="12" fill="#666666">React + Vite + Cytoscape SPA</text>
+    <line x1="100" y1="260" x2="380" y2="260" stroke="#e6dbc7"/>
+    <text x="100" y="284" font-size="11" font-family="ui-monospace, monospace" fill="#1a1a1a">npm run build → /static</text>
+    <text x="100" y="310" font-size="11" fill="#999999" font-style="italic">free tier · global CDN</text>
   </g>
 
-  <!-- Render -->
+  <!-- Card 2 · Render -->
   <g>
-    <rect x="350" y="120" width="260" height="180" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.4"/>
-    <rect x="350" y="120" width="260" height="6" fill="#b8954a"/>
-    <text x="480" y="158" text-anchor="middle" font-size="11" font-weight="700" fill="#8a6f37" letter-spacing="2">BACKEND</text>
-    <text x="480" y="192" text-anchor="middle" font-size="20" font-weight="700" fill="#1a1a1a">Render web service</text>
-    <text x="480" y="218" text-anchor="middle" font-size="13" fill="#666666">FastAPI + LoreGraph</text>
-    <line x1="380" y1="234" x2="580" y2="234" stroke="#e6dbc7"/>
-    <text x="480" y="256" text-anchor="middle" font-size="12" fill="#1a1a1a" font-family="ui-monospace, monospace">render.yaml blueprint</text>
-    <text x="480" y="276" text-anchor="middle" font-size="11" fill="#999999" font-style="italic">free tier · alembic upgrade head</text>
+    <rect x="440" y="148" width="320" height="196" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.4"/>
+    <text x="460" y="176" font-size="10" font-weight="700" letter-spacing="2.5" fill="#8a6f37">BACKEND</text>
+    <line x1="460" y1="184" x2="580" y2="184" stroke="#b8954a" stroke-width="1"/>
+    <text x="460" y="216" font-size="18" font-weight="700" fill="#1a1a1a">Render web service</text>
+    <text x="460" y="236" font-size="12" fill="#666666">FastAPI + LoreGraph</text>
+    <line x1="460" y1="260" x2="740" y2="260" stroke="#e6dbc7"/>
+    <text x="460" y="284" font-size="11" font-family="ui-monospace, monospace" fill="#1a1a1a">render.yaml blueprint</text>
+    <text x="460" y="310" font-size="11" fill="#999999" font-style="italic">free tier · alembic upgrade head</text>
   </g>
 
-  <!-- Neon -->
+  <!-- Card 3 · Neon -->
   <g>
-    <rect x="650" y="120" width="260" height="180" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.4"/>
-    <rect x="650" y="120" width="260" height="6" fill="#b8954a"/>
-    <text x="780" y="158" text-anchor="middle" font-size="11" font-weight="700" fill="#8a6f37" letter-spacing="2">DATABASE</text>
-    <text x="780" y="192" text-anchor="middle" font-size="20" font-weight="700" fill="#1a1a1a">Neon Postgres</text>
-    <text x="780" y="218" text-anchor="middle" font-size="13" fill="#666666">serverless + pgvector</text>
-    <line x1="680" y1="234" x2="880" y2="234" stroke="#e6dbc7"/>
-    <text x="780" y="256" text-anchor="middle" font-size="12" fill="#1a1a1a" font-family="ui-monospace, monospace">pooled connection</text>
-    <text x="780" y="276" text-anchor="middle" font-size="11" fill="#999999" font-style="italic">free tier · auto-suspend</text>
+    <rect x="800" y="148" width="320" height="196" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.4"/>
+    <text x="820" y="176" font-size="10" font-weight="700" letter-spacing="2.5" fill="#8a6f37">DATABASE</text>
+    <line x1="820" y1="184" x2="940" y2="184" stroke="#b8954a" stroke-width="1"/>
+    <text x="820" y="216" font-size="18" font-weight="700" fill="#1a1a1a">Neon Postgres</text>
+    <text x="820" y="236" font-size="12" fill="#666666">serverless + pgvector</text>
+    <line x1="820" y1="260" x2="1100" y2="260" stroke="#e6dbc7"/>
+    <text x="820" y="284" font-size="11" font-family="ui-monospace, monospace" fill="#1a1a1a">pooled connection</text>
+    <text x="820" y="310" font-size="11" fill="#999999" font-style="italic">free tier · auto-suspend</text>
   </g>
 
-  <!-- Arrows -->
-  <line x1="310" y1="210" x2="343" y2="210" stroke="#1a1a1a" stroke-width="1.6" marker-end="url(#arrow)"/>
-  <text x="326" y="200" text-anchor="middle" font-size="10" fill="#666666" font-family="ui-monospace, monospace">VITE_API_BASE</text>
+  <!-- ════════ Arrows between cards ════════ -->
+  <line x1="400" y1="246" x2="436" y2="246" stroke="#1a1a1a" stroke-width="1.6" marker-end="url(#arr)"/>
+  <rect x="396" y="222" width="44" height="14" fill="#f3ede0"/>
+  <text x="418" y="232" text-anchor="middle" font-size="10" font-family="ui-monospace, monospace" fill="#666666">REST</text>
 
-  <line x1="610" y1="210" x2="643" y2="210" stroke="#1a1a1a" stroke-width="1.6" marker-end="url(#arrow)"/>
-  <text x="626" y="200" text-anchor="middle" font-size="10" fill="#666666" font-family="ui-monospace, monospace">DATABASE_URL</text>
+  <line x1="760" y1="246" x2="796" y2="246" stroke="#1a1a1a" stroke-width="1.6" marker-end="url(#arr)"/>
+  <rect x="756" y="222" width="44" height="14" fill="#f3ede0"/>
+  <text x="778" y="232" text-anchor="middle" font-size="10" font-family="ui-monospace, monospace" fill="#666666">SQL</text>
 
-  <!-- Bottom step -->
+  <!-- ════════ Bottom note · pin URL step ════════ -->
   <g>
-    <rect x="280" y="340" width="400" height="50" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.2"/>
-    <text x="480" y="362" text-anchor="middle" font-size="12" fill="#666666">Step 5 · pin the URL on the GitHub repo</text>
-    <text x="480" y="382" text-anchor="middle" font-size="12" fill="#1a1a1a" font-family="ui-monospace, monospace">gh repo edit YunyueLi/LoreGraph --homepage &lt;url&gt;</text>
+    <rect x="240" y="380" width="720" height="48" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.2"/>
+    <rect x="240" y="380" width="6" height="48" fill="#b8954a"/>
+    <text x="266" y="402" font-size="10" font-weight="700" letter-spacing="2" fill="#8a6f37">STEP 5</text>
+    <text x="334" y="402" font-size="12" fill="#666666">pin the live URL on GitHub:</text>
+    <text x="266" y="420" font-size="12" font-family="ui-monospace, monospace" fill="#1a1a1a">gh repo edit YunyueLi/LoreGraph --homepage &lt;url&gt;</text>
   </g>
 </svg>
