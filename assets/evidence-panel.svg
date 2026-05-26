@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, system-ui, sans-serif">
-  <rect width="1200" height="720" fill="#f3ede0"/>
+  <rect width="1200" height="720" fill="#ffffff"/>
 
   <!-- ════════ Title block ════════ -->
   <text x="600" y="56" text-anchor="middle" font-size="22" font-weight="700" fill="#1a1a1a">Figure 2 · The detail panel</text>
@@ -8,7 +8,7 @@
 
   <!-- ════════ Top bar ════════ -->
   <g transform="translate(80, 128)">
-    <rect x="0" y="0" width="1040" height="48" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.2"/>
+    <rect x="0" y="0" width="1040" height="48" fill="#fafafa" stroke="#1a1a1a" stroke-width="1.2"/>
     <text x="20" y="30" font-size="14" font-weight="700" fill="#1a1a1a">LoreGraph</text>
     <text x="120" y="30" font-size="11" font-style="italic" fill="#999999">/ The Yellow Wallpaper · C. P. Gilman</text>
 
@@ -32,20 +32,20 @@
     <line x1="120" y1="180" x2="120" y2="280" stroke="#1a1a1a" stroke-width="1.2" opacity="0.7"/>
 
     <!-- The Protagonist (highlighted as selected — gold border) -->
-    <circle cx="120" cy="140" r="40" fill="#fdfbf6" stroke="#b8954a" stroke-width="3"/>
+    <circle cx="120" cy="140" r="40" fill="#fafafa" stroke="#b8954a" stroke-width="3"/>
     <text x="120" y="138" text-anchor="middle" font-size="11" font-weight="700" fill="#1a1a1a">The</text>
     <text x="120" y="152" text-anchor="middle" font-size="11" font-weight="700" fill="#1a1a1a">Protagonist</text>
 
     <!-- Room (Object · square) -->
-    <rect x="220" y="58" width="40" height="40" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.4"/>
+    <rect x="220" y="58" width="40" height="40" fill="#fafafa" stroke="#1a1a1a" stroke-width="1.4"/>
     <text x="240" y="82" text-anchor="middle" font-size="10" fill="#1a1a1a">Room</text>
 
     <!-- Confinement (Concept · hexagon) -->
-    <polygon points="248,238 260,222 296,222 308,238 296,254 260,254" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.4"/>
+    <polygon points="248,238 260,222 296,222 308,238 296,254 260,254" fill="#fafafa" stroke="#1a1a1a" stroke-width="1.4"/>
     <text x="278" y="242" text-anchor="middle" font-size="10" fill="#1a1a1a">Confinement</text>
 
     <!-- Wallpaper (Object · square) -->
-    <rect x="92" y="288" width="56" height="44" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.4"/>
+    <rect x="92" y="288" width="56" height="44" fill="#fafafa" stroke="#1a1a1a" stroke-width="1.4"/>
     <text x="120" y="307" text-anchor="middle" font-size="10" fill="#1a1a1a">Yellow</text>
     <text x="120" y="320" text-anchor="middle" font-size="10" fill="#1a1a1a">Wallpaper</text>
 
@@ -60,7 +60,7 @@
     <!-- Entity name + type -->
     <text x="0" y="44" font-size="18" font-weight="700" fill="#1a1a1a">The Protagonist</text>
     <rect x="208" y="26" width="48" height="20" fill="#1a1a1a"/>
-    <text x="232" y="40" text-anchor="middle" font-size="10" font-weight="700" fill="#fdfbf6" letter-spacing="1">AGENT</text>
+    <text x="232" y="40" text-anchor="middle" font-size="10" font-weight="700" fill="#fafafa" letter-spacing="1">AGENT</text>
     <text x="0" y="64" font-size="11" font-family="ui-monospace, monospace" fill="#999999">ent_protagonist  ·  142 mentions  ·  28 chunks</text>
 
     <!-- ALIASES -->
@@ -69,7 +69,7 @@
 
     <!-- OUTGOING EDGES -->
     <text x="0" y="172" font-size="10" font-weight="700" letter-spacing="2" fill="#8a6f37">OUTGOING EDGES · 2</text>
-    <line x1="0" y1="180" x2="600" y2="180" stroke="#e6dbc7"/>
+    <line x1="0" y1="180" x2="600" y2="180" stroke="#e8e8e8"/>
 
     <text x="0" y="202" font-family="ui-monospace, monospace" font-size="11" font-weight="700" fill="#1a1a1a">LIVES_IN</text>
     <text x="76" y="202" font-size="11" fill="#666666">→</text>
@@ -83,7 +83,7 @@
 
     <!-- IMPLICIT FACTS -->
     <text x="0" y="316" font-size="10" font-weight="700" letter-spacing="2" fill="#8a6f37">IMPLICIT FACTS · GLUCOSE</text>
-    <line x1="0" y1="324" x2="600" y2="324" stroke="#e6dbc7"/>
+    <line x1="0" y1="324" x2="600" y2="324" stroke="#e8e8e8"/>
 
     <text x="0" y="346" font-family="ui-monospace, monospace" font-size="10" fill="#999999">emotion · after · one_step</text>
     <text x="0" y="366" font-size="13" fill="#1a1a1a">"she feels surveilled by the pattern"</text>

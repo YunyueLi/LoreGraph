@@ -4,7 +4,7 @@
     <marker id="arr-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#b8954a"/></marker>
   </defs>
 
-  <rect width="1200" height="760" fill="#f3ede0"/>
+  <rect width="1200" height="760" fill="#ffffff"/>
 
   <!-- ════════ Title block ════════ -->
   <text x="600" y="56" text-anchor="middle" font-size="22" font-weight="700" fill="#1a1a1a">Figure 1 · What an extraction looks like</text>
@@ -16,59 +16,59 @@
   <!-- Edges (drawn before nodes) -->
   <!-- 1. Protagonist → Confidant : INTERACTS (solid) -->
   <line x1="304" y1="288" x2="568" y2="222" stroke="#1a1a1a" stroke-width="1.4" marker-end="url(#arr)"/>
-  <rect x="376" y="232" width="112" height="22" fill="#f3ede0" stroke="#1a1a1a" stroke-width="0.6"/>
+  <rect x="376" y="232" width="112" height="22" fill="#ffffff" stroke="#1a1a1a" stroke-width="0.6"/>
   <text x="432" y="247" text-anchor="middle" font-size="10" font-family="ui-monospace, monospace" letter-spacing="0.5" fill="#1a1a1a">INTERACTS</text>
 
   <!-- 2. Protagonist → Heirloom : STRUCTURAL (solid) -->
   <line x1="280" y1="384" x2="488" y2="464" stroke="#1a1a1a" stroke-width="1.4" marker-end="url(#arr)"/>
-  <rect x="312" y="408" width="112" height="22" fill="#f3ede0" stroke="#1a1a1a" stroke-width="0.6"/>
+  <rect x="312" y="408" width="112" height="22" fill="#ffffff" stroke="#1a1a1a" stroke-width="0.6"/>
   <text x="368" y="423" text-anchor="middle" font-size="10" font-family="ui-monospace, monospace" letter-spacing="0.5" fill="#1a1a1a">STRUCTURAL</text>
 
   <!-- 3. Heirloom → Curse : SYMBOLIZES (dashed) -->
   <line x1="584" y1="488" x2="744" y2="488" stroke="#1a1a1a" stroke-width="1.4" stroke-dasharray="6,4" marker-end="url(#arr)"/>
-  <rect x="608" y="464" width="112" height="22" fill="#f3ede0" stroke="#1a1a1a" stroke-width="0.6"/>
+  <rect x="608" y="464" width="112" height="22" fill="#ffffff" stroke="#1a1a1a" stroke-width="0.6"/>
   <text x="664" y="479" text-anchor="middle" font-size="10" font-family="ui-monospace, monospace" letter-spacing="0.5" fill="#1a1a1a">SYMBOLIZES</text>
 
   <!-- 4. Confidant → Revelation : CAUSES (solid) -->
   <line x1="640" y1="200" x2="752" y2="216" stroke="#1a1a1a" stroke-width="1.4" marker-end="url(#arr)"/>
-  <rect x="652" y="174" width="80" height="22" fill="#f3ede0" stroke="#1a1a1a" stroke-width="0.6"/>
+  <rect x="652" y="174" width="80" height="22" fill="#ffffff" stroke="#1a1a1a" stroke-width="0.6"/>
   <text x="692" y="189" text-anchor="middle" font-size="10" font-family="ui-monospace, monospace" letter-spacing="0.5" fill="#1a1a1a">CAUSES</text>
 
   <!-- 5. Revelation → Curse : INFLUENCES (heavy) -->
   <line x1="816" y1="280" x2="816" y2="432" stroke="#1a1a1a" stroke-width="2.2" marker-end="url(#arr)"/>
-  <rect x="760" y="340" width="112" height="22" fill="#f3ede0" stroke="#1a1a1a" stroke-width="0.6"/>
+  <rect x="760" y="340" width="112" height="22" fill="#ffffff" stroke="#1a1a1a" stroke-width="0.6"/>
   <text x="816" y="355" text-anchor="middle" font-size="10" font-family="ui-monospace, monospace" letter-spacing="0.5" fill="#1a1a1a">INFLUENCES</text>
 
   <!-- 6. Curse → Protagonist : PREDICTS (gold dashed) -->
   <path d="M 736 480 Q 540 540 280 408" fill="none" stroke="#b8954a" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arr-g)"/>
-  <rect x="412" y="528" width="88" height="22" fill="#f3ede0" stroke="#b8954a" stroke-width="0.8"/>
+  <rect x="412" y="528" width="88" height="22" fill="#ffffff" stroke="#b8954a" stroke-width="0.8"/>
   <text x="456" y="543" text-anchor="middle" font-size="10" font-family="ui-monospace, monospace" letter-spacing="0.5" font-weight="700" fill="#8a6f37">PREDICTS</text>
 
   <!-- ════════ NODES ════════ -->
 
   <!-- Protagonist (Agent · large circle, focal) -->
-  <circle cx="248" cy="336" r="64" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="2"/>
+  <circle cx="248" cy="336" r="64" fill="#fafafa" stroke="#1a1a1a" stroke-width="2"/>
   <text x="248" y="332" text-anchor="middle" font-size="14" font-weight="700" fill="#1a1a1a">The</text>
   <text x="248" y="350" text-anchor="middle" font-size="14" font-weight="700" fill="#1a1a1a">Protagonist</text>
   <text x="248" y="372" text-anchor="middle" font-size="10" font-family="ui-monospace, monospace" fill="#666666">142 mentions</text>
 
   <!-- Confidant (Agent · circle) -->
-  <circle cx="600" cy="200" r="48" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.6"/>
+  <circle cx="600" cy="200" r="48" fill="#fafafa" stroke="#1a1a1a" stroke-width="1.6"/>
   <text x="600" y="202" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a1a">The Confidant</text>
   <text x="600" y="222" text-anchor="middle" font-size="10" font-family="ui-monospace, monospace" fill="#666666">38 mentions</text>
 
   <!-- Heirloom (Object · square) -->
-  <rect x="488" y="448" width="96" height="80" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.6"/>
+  <rect x="488" y="448" width="96" height="80" fill="#fafafa" stroke="#1a1a1a" stroke-width="1.6"/>
   <text x="536" y="484" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a1a">The Heirloom</text>
   <text x="536" y="504" text-anchor="middle" font-size="10" font-family="ui-monospace, monospace" fill="#666666">12 mentions</text>
 
   <!-- Revelation (Event · diamond / rotated square) -->
-  <g transform="rotate(45 816 240)"><rect x="772" y="196" width="88" height="88" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.6"/></g>
+  <g transform="rotate(45 816 240)"><rect x="772" y="196" width="88" height="88" fill="#fafafa" stroke="#1a1a1a" stroke-width="1.6"/></g>
   <text x="816" y="236" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a1a">The</text>
   <text x="816" y="252" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a1a">Revelation</text>
 
   <!-- Curse (Concept · hexagon) -->
-  <polygon points="760,480 784,442 848,442 872,480 848,518 784,518" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.6"/>
+  <polygon points="760,480 784,442 848,442 872,480 848,518 784,518" fill="#fafafa" stroke="#1a1a1a" stroke-width="1.6"/>
   <text x="816" y="478" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a1a">The Curse</text>
   <text x="816" y="496" text-anchor="middle" font-size="10" font-family="ui-monospace, monospace" fill="#666666">prophecy</text>
 
@@ -78,19 +78,19 @@
     <text x="0" y="0" font-size="10" font-weight="700" letter-spacing="2" fill="#8a6f37">ENTITY TYPES</text>
     <line x1="0" y1="10" x2="200" y2="10" stroke="#b8954a" stroke-width="1"/>
 
-    <circle cx="14" cy="36" r="10" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.5"/>
+    <circle cx="14" cy="36" r="10" fill="#fafafa" stroke="#1a1a1a" stroke-width="1.5"/>
     <text x="36" y="40" font-size="12" fill="#1a1a1a">Agent</text>
     <text x="100" y="40" font-size="11" fill="#999999" font-style="italic">characters</text>
 
-    <rect x="4" y="60" width="20" height="20" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.5"/>
+    <rect x="4" y="60" width="20" height="20" fill="#fafafa" stroke="#1a1a1a" stroke-width="1.5"/>
     <text x="36" y="74" font-size="12" fill="#1a1a1a">Object</text>
     <text x="100" y="74" font-size="11" fill="#999999" font-style="italic">things, places</text>
 
-    <g transform="rotate(45 14 104)"><rect x="4" y="94" width="20" height="20" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.5"/></g>
+    <g transform="rotate(45 14 104)"><rect x="4" y="94" width="20" height="20" fill="#fafafa" stroke="#1a1a1a" stroke-width="1.5"/></g>
     <text x="36" y="108" font-size="12" fill="#1a1a1a">Event</text>
     <text x="100" y="108" font-size="11" fill="#999999" font-style="italic">realis trigger</text>
 
-    <polygon points="4,138 10,128 18,128 24,138 18,148 10,148" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.5"/>
+    <polygon points="4,138 10,128 18,128 24,138 18,148 10,148" fill="#fafafa" stroke="#1a1a1a" stroke-width="1.5"/>
     <text x="36" y="142" font-size="12" fill="#1a1a1a">Concept</text>
     <text x="100" y="142" font-size="11" fill="#999999" font-style="italic">themes</text>
 
@@ -116,7 +116,7 @@
 
   <!-- ════════ EVIDENCE CALLOUT · bottom ════════ -->
   <g transform="translate(80, 624)">
-    <rect x="0" y="0" width="1040" height="96" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.2"/>
+    <rect x="0" y="0" width="1040" height="96" fill="#fafafa" stroke="#1a1a1a" stroke-width="1.2"/>
     <rect x="0" y="0" width="6" height="96" fill="#b8954a"/>
     <text x="28" y="28" font-size="10" font-weight="700" letter-spacing="2" fill="#8a6f37">EVIDENCE FOR EVERY EDGE</text>
     <text x="28" y="54" font-size="13" fill="#1a1a1a">
