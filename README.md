@@ -66,7 +66,7 @@ It synthesizes the strongest ideas from four lines of work:
 ```bash
 git clone https://github.com/YunyueLi/LoreGraph.git
 cd LoreGraph
-cp .env.example .env                                  # add ANTHROPIC_API_KEY
+cp .env.example .env                                  # pick a provider + key (see below)
 docker compose up -d                                  # postgres + pgvector
 pip install -e ".[dev]" && alembic upgrade head
 
@@ -75,7 +75,45 @@ loregraph extract --book-id 1
 loregraph view --book-id 1                            # opens http://localhost:8000
 ```
 
-> A short novel (~6 000 words) runs all 7 passes for roughly **$0.20 – 1.00** in Anthropic spend, with prompt-cache discounts factored in.
+> A short novel (~6 000 words) runs all 7 passes for roughly **$0.20 – 1.00** on Anthropic with prompt-cache discounts. Costs on DeepSeek / Qwen / Gemini Flash are typically **3–10× cheaper**; local Ollama / vLLM is **free** at the cost of slower / smaller models.
+
+---
+
+## 🔌 Bring your own LLM
+
+LoreGraph runs on **any LLM that speaks Anthropic native or OpenAI-compatible chat-completions**. Switch provider by setting one env var:
+
+```bash
+# Anthropic Claude (default — retains prompt caching)
+LOREGRAPH_LLM_PROVIDER=anthropic
+ANTHROPIC_API_KEY=sk-ant-...
+
+# DeepSeek
+LOREGRAPH_LLM_PROVIDER=deepseek
+DEEPSEEK_API_KEY=sk-...
+
+# Local Ollama, no key
+LOREGRAPH_LLM_PROVIDER=ollama
+LOREGRAPH_LLM_MODEL=llama3.2          # optional override
+
+# Any OpenAI-compatible endpoint
+LOREGRAPH_LLM_PROVIDER=openai_compatible
+LOREGRAPH_LLM_BASE_URL=https://your.endpoint/v1
+LOREGRAPH_LLM_API_KEY=...
+LOREGRAPH_LLM_MODEL=your-model
+```
+
+Built-in provider presets (each ships with a sensible default model):
+
+| Group | Providers |
+|---|---|
+| **Frontier** | `anthropic` · `openai` · `gemini` · `grok` |
+| **China** | `deepseek` · `kimi` (Moonshot) · `zhipu` (GLM) · `qwen` (DashScope) |
+| **Open-weights hosts** | `groq` · `together` · `fireworks` · `mistral` |
+| **Local** | `ollama` · `vllm` |
+| **Custom** | `openai_compatible` |
+
+API key resolution chain: `LOREGRAPH_LLM_API_KEY` (generic) → provider-canonical env (`OPENAI_API_KEY`, `DEEPSEEK_API_KEY`, `MOONSHOT_API_KEY`, …) → none. Prompt caching stays native on Anthropic; OpenAI auto-cache and DeepSeek context-cache are surfaced automatically when the provider exposes `cached_tokens`.
 
 ---
 
