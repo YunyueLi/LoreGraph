@@ -67,62 +67,23 @@ loregraph view --book-id 1                            # 浏览器打开 http://l
 
 `loregraph extract` 跑完后，数据库里就有完整的图谱——**每一条都带原文字面引用**：
 
-```mermaid
-graph LR
-    BY["贾宝玉<br/>Agent · Person"]:::agent
-    DY["林黛玉<br/>Agent · Person"]:::agent
-    BC["薛宝钗<br/>Agent · Person"]:::agent
-    TL["通灵宝玉<br/>Object · 信物"]:::object
-    JM["金玉良缘<br/>Concept · Narrative"]:::concept
-    MS["木石前盟<br/>Concept · Narrative"]:::concept
-
-    BY -- "OWNS<br/>(INTERACTS)" --> TL
-    BY -- "ENDORSES<br/>(ASSERTS)" --> MS
-    BY -- "DENIES<br/>(ASSERTS)" --> JM
-    BC -- "ASSOCIATED_WITH<br/>(STRUCTURAL)" --> JM
-    DY -- "ASSOCIATED_WITH<br/>(STRUCTURAL)" --> MS
-
-    classDef agent fill:#e8f0f8,stroke:#3a6fa5,stroke-width:1.5px,color:#0f172a
-    classDef object fill:#e4f3f3,stroke:#0e7a7a,stroke-width:1.5px,color:#0f172a
-    classDef concept fill:#efe7f8,stroke:#6d4e94,stroke-width:1.5px,color:#0f172a
-```
+<div align="center">
+  <img src="assets/demo-graph.svg" alt="抽取后的图谱片段：含 4 类节点（Agent / Object / Event / Concept）、5 类关系（STRUCTURAL / INTERACTS / SYMBOLIZES / PREDICTS / INFLUENCES / CAUSES），底部 callout 证明每一条边都引用了原文的字面片段。" width="100%" />
+</div>
 
 在 Web UI 里点任何节点或边，能看到完整的来源链：
 
-```
-┌─ Selected: 贾宝玉                                                ┐
-│  Agent · Person · 142 mentions across 28 chunks                  │
-│                                                                  │
-│  ▌ Outgoing edges                                                │
-│    DENIES (ASSERTS) → 金玉良缘                                   │
-│      ❝ 什么是金玉姻缘，我偏说是木石姻缘 ❞     (explicit, .95)    │
-│                                                                  │
-│  ▌ Implicit (GLUCOSE) facts                                      │
-│    emotion · after · one_step                                    │
-│      "对礼教与仕途的内在抗拒"                                    │
-│      ❝ 视科举为"国贼禄鬼"之营生 ❞                                │
-│                                                                  │
-│    attribute · explicit                                          │
-│      "含玉而生，玉上有'莫失莫忘，仙寿恒昌'字样"                  │
-│      ❝ 玉上有"莫失莫忘，仙寿恒昌"字样 ❞                          │
-└──────────────────────────────────────────────────────────────────┘
-```
-
-**每一行都能定位到原文里的字面子串——由 Pass-7 验证。**
+<div align="center">
+  <img src="assets/evidence-panel.svg" alt="LoreGraph Web UI 示意图：左侧为图谱视图，右侧为详情面板，显示选中实体的 canonical 名称、类型标签、提及次数、别名、出边及证据引文、GLUCOSE 隐式事实——每条都由 Pass-7 验证。" width="100%" />
+</div>
 
 ---
 
 ## 🔬 7-Pass 流水线
 
-```mermaid
-graph LR
-  P1["Pass-1<br/>切片"] --> P2["Pass-2<br/>实体"]
-  P2 --> P3["Pass-3<br/>聚合"]
-  P3 --> P4["Pass-4<br/>共指"]
-  P4 --> P5["Pass-5<br/>关系+事件"]
-  P5 --> P6["Pass-6<br/>GLUCOSE"]
-  P6 --> P7["Pass-7<br/>CoVe 验证"]
-```
+<div align="center">
+  <img src="assets/7-pass-pipeline.svg" alt="七个顺序 Pass：Chunk → Entity → Cluster → Coref → Relation → GLUCOSE → CoVe。Pass-7 作为验证门控被高亮，要求 evidence_span 字面匹配率 ≥ 95% 才能通过。" width="100%" />
+</div>
 
 | Pass | 目标 | 关键技术 |
 |---|---|---|
@@ -138,48 +99,17 @@ graph LR
 
 ## 🧬 图谱里有什么
 
-**4 类节点（本体）**
-
-|  | 类型 | 例子 |
-|---|---|---|
-| 🧑 | **Agent · 主体** | 个人 · 作为整体行动的群体 · 神话角色 |
-| 📦 | **Object · 客体** | 物 · 地 · 文档 · 信物 |
-| ⚡ | **Event · 事件** | *realis* 触发——已发生的事；**绝不包括**假设、习惯、否定、想象 |
-| 💭 | **Concept · 概念** | 主题 · 命名的关系 · 预言 · 象征母题 |
-
-**5 类关系**
-
-| 类别 | 适用情况 |
-|---|---|
-| `STRUCTURAL` | 稳定的归属 / 位置 / 所属 / 部分关系 |
-| `INTERACTS` | 实体间的直接动作 · 事件参与 |
-| `ASSERTS` | 一方对另一方的声明 / 信念 / 陈述 |
-| `INFLUENCES` | 因果影响 |
-| `PREDICTS` | 伏笔 · 预言 · 前瞻陈述 |
-
-**10 维隐式信息**（GLUCOSE，Mostafazadeh 等 EMNLP 2020 *Best Paper*）：
-
-`{cause, emotion, location, possession, attribute}` × `{before, after}`
-
-每条事实标 `inference_depth ∈ {explicit, one_step, multi_step}`——Pass-7 对深层推断的审查比浅层更严。
+<div align="center">
+  <img src="assets/ontology.svg" alt="LoreGraph 本体总览：4 类节点卡片（Agent / Object / Event / Concept）+ 示例对象，5 类关系卡片 + 适用场景，以及 GLUCOSE 10 维隐式信息 schema（5 维度 × 2 时间向 + inference_depth 推理深度标签）。" width="100%" />
+</div>
 
 ---
 
 ## 🏗️ 架构
 
-```
-┌──────────────────────────────────────────────┐
-│  Web UI       FastAPI + React + Cytoscape    │  交互式图谱 + 证据面板
-├──────────────────────────────────────────────┤
-│  CLI          Typer                          │  loregraph ingest | extract | view | status
-├──────────────────────────────────────────────┤
-│  Pipeline     7-Pass 协调器                  │  各 Pass 分派 + 成本统计
-├──────────────────────────────────────────────┤
-│  LLM          Anthropic SDK + prompt cache   │  唯一 LLM 出口，缓存 80%+ 折扣
-├──────────────────────────────────────────────┤
-│  Storage      SQLAlchemy 2.0 + PG+pgvector   │  canonical 实体 + 6 个 ENUM 类型
-└──────────────────────────────────────────────┘
-```
+<div align="center">
+  <img src="assets/architecture.svg" alt="五层架构：Web UI（FastAPI + React + Cytoscape）、CLI（Typer）、Pipeline（7-Pass 协调器）、LLM（Anthropic SDK + prompt cache）、Storage（SQLAlchemy 2.0 + Postgres + pgvector）。单 LLM 出口，单存储后端，全链路证据接地。" width="100%" />
+</div>
 
 完整设计原由 + 论文逐项映射 + WMG → LoreGraph 血缘：[**`docs/architecture.md`**](docs/architecture.md)。
 
@@ -206,14 +136,9 @@ graph LR
 
 ## 🚢 部署你自己的 demo
 
-三个免费层服务 + 你的 Anthropic key，**~15 分钟**就能上线一个可分享的公开 demo：
-
-```
-   Cloudflare Pages   ──→   Render Web 服务         ──→   Neon Postgres
-   (React SPA)              (FastAPI + LoreGraph)         (serverless + pgvector)
-        │
-        └── 通过  gh repo edit --homepage <url>  挂到 GitHub 仓库
-```
+<div align="center">
+  <img src="assets/deploy-flow.svg" alt="部署拓扑：Cloudflare Pages 部署 React SPA，调用 Render Web 服务（FastAPI + LoreGraph），后者连接 Neon Serverless Postgres + pgvector。最后一步：`gh repo edit --homepage` 把上线 URL 挂到 GitHub About 卡片。" width="100%" />
+</div>
 
 > **国内访问提示**：Cloudflare 在国内有时延和稳定性问题，必要时可换成 Vercel / Netlify；Render 免费层 15 分钟空闲后会休眠，首次访问需 ~30s 唤醒。
 
