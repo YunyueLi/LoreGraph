@@ -1,119 +1,99 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 680" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, system-ui, sans-serif">
-  <rect width="920" height="680" fill="#f3ede0"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, system-ui, sans-serif">
+  <rect width="1200" height="720" fill="#f3ede0"/>
 
-  <!-- Browser chrome -->
-  <rect x="40" y="40" width="840" height="600" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.2"/>
+  <!-- ════════ Title block ════════ -->
+  <text x="600" y="56" text-anchor="middle" font-size="22" font-weight="700" fill="#1a1a1a">Figure 2 · The detail panel</text>
+  <text x="600" y="80" text-anchor="middle" font-size="13" fill="#666666" font-style="italic">Right-side evidence panel updates live when the visitor clicks any node or edge.</text>
+  <line x1="80" y1="104" x2="1120" y2="104" stroke="#1a1a1a" stroke-width="0.6" opacity="0.3"/>
 
-  <!-- Window controls -->
-  <circle cx="68" cy="68" r="6" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1"/>
-  <circle cx="86" cy="68" r="6" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1"/>
-  <circle cx="104" cy="68" r="6" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1"/>
+  <!-- ════════ Top bar ════════ -->
+  <g transform="translate(80, 128)">
+    <rect x="0" y="0" width="1040" height="48" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.2"/>
+    <text x="20" y="30" font-size="14" font-weight="700" fill="#1a1a1a">LoreGraph</text>
+    <text x="120" y="30" font-size="11" font-style="italic" fill="#999999">/ The Yellow Wallpaper · C. P. Gilman</text>
 
-  <!-- Address bar -->
-  <rect x="140" y="56" width="700" height="24" fill="#f3ede0" stroke="#1a1a1a" stroke-width="0.8"/>
-  <text x="160" y="72" font-size="11" font-family="ui-monospace, 'JetBrains Mono', monospace" fill="#666666">
-    loregraph.pages.dev/?book_id=1
-  </text>
+    <!-- verified chip -->
+    <rect x="864" y="12" width="160" height="24" fill="#b8954a"/>
+    <text x="944" y="28" text-anchor="middle" font-size="11" font-weight="700" fill="#1a1a1a">✓  Pass-7 verified</text>
+  </g>
 
-  <!-- Page header -->
-  <line x1="40" y1="92" x2="880" y2="92" stroke="#e6dbc7"/>
-  <text x="60" y="120" font-size="18" font-weight="700" fill="#1a1a1a">LoreGraph</text>
-  <text x="178" y="121" font-size="10" font-family="ui-monospace, monospace" fill="#999999" font-style="italic">knowledge graphs from closed-world fiction</text>
+  <!-- ════════ Two-column layout ════════ -->
+  <!-- divider -->
+  <line x1="480" y1="200" x2="480" y2="664" stroke="#1a1a1a" stroke-width="0.6" opacity="0.3"/>
 
-  <!-- Book selector -->
-  <text x="480" y="121" font-size="12" fill="#666666">Book:</text>
-  <rect x="518" y="106" width="220" height="22" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="0.8"/>
-  <text x="532" y="121" font-size="12" fill="#1a1a1a">The Yellow Wallpaper · Gilman</text>
+  <!-- ════════ LEFT · graph minimap ════════ -->
+  <g transform="translate(80, 216)">
+    <text x="0" y="0" font-size="10" font-weight="700" letter-spacing="2" fill="#8a6f37">GRAPH VIEW</text>
+    <line x1="0" y1="10" x2="360" y2="10" stroke="#b8954a" stroke-width="1"/>
 
-  <!-- Layout split -->
-  <line x1="540" y1="140" x2="540" y2="640" stroke="#e6dbc7"/>
+    <!-- edges -->
+    <line x1="120" y1="120" x2="240" y2="80" stroke="#1a1a1a" stroke-width="1.2" opacity="0.7"/>
+    <line x1="120" y1="160" x2="280" y2="220" stroke="#1a1a1a" stroke-width="1.2" opacity="0.7"/>
+    <line x1="120" y1="180" x2="120" y2="280" stroke="#1a1a1a" stroke-width="1.2" opacity="0.7"/>
 
-  <!-- LEFT: graph preview -->
-  <g transform="translate(60, 160)">
-    <!-- edges first -->
-    <line x1="156" y1="125" x2="270" y2="100" stroke="#1a1a1a" stroke-width="1.1" opacity="0.7"/>
-    <line x1="156" y1="145" x2="300" y2="220" stroke="#1a1a1a" stroke-width="1.1" opacity="0.7"/>
-    <line x1="120" y1="170" x2="120" y2="280" stroke="#1a1a1a" stroke-width="1.1" opacity="0.7"/>
-
-    <!-- The Protagonist (Agent · circle, highlighted as selected) -->
-    <circle cx="120" cy="130" r="44" fill="#b8954a" stroke="#1a1a1a" stroke-width="1.8"/>
-    <text x="120" y="128" text-anchor="middle" font-size="11" font-weight="700" fill="#1a1a1a">The</text>
-    <text x="120" y="142" text-anchor="middle" font-size="11" font-weight="700" fill="#1a1a1a">Protagonist</text>
+    <!-- The Protagonist (highlighted as selected — gold border) -->
+    <circle cx="120" cy="140" r="40" fill="#fdfbf6" stroke="#b8954a" stroke-width="3"/>
+    <text x="120" y="138" text-anchor="middle" font-size="11" font-weight="700" fill="#1a1a1a">The</text>
+    <text x="120" y="152" text-anchor="middle" font-size="11" font-weight="700" fill="#1a1a1a">Protagonist</text>
 
     <!-- Room (Object · square) -->
-    <rect x="276" y="61" width="48" height="48" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.4"/>
-    <text x="300" y="89" text-anchor="middle" font-size="10" fill="#1a1a1a">Room</text>
+    <rect x="220" y="58" width="40" height="40" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.4"/>
+    <text x="240" y="82" text-anchor="middle" font-size="10" fill="#1a1a1a">Room</text>
 
     <!-- Confinement (Concept · hexagon) -->
-    <polygon points="296,210 308,194 332,194 344,210 332,226 308,226" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.4"/>
-    <text x="320" y="213" text-anchor="middle" font-size="9" fill="#1a1a1a">Confinement</text>
+    <polygon points="248,238 260,222 296,222 308,238 296,254 260,254" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.4"/>
+    <text x="278" y="242" text-anchor="middle" font-size="10" fill="#1a1a1a">Confinement</text>
 
-    <!-- Yellow Wallpaper (Object · square) -->
-    <rect x="90" y="282" width="60" height="56" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.4"/>
-    <text x="120" y="305" text-anchor="middle" font-size="10" fill="#1a1a1a">Yellow</text>
+    <!-- Wallpaper (Object · square) -->
+    <rect x="92" y="288" width="56" height="44" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.4"/>
+    <text x="120" y="307" text-anchor="middle" font-size="10" fill="#1a1a1a">Yellow</text>
     <text x="120" y="320" text-anchor="middle" font-size="10" fill="#1a1a1a">Wallpaper</text>
 
-    <text x="220" y="430" text-anchor="middle" font-size="10" fill="#999999" font-style="italic">— graph view —</text>
+    <text x="180" y="396" text-anchor="middle" font-size="11" font-style="italic" fill="#999999">— click any node —</text>
   </g>
 
-  <!-- RIGHT: evidence panel -->
-  <g transform="translate(560, 160)">
-    <!-- Header -->
-    <text x="0" y="0" font-size="14" font-weight="700" fill="#1a1a1a">Selected: The Protagonist</text>
-    <rect x="218" y="-14" width="50" height="18" fill="#b8954a"/>
-    <text x="243" y="-1" text-anchor="middle" font-size="11" font-weight="700" fill="#1a1a1a">Agent</text>
+  <!-- ════════ RIGHT · detail panel ════════ -->
+  <g transform="translate(520, 216)">
+    <text x="0" y="0" font-size="10" font-weight="700" letter-spacing="2" fill="#8a6f37">DETAIL PANEL</text>
+    <line x1="0" y1="10" x2="600" y2="10" stroke="#b8954a" stroke-width="1"/>
 
-    <text x="0" y="20" font-size="11" font-family="ui-monospace, monospace" fill="#999999">ent_protagonist · 142 mentions across 28 chunks</text>
+    <!-- Entity name + type -->
+    <text x="0" y="44" font-size="18" font-weight="700" fill="#1a1a1a">The Protagonist</text>
+    <rect x="208" y="26" width="48" height="20" fill="#1a1a1a"/>
+    <text x="232" y="40" text-anchor="middle" font-size="10" font-weight="700" fill="#fdfbf6" letter-spacing="1">AGENT</text>
+    <text x="0" y="64" font-size="11" font-family="ui-monospace, monospace" fill="#999999">ent_protagonist  ·  142 mentions  ·  28 chunks</text>
 
-    <!-- Aliases -->
-    <text x="0" y="56" font-size="10" font-weight="700" letter-spacing="1.8" fill="#8a6f37">ALIASES</text>
-    <text x="0" y="76" font-size="13" fill="#1a1a1a">"she", "the narrator", "I"</text>
+    <!-- ALIASES -->
+    <text x="0" y="108" font-size="10" font-weight="700" letter-spacing="2" fill="#8a6f37">ALIASES</text>
+    <text x="0" y="128" font-size="13" fill="#1a1a1a">"she"  ·  "the narrator"  ·  "I"</text>
 
-    <!-- Outgoing edges -->
-    <text x="0" y="116" font-size="10" font-weight="700" letter-spacing="1.8" fill="#8a6f37">OUTGOING EDGES</text>
+    <!-- OUTGOING EDGES -->
+    <text x="0" y="172" font-size="10" font-weight="700" letter-spacing="2" fill="#8a6f37">OUTGOING EDGES · 2</text>
+    <line x1="0" y1="180" x2="600" y2="180" stroke="#e6dbc7"/>
 
-    <rect x="-4" y="125" width="60" height="18" fill="#f3ede0" stroke="#1a1a1a" stroke-width="0.6"/>
-    <text x="26" y="139" text-anchor="middle" font-size="10" font-family="ui-monospace, monospace" fill="#1a1a1a">LIVES_IN</text>
-    <text x="64" y="139" font-size="12" fill="#666666">→</text>
-    <text x="80" y="139" font-size="13" fill="#1a1a1a">Room</text>
+    <text x="0" y="202" font-family="ui-monospace, monospace" font-size="11" font-weight="700" fill="#1a1a1a">LIVES_IN</text>
+    <text x="76" y="202" font-size="11" fill="#666666">→</text>
+    <text x="96" y="202" font-size="13" fill="#1a1a1a">Room</text>
+    <text x="0" y="220" font-family="Georgia, serif" font-style="italic" font-size="12" fill="#666666">"It is a big, airy room, the whole floor nearly"</text>
 
-    <text x="0" y="160" font-size="11" fill="#666666" font-style="italic" font-family="Georgia, serif">
-      ❝ It is a big, airy room, the whole floor nearly ❞
-    </text>
+    <text x="0" y="252" font-family="ui-monospace, monospace" font-size="11" font-weight="700" fill="#1a1a1a">ASSERTS</text>
+    <text x="76" y="252" font-size="11" fill="#666666">→</text>
+    <text x="96" y="252" font-size="13" fill="#1a1a1a">Confinement</text>
+    <text x="0" y="270" font-family="Georgia, serif" font-style="italic" font-size="12" fill="#666666">"I cry at nothing, and cry most of the time"</text>
 
-    <rect x="-4" y="178" width="60" height="18" fill="#f3ede0" stroke="#1a1a1a" stroke-width="0.6"/>
-    <text x="26" y="192" text-anchor="middle" font-size="10" font-family="ui-monospace, monospace" fill="#1a1a1a">ASSERTS</text>
-    <text x="64" y="192" font-size="12" fill="#666666">→</text>
-    <text x="80" y="192" font-size="13" fill="#1a1a1a">Confinement</text>
+    <!-- IMPLICIT FACTS -->
+    <text x="0" y="316" font-size="10" font-weight="700" letter-spacing="2" fill="#8a6f37">IMPLICIT FACTS · GLUCOSE</text>
+    <line x1="0" y1="324" x2="600" y2="324" stroke="#e6dbc7"/>
 
-    <text x="0" y="213" font-size="11" fill="#666666" font-style="italic" font-family="Georgia, serif">
-      ❝ I cry at nothing, and cry most of the time ❞
-    </text>
+    <text x="0" y="346" font-family="ui-monospace, monospace" font-size="10" fill="#999999">emotion · after · one_step</text>
+    <text x="0" y="366" font-size="13" fill="#1a1a1a">"she feels surveilled by the pattern"</text>
+    <text x="0" y="384" font-family="Georgia, serif" font-style="italic" font-size="12" fill="#666666">"I think there are women behind that paper"</text>
 
-    <!-- GLUCOSE facts -->
-    <text x="0" y="252" font-size="10" font-weight="700" letter-spacing="1.8" fill="#8a6f37">IMPLICIT (GLUCOSE) FACTS</text>
-
-    <text x="0" y="276" font-size="10" font-family="ui-monospace, monospace" fill="#999999">emotion · after · one_step</text>
-    <text x="0" y="296" font-size="13" fill="#1a1a1a">"she feels surveilled by the pattern"</text>
-    <text x="0" y="316" font-size="11" fill="#666666" font-style="italic" font-family="Georgia, serif">
-      ❝ I think there are women behind that paper ❞
-    </text>
-
-    <text x="0" y="352" font-size="10" font-family="ui-monospace, monospace" fill="#999999">attribute · explicit</text>
-    <text x="0" y="372" font-size="13" fill="#1a1a1a">"physically and mentally exhausted"</text>
-    <text x="0" y="392" font-size="11" fill="#666666" font-style="italic" font-family="Georgia, serif">
-      ❝ I get so tired of trying to lift and push it ❞
-    </text>
-
-    <!-- Verification chip (gold) -->
-    <rect x="0" y="422" width="240" height="34" fill="#b8954a" stroke="#1a1a1a" stroke-width="1"/>
-    <text x="120" y="444" text-anchor="middle" font-size="11" font-weight="700" fill="#1a1a1a">
-      ✓  all claims · evidence_span verified  (Pass-7)
-    </text>
+    <text x="0" y="416" font-family="ui-monospace, monospace" font-size="10" fill="#999999">attribute · explicit</text>
+    <text x="0" y="436" font-size="13" fill="#1a1a1a">"physically and mentally exhausted"</text>
+    <text x="0" y="454" font-family="Georgia, serif" font-style="italic" font-size="12" fill="#666666">"I get so tired of trying to lift and push it"</text>
   </g>
 
-  <!-- Caption -->
-  <text x="460" y="668" text-anchor="middle" font-size="11" fill="#666666" font-style="italic">
-    Right panel updates live as the visitor clicks any node or edge in the graph.
-  </text>
+  <!-- ════════ Caption ════════ -->
+  <text x="600" y="700" text-anchor="middle" font-size="11" font-style="italic" fill="#999999">Every quoted fragment is a literal substring of the source chunk — verified at extraction time by Pass-7.</text>
 </svg>
