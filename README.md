@@ -6,6 +6,8 @@
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
 [![Status](https://img.shields.io/badge/status-alpha-orange.svg)](#roadmap)
 
+\[ English · [简体中文](README.zh-CN.md) \]
+
 **LoreGraph** extracts entities, relations, events, and implicit story-level facts from a single closed-world fictional text (novel, screenplay, script) into a queryable knowledge graph — with every claim traceable to a literal span in the original text.
 
 ## Why LoreGraph
