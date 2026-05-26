@@ -1,34 +1,48 @@
 <div align="center">
 
-<br>
-
-# 🕸️ LoreGraph
-
-### Knowledge graphs from closed-world fiction.<br>Every node and every edge — traceable to a literal span in the source text.
+<img src="assets/hero-banner.svg" alt="LoreGraph hero — a row of book pages with floating graph nodes connected by thin lines to gold-highlighted spans on each page; italic tagline reads 'every node cites the page it came from.'" width="100%" />
 
 <br>
 
-<p>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache_2.0-blue.svg?style=flat-square" alt="License" /></a>
-  <a href="pyproject.toml"><img src="https://img.shields.io/badge/python-3.11+-3776AB.svg?style=flat-square&logo=python&logoColor=white" alt="Python" /></a>
-  <a href="https://github.com/YunyueLi/LoreGraph/actions"><img src="https://img.shields.io/github/actions/workflow/status/YunyueLi/LoreGraph/ci.yml?branch=main&style=flat-square&label=CI" alt="CI" /></a>
-  <a href="https://github.com/YunyueLi/LoreGraph/stargazers"><img src="https://img.shields.io/github/stars/YunyueLi/LoreGraph?style=flat-square" alt="Stars" /></a>
-  <img src="https://img.shields.io/badge/status-alpha-orange.svg?style=flat-square" alt="Status" />
-</p>
+# LoreGraph
 
-\[ **English** · [简体中文](README.zh-CN.md) \]
+***knowledge graphs that quote the page they came from.***
 
-[Quick start](#-quick-start) · [What you get](#-what-you-get) · [How it works](#-the-7-pass-pipeline) · [Deploy](#-deploy-your-own-demo) · [Roadmap](#-roadmap) · [Cite](#-academic-foundations)
+A 7-pass LLM pipeline that turns a novel, screenplay, or script
+into a queryable knowledge graph
+where every claim is anchored to a literal span of the source text.
+
+<br>
+
+[![Live demo](https://img.shields.io/badge/LIVE_DEMO-yunyueli.github.io%2Floregraph-b8954a?style=for-the-badge&labelColor=1a1a1a&logo=github&logoColor=b8954a)](https://github.com/YunyueLi/LoreGraph)
+[![Stars](https://img.shields.io/github/stars/YunyueLi/LoreGraph?style=for-the-badge&label=STARS&labelColor=1a1a1a&color=b8954a&logo=github&logoColor=b8954a)](https://github.com/YunyueLi/LoreGraph/stargazers)
+[![License](https://img.shields.io/badge/LICENSE-Apache_2.0-b8954a?style=for-the-badge&labelColor=1a1a1a)](LICENSE)
+[![Version](https://img.shields.io/badge/VERSION-0.1.0-b8954a?style=for-the-badge&labelColor=1a1a1a)](#-roadmap)
+
+[![Passes](https://img.shields.io/badge/PASSES-7-b8954a?style=for-the-badge&labelColor=1a1a1a)](#-the-7-pass-pipeline)
+[![Status](https://img.shields.io/badge/STATUS-ALPHA-b8954a?style=for-the-badge&labelColor=1a1a1a)](#-roadmap)
+[![Python](https://img.shields.io/badge/PYTHON-3.11+-b8954a?style=for-the-badge&labelColor=1a1a1a)](pyproject.toml)
+
+<br>
+
+[**Quick start**](#-quick-start) · [**What you get**](#-what-you-get) · [**Pipeline**](#-the-7-pass-pipeline) · [**Deploy**](#-deploy-your-own-demo) · [**Roadmap**](#-roadmap) · [**简体中文**](README.zh-CN.md)
+
+<br>
+
+> *"Books are not made to be believed,*
+> *but to be subjected to inquiry."*
+>
+> **Umberto Eco** · *The Name of the Rose*
 
 </div>
 
 ---
 
-## Why this exists
+## ✨ Why this exists
 
 Mainstream **GraphRAG** pipelines work on the open web — when sources contradict, you add more sources. **Fiction is different.**
 
-When you ask *"what does this character believe?"* the answer must come **from the text alone**. Every inference must **cite a span**. The graph must reason about **multi-character viewpoints**, **foreshadowing**, and **counterfactual continuations**.
+When you ask *what does this character believe?* the answer must come **from the text alone**. Every inference must **cite a span**. The graph must reason about **multi-character viewpoints**, **foreshadowing**, and **counterfactual continuations**.
 
 **LoreGraph** turns a single novel, screenplay, or script into a queryable knowledge graph with **every claim grounded in a literal substring of the source text** — exposed through a CLI and an interactive web UI.
 
@@ -36,10 +50,10 @@ It synthesizes the strongest ideas from four lines of work:
 
 |  |  |
 |---|---|
-| 📚 **Narrative NLP** | BookNLP · LitBank · GLUCOSE · Literary Event Detection |
-| 🏛️ **Industrial KG-RAG** | Microsoft GraphRAG · HippoRAG 2 · LightRAG · Zep |
-| ⚗️ **LLM extraction** | GPT-NER · Chain-of-Verification · BOOKCOREF |
-| 🎭 **Agent simulation** *(v0.4)* | Generative Agents · SymbolicToM · MCTS narrative |
+| **Narrative NLP** | BookNLP · LitBank · GLUCOSE · Literary Event Detection |
+| **Industrial KG-RAG** | Microsoft GraphRAG · HippoRAG 2 · LightRAG · Zep |
+| **LLM extraction** | GPT-NER · Chain-of-Verification · BOOKCOREF |
+| **Agent simulation** *(v0.4)* | Generative Agents · SymbolicToM · MCTS narrative |
 
 — behind a strict **≥ 95% evidence-span literal match** policy as the hallucination gate.
 
@@ -59,30 +73,30 @@ loregraph extract --book-id 1
 loregraph view --book-id 1                            # opens http://localhost:8000
 ```
 
-> **Cost**: a short novel (~6 000 words) runs all 7 passes for roughly **$0.20 – 1.00** in Anthropic spend, with prompt-cache discounts factored in.
+> A short novel (~6 000 words) runs all 7 passes for roughly **$0.20 – 1.00** in Anthropic spend, with prompt-cache discounts factored in.
 
 ---
 
-## ✨ What you get
+## 📖 What you get
 
-After `loregraph extract` finishes, the database holds typed entities, typed relations, and 10-dimensional implicit facts — every one of them anchored to a literal span:
+After `loregraph extract` finishes, the database holds typed entities, typed relations, and 10-dimensional implicit facts — every one anchored to a literal span:
 
 <div align="center">
-  <img src="assets/demo-graph.svg" alt="A fragment of an extracted knowledge graph showing typed entities (Agent / Object / Event / Concept), typed relations (STRUCTURAL / INTERACTS / SYMBOLIZES / PREDICTS / INFLUENCES / CAUSES), and a callout proving every edge cites a literal evidence_span from a specific chunk." width="100%" />
+  <img src="assets/demo-graph.svg" alt="A fragment of an extracted knowledge graph showing 4 entity shapes (circle/square/diamond/hexagon for Agent/Object/Event/Concept), typed relations (STRUCTURAL/INTERACTS/SYMBOLIZES/PREDICTS/CAUSES/INFLUENCES), and a gold-accented callout proving every edge cites a literal evidence_span from a specific chunk." width="100%" />
 </div>
 
 Click any node or edge in the web UI and you see its full provenance:
 
 <div align="center">
-  <img src="assets/evidence-panel.svg" alt="LoreGraph web UI mockup: a browser window showing the graph view on the left and a detail panel on the right. The panel displays the selected entity's canonical name, type chip, mention count, aliases, outgoing edges with evidence quotes, and GLUCOSE implicit facts — each marked verified by Pass-7." width="100%" />
+  <img src="assets/evidence-panel.svg" alt="LoreGraph web UI mockup: a browser window with the graph view on the left and a detail panel on the right. The panel displays the selected entity's canonical name, type chip, mention count, aliases, outgoing edges with evidence quotes, and GLUCOSE implicit facts. A gold chip at the bottom marks all claims as Pass-7 verified." width="100%" />
 </div>
 
 ---
 
-## 🔬 The 7-Pass pipeline
+## 🔬 The 7-pass pipeline
 
 <div align="center">
-  <img src="assets/7-pass-pipeline.svg" alt="Seven sequential passes: Chunk → Entity → Cluster → Coref → Relation → GLUCOSE → CoVe. Pass-7 is highlighted as the verification gate that requires ≥ 95% evidence-span literal match to pass." width="100%" />
+  <img src="assets/7-pass-pipeline.svg" alt="Seven sequential passes: Chunk → Entity → Cluster → Coref → Relation → GLUCOSE → CoVe. Pass-7 is highlighted in gold as the verification gate that requires ≥ 95% evidence-span literal match." width="100%" />
 </div>
 
 | Pass | Job | Key technique |
@@ -100,7 +114,7 @@ Click any node or edge in the web UI and you see its full provenance:
 ## 🧬 What's in the graph
 
 <div align="center">
-  <img src="assets/ontology.svg" alt="LoreGraph ontology overview: four entity-type cards (Agent / Object / Event / Concept) with example referents, five relation-class cards with use cases, and the GLUCOSE 10-dim implicit-fact schema (5 dimensions × 2 time aspects + inference_depth tag)." width="100%" />
+  <img src="assets/ontology.svg" alt="LoreGraph ontology overview: four entity-type cards (Agent circle / Object square / Event diamond / Concept hexagon) with examples; five relation-class cards each showing the line style that encodes the type; GLUCOSE 10-dim implicit-fact schema strip at the bottom (5 dimensions × 2 time aspects × inference depth)." width="100%" />
 </div>
 
 ---
@@ -108,36 +122,17 @@ Click any node or edge in the web UI and you see its full provenance:
 ## 🏗️ Architecture
 
 <div align="center">
-  <img src="assets/architecture.svg" alt="Five-layer architecture: Web UI (FastAPI + React + Cytoscape), CLI (Typer), Pipeline (7-Pass orchestrator), LLM (Anthropic SDK + prompt cache), Storage (SQLAlchemy 2.0 + Postgres + pgvector). One LLM gateway, one storage backend, evidence-grounded edges throughout." width="100%" />
+  <img src="assets/architecture.svg" alt="Five horizontal layer cards: Web UI (FastAPI + React + Cytoscape), CLI (Typer), Pipeline (7-Pass orchestrator), LLM (Anthropic SDK + prompt cache), Storage (SQLAlchemy 2.0 + Postgres + pgvector). One LLM gateway, one storage backend, evidence-grounded edges throughout." width="100%" />
 </div>
 
 Full design rationale, paper-by-paper mapping, and the WMG → LoreGraph ancestry are in [**`docs/architecture.md`**](docs/architecture.md).
 
 ---
 
-## 🛠️ Built with
-
-<p>
-  <img src="https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white" />
-  <img src="https://img.shields.io/badge/Anthropic-Sonnet_4.6-d97757?style=flat-square&logo=anthropic&logoColor=white" />
-  <img src="https://img.shields.io/badge/SQLAlchemy-2.0_async-d71f00?style=flat-square&logo=sqlalchemy&logoColor=white" />
-  <img src="https://img.shields.io/badge/PostgreSQL-17 + pgvector-336791?style=flat-square&logo=postgresql&logoColor=white" />
-  <img src="https://img.shields.io/badge/Alembic-1.13-blue?style=flat-square" />
-  <img src="https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white" />
-  <img src="https://img.shields.io/badge/Typer-12-ff69b4?style=flat-square" />
-  <img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black" />
-  <img src="https://img.shields.io/badge/Vite-6-646CFF?style=flat-square&logo=vite&logoColor=white" />
-  <img src="https://img.shields.io/badge/Cytoscape.js-3.30-F7DF1E?style=flat-square&logo=javascript&logoColor=black" />
-  <img src="https://img.shields.io/badge/Tailwind-3.4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" />
-  <img src="https://img.shields.io/badge/Ruff-0.15-FCC21B?style=flat-square&logo=ruff&logoColor=black" />
-</p>
-
----
-
 ## 🚢 Deploy your own demo
 
 <div align="center">
-  <img src="assets/deploy-flow.svg" alt="Deployment topology: Cloudflare Pages serves the React SPA, calling a Render web service running FastAPI + LoreGraph, which connects to a Neon serverless Postgres + pgvector. Final step: `gh repo edit --homepage` pins the live URL on the GitHub About card." width="100%" />
+  <img src="assets/deploy-flow.svg" alt="Deployment topology: Cloudflare Pages serves the React SPA, calling a Render web service running FastAPI + LoreGraph, which connects to a Neon serverless Postgres + pgvector. Final step: gh repo edit --homepage pins the live URL on the GitHub About card." width="100%" />
 </div>
 
 Three free-tier services + your Anthropic key get a shareable public demo in **~15 minutes**. Step-by-step walkthrough, including how to seed the demo with public-domain books: [**`docs/deployment.md`**](docs/deployment.md).
@@ -160,7 +155,7 @@ Three free-tier services + your Anthropic key get a shareable public demo in **~
 LoreGraph stands on four lines of prior work. Full BibTeX in [**`docs/references.bib`**](docs/references.bib).
 
 <details>
-<summary><strong>📚 Narrative NLP</strong> — BookNLP, LitBank, GLUCOSE, Literary Event Detection</summary>
+<summary><strong>Narrative NLP</strong> — BookNLP, LitBank, GLUCOSE, Literary Event Detection</summary>
 
 <br>
 
@@ -173,7 +168,7 @@ LoreGraph stands on four lines of prior work. Full BibTeX in [**`docs/references
 </details>
 
 <details>
-<summary><strong>🏛️ Industrial KG-RAG</strong> — GraphRAG, HippoRAG 2, LightRAG, Zep</summary>
+<summary><strong>Industrial KG-RAG</strong> — GraphRAG, HippoRAG 2, LightRAG, Zep</summary>
 
 <br>
 
@@ -185,7 +180,7 @@ LoreGraph stands on four lines of prior work. Full BibTeX in [**`docs/references
 </details>
 
 <details>
-<summary><strong>⚗️ LLM extraction & verification</strong> — GPT-NER, CoVe, BOOKCOREF</summary>
+<summary><strong>LLM extraction & verification</strong> — GPT-NER, CoVe, BOOKCOREF</summary>
 
 <br>
 
@@ -197,7 +192,7 @@ LoreGraph stands on four lines of prior work. Full BibTeX in [**`docs/references
 </details>
 
 <details>
-<summary><strong>🎭 Agent simulation</strong> — Generative Agents, SymbolicToM, FANToM, MCTS narrative (v0.4 roadmap)</summary>
+<summary><strong>Agent simulation</strong> — Generative Agents, SymbolicToM, FANToM, MCTS narrative (v0.4 roadmap)</summary>
 
 <br>
 
@@ -242,6 +237,6 @@ Apache 2.0 — see [`LICENSE`](LICENSE).
 
 <div align="center">
 
-<sub>Built by <a href="https://github.com/YunyueLi">@YunyueLi</a> · <i>make the graph cite its work.</i></sub>
+<sub>Built by <a href="https://github.com/YunyueLi">@YunyueLi</a> · <em>make the graph cite its work.</em></sub>
 
 </div>

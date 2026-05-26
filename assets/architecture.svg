@@ -1,77 +1,52 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 520" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, system-ui, sans-serif">
-  <defs>
-    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
-      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.08"/>
-    </filter>
-    <linearGradient id="bg" x1="0" x2="0" y1="0" y2="1">
-      <stop offset="0" stop-color="#f8fafc"/>
-      <stop offset="1" stop-color="#eef2f7"/>
-    </linearGradient>
-    <linearGradient id="g1" x1="0" x2="1" y1="0" y2="0">
-      <stop offset="0" stop-color="#dbeafe"/>
-      <stop offset="1" stop-color="#bfdbfe"/>
-    </linearGradient>
-    <linearGradient id="g2" x1="0" x2="1" y1="0" y2="0">
-      <stop offset="0" stop-color="#e0e7ff"/>
-      <stop offset="1" stop-color="#c7d2fe"/>
-    </linearGradient>
-    <linearGradient id="g3" x1="0" x2="1" y1="0" y2="0">
-      <stop offset="0" stop-color="#ede9fe"/>
-      <stop offset="1" stop-color="#ddd6fe"/>
-    </linearGradient>
-    <linearGradient id="g4" x1="0" x2="1" y1="0" y2="0">
-      <stop offset="0" stop-color="#fae8ff"/>
-      <stop offset="1" stop-color="#f5d0fe"/>
-    </linearGradient>
-    <linearGradient id="g5" x1="0" x2="1" y1="0" y2="0">
-      <stop offset="0" stop-color="#fce7f3"/>
-      <stop offset="1" stop-color="#fbcfe8"/>
-    </linearGradient>
-  </defs>
-
-  <rect width="960" height="520" fill="url(#bg)"/>
+  <rect width="960" height="520" fill="#f3ede0"/>
 
   <!-- Title -->
-  <text x="480" y="50" text-anchor="middle" font-size="22" font-weight="700" fill="#0f172a">Architecture</text>
-  <text x="480" y="74" text-anchor="middle" font-size="13" fill="#64748b">Five clean layers, one Anthropic-only LLM gateway, one Postgres+pgvector store.</text>
+  <text x="480" y="50" text-anchor="middle" font-size="22" font-weight="700" fill="#1a1a1a">Architecture</text>
+  <text x="480" y="74" text-anchor="middle" font-size="13" fill="#666666" font-style="italic">Five clean layers, one Anthropic-only LLM gateway, one Postgres + pgvector store.</text>
 
   <!-- Layer 1: Web UI -->
-  <g filter="url(#shadow)">
-    <rect x="80" y="110" width="800" height="64" rx="10" fill="url(#g1)" stroke="#93c5fd" stroke-width="1"/>
-    <text x="100" y="138" font-size="13" font-weight="600" fill="#0f172a" letter-spacing="1.5">WEB UI</text>
-    <text x="100" y="158" font-size="14" font-weight="500" fill="#1e3a8a">FastAPI · React · Cytoscape.js · Tailwind</text>
-    <text x="860" y="148" text-anchor="end" font-size="12" fill="#475569" font-style="italic">interactive graph + evidence panel</text>
+  <g>
+    <rect x="80" y="110" width="800" height="64" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.2"/>
+    <rect x="80" y="110" width="6" height="64" fill="#b8954a"/>
+    <text x="104" y="138" font-size="11" font-weight="700" fill="#8a6f37" letter-spacing="2">WEB UI</text>
+    <text x="104" y="158" font-size="14" font-weight="600" fill="#1a1a1a">FastAPI · React · Cytoscape.js · Tailwind</text>
+    <text x="860" y="148" text-anchor="end" font-size="12" fill="#666666" font-style="italic">interactive graph + evidence panel</text>
   </g>
 
   <!-- Layer 2: CLI -->
-  <g filter="url(#shadow)">
-    <rect x="80" y="190" width="800" height="64" rx="10" fill="url(#g2)" stroke="#a5b4fc" stroke-width="1"/>
-    <text x="100" y="218" font-size="13" font-weight="600" fill="#0f172a" letter-spacing="1.5">CLI</text>
-    <text x="100" y="238" font-size="14" font-weight="500" fill="#3730a3">Typer</text>
-    <text x="860" y="228" text-anchor="end" font-size="12" fill="#475569" font-family="ui-monospace, 'JetBrains Mono', monospace">loregraph ingest | extract | view | status</text>
+  <g>
+    <rect x="80" y="190" width="800" height="64" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.2"/>
+    <rect x="80" y="190" width="6" height="64" fill="#b8954a"/>
+    <text x="104" y="218" font-size="11" font-weight="700" fill="#8a6f37" letter-spacing="2">CLI</text>
+    <text x="104" y="238" font-size="14" font-weight="600" fill="#1a1a1a">Typer</text>
+    <text x="860" y="228" text-anchor="end" font-size="12" fill="#666666" font-family="ui-monospace, 'JetBrains Mono', monospace">loregraph ingest | extract | view | status</text>
   </g>
 
   <!-- Layer 3: Pipeline -->
-  <g filter="url(#shadow)">
-    <rect x="80" y="270" width="800" height="64" rx="10" fill="url(#g3)" stroke="#c4b5fd" stroke-width="1"/>
-    <text x="100" y="298" font-size="13" font-weight="600" fill="#0f172a" letter-spacing="1.5">PIPELINE</text>
-    <text x="100" y="318" font-size="14" font-weight="500" fill="#5b21b6">7-Pass orchestrator · per-pass dispatch · cost telemetry</text>
-    <text x="860" y="308" text-anchor="end" font-size="12" fill="#475569" font-style="italic">chunk → entity → cluster → coref → relation → glucose → verify</text>
+  <g>
+    <rect x="80" y="270" width="800" height="64" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.2"/>
+    <rect x="80" y="270" width="6" height="64" fill="#b8954a"/>
+    <text x="104" y="298" font-size="11" font-weight="700" fill="#8a6f37" letter-spacing="2">PIPELINE</text>
+    <text x="104" y="318" font-size="14" font-weight="600" fill="#1a1a1a">7-Pass orchestrator · per-pass dispatch · cost telemetry</text>
+    <text x="860" y="308" text-anchor="end" font-size="12" fill="#666666" font-style="italic">chunk → entity → cluster → coref → relation → glucose → verify</text>
   </g>
 
   <!-- Layer 4: LLM -->
-  <g filter="url(#shadow)">
-    <rect x="80" y="350" width="800" height="64" rx="10" fill="url(#g4)" stroke="#e9a4f5" stroke-width="1"/>
-    <text x="100" y="378" font-size="13" font-weight="600" fill="#0f172a" letter-spacing="1.5">LLM</text>
-    <text x="100" y="398" font-size="14" font-weight="500" fill="#86198f">Anthropic SDK · prompt cache · cost accounting</text>
-    <text x="860" y="388" text-anchor="end" font-size="12" fill="#475569" font-style="italic">single gateway · 80%+ cache discount</text>
+  <g>
+    <rect x="80" y="350" width="800" height="64" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.2"/>
+    <rect x="80" y="350" width="6" height="64" fill="#b8954a"/>
+    <text x="104" y="378" font-size="11" font-weight="700" fill="#8a6f37" letter-spacing="2">LLM</text>
+    <text x="104" y="398" font-size="14" font-weight="600" fill="#1a1a1a">Anthropic SDK · prompt cache · cost accounting</text>
+    <text x="860" y="388" text-anchor="end" font-size="12" fill="#666666" font-style="italic">single gateway · 80%+ cache discount</text>
   </g>
 
   <!-- Layer 5: Storage -->
-  <g filter="url(#shadow)">
-    <rect x="80" y="430" width="800" height="64" rx="10" fill="url(#g5)" stroke="#f9a8d4" stroke-width="1"/>
-    <text x="100" y="458" font-size="13" font-weight="600" fill="#0f172a" letter-spacing="1.5">STORAGE</text>
-    <text x="100" y="478" font-size="14" font-weight="500" fill="#9d174d">SQLAlchemy 2.0 async · PostgreSQL 17 + pgvector · Alembic</text>
-    <text x="860" y="468" text-anchor="end" font-size="12" fill="#475569" font-style="italic">canonical entities · 6 ENUM types · evidence-grounded edges</text>
+  <g>
+    <rect x="80" y="430" width="800" height="64" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.2"/>
+    <rect x="80" y="430" width="6" height="64" fill="#b8954a"/>
+    <text x="104" y="458" font-size="11" font-weight="700" fill="#8a6f37" letter-spacing="2">STORAGE</text>
+    <text x="104" y="478" font-size="14" font-weight="600" fill="#1a1a1a">SQLAlchemy 2.0 async · PostgreSQL 17 + pgvector · Alembic</text>
+    <text x="860" y="468" text-anchor="end" font-size="12" fill="#666666" font-style="italic">canonical entities · 6 ENUM types · evidence-grounded edges</text>
   </g>
 </svg>

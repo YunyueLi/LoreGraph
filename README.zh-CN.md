@@ -1,30 +1,44 @@
 <div align="center">
 
-<br>
-
-# 🕸️ LoreGraph
-
-### 从封闭世界的文学作品中抽取知识图谱<br>每一个节点、每一条边——都能追溯到原文的字面片段
+<img src="assets/hero-banner.svg" alt="LoreGraph hero——一排书页与漂浮的图谱节点，节点用细线连到书页上金色高亮的字段；上方 italic slogan：'every node cites the page it came from.'" width="100%" />
 
 <br>
 
-<p>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache_2.0-blue.svg?style=flat-square" alt="License" /></a>
-  <a href="pyproject.toml"><img src="https://img.shields.io/badge/python-3.11+-3776AB.svg?style=flat-square&logo=python&logoColor=white" alt="Python" /></a>
-  <a href="https://github.com/YunyueLi/LoreGraph/actions"><img src="https://img.shields.io/github/actions/workflow/status/YunyueLi/LoreGraph/ci.yml?branch=main&style=flat-square&label=CI" alt="CI" /></a>
-  <a href="https://github.com/YunyueLi/LoreGraph/stargazers"><img src="https://img.shields.io/github/stars/YunyueLi/LoreGraph?style=flat-square" alt="Stars" /></a>
-  <img src="https://img.shields.io/badge/status-alpha-orange.svg?style=flat-square" alt="Status" />
-</p>
+# LoreGraph
 
-\[ [English](README.md) · **简体中文** \]
+***让图谱替自己作证。***
 
-[快速开始](#-快速开始) · [能抽取出什么](#-能抽取出什么) · [工作原理](#-7-pass-流水线) · [部署](#-部署你自己的-demo) · [路线图](#-路线图) · [引用](#-学术基础)
+一条 7-Pass LLM 流水线，
+把一部小说、剧本或电影分镜本，
+变成每条主张都引用原文字面片段的可查询知识图谱。
+
+<br>
+
+[![Live demo](https://img.shields.io/badge/LIVE_DEMO-yunyueli.github.io%2Floregraph-b8954a?style=for-the-badge&labelColor=1a1a1a&logo=github&logoColor=b8954a)](https://github.com/YunyueLi/LoreGraph)
+[![Stars](https://img.shields.io/github/stars/YunyueLi/LoreGraph?style=for-the-badge&label=STARS&labelColor=1a1a1a&color=b8954a&logo=github&logoColor=b8954a)](https://github.com/YunyueLi/LoreGraph/stargazers)
+[![License](https://img.shields.io/badge/LICENSE-Apache_2.0-b8954a?style=for-the-badge&labelColor=1a1a1a)](LICENSE)
+[![Version](https://img.shields.io/badge/VERSION-0.1.0-b8954a?style=for-the-badge&labelColor=1a1a1a)](#-路线图)
+
+[![Passes](https://img.shields.io/badge/PASSES-7-b8954a?style=for-the-badge&labelColor=1a1a1a)](#-7-pass-流水线)
+[![Status](https://img.shields.io/badge/STATUS-ALPHA-b8954a?style=for-the-badge&labelColor=1a1a1a)](#-路线图)
+[![Python](https://img.shields.io/badge/PYTHON-3.11+-b8954a?style=for-the-badge&labelColor=1a1a1a)](pyproject.toml)
+
+<br>
+
+[**快速开始**](#-快速开始) · [**能抽取出什么**](#-能抽取出什么) · [**流水线**](#-7-pass-流水线) · [**部署**](#-部署你自己的-demo) · [**路线图**](#-路线图) · [**English**](README.md)
+
+<br>
+
+> *"书不是用来被相信的，*
+> *书是用来被审视的。"*
+>
+> **Umberto Eco**　·　*《玫瑰之名》*
 
 </div>
 
 ---
 
-## 为什么需要它
+## ✨ 为什么需要它
 
 主流的 **GraphRAG** 流水线为开放网络设计——遇到矛盾就加更多来源。**文学不一样。**
 
@@ -36,10 +50,10 @@
 
 |  |  |
 |---|---|
-| 📚 **叙事 NLP** | BookNLP · LitBank · GLUCOSE · 文学事件检测 |
-| 🏛️ **工业级 KG-RAG** | Microsoft GraphRAG · HippoRAG 2 · LightRAG · Zep |
-| ⚗️ **LLM 抽取** | GPT-NER · Chain-of-Verification · BOOKCOREF |
-| 🎭 **Agent 模拟** *(v0.4)* | Generative Agents · SymbolicToM · MCTS 叙事 |
+| **叙事 NLP** | BookNLP · LitBank · GLUCOSE · 文学事件检测 |
+| **工业级 KG-RAG** | Microsoft GraphRAG · HippoRAG 2 · LightRAG · Zep |
+| **LLM 抽取** | GPT-NER · Chain-of-Verification · BOOKCOREF |
+| **Agent 模拟** *(v0.4)* | Generative Agents · SymbolicToM · MCTS 叙事 |
 
 ——并以严格的 **证据片段字面匹配率 ≥ 95%** 作为防幻觉硬门控。
 
@@ -59,22 +73,22 @@ loregraph extract --book-id 1
 loregraph view --book-id 1                            # 浏览器打开 http://localhost:8000
 ```
 
-> **成本**：一篇短篇小说（约 6000 词）跑完 7-Pass 大约 **$0.20 – 1.00** 的 Anthropic 调用费（含 prompt cache 折扣）。
+> 一篇短篇小说（约 6000 词）跑完 7-Pass 大约 **$0.20 – 1.00** 的 Anthropic 调用费（含 prompt cache 折扣）。
 
 ---
 
-## ✨ 能抽取出什么
+## 📖 能抽取出什么
 
 `loregraph extract` 跑完后，数据库里就有完整的图谱——**每一条都带原文字面引用**：
 
 <div align="center">
-  <img src="assets/demo-graph.svg" alt="抽取后的图谱片段：含 4 类节点（Agent / Object / Event / Concept）、5 类关系（STRUCTURAL / INTERACTS / SYMBOLIZES / PREDICTS / INFLUENCES / CAUSES），底部 callout 证明每一条边都引用了原文的字面片段。" width="100%" />
+  <img src="assets/demo-graph.svg" alt="抽取后的图谱片段：含 4 种节点形状（圆/方/菱/六边形 对应 Agent/Object/Event/Concept）、5 类关系（STRUCTURAL / INTERACTS / SYMBOLIZES / PREDICTS / CAUSES / INFLUENCES），底部金色 accent callout 证明每条边都引用了原文字面片段。" width="100%" />
 </div>
 
 在 Web UI 里点任何节点或边，能看到完整的来源链：
 
 <div align="center">
-  <img src="assets/evidence-panel.svg" alt="LoreGraph Web UI 示意图：左侧为图谱视图，右侧为详情面板，显示选中实体的 canonical 名称、类型标签、提及次数、别名、出边及证据引文、GLUCOSE 隐式事实——每条都由 Pass-7 验证。" width="100%" />
+  <img src="assets/evidence-panel.svg" alt="LoreGraph Web UI 示意图：左侧图谱视图，右侧详情面板，显示选中实体的 canonical 名称、类型标签、提及次数、别名、出边及证据引文、GLUCOSE 隐式事实。底部金色 chip 标识全部由 Pass-7 验证。" width="100%" />
 </div>
 
 ---
@@ -82,7 +96,7 @@ loregraph view --book-id 1                            # 浏览器打开 http://l
 ## 🔬 7-Pass 流水线
 
 <div align="center">
-  <img src="assets/7-pass-pipeline.svg" alt="七个顺序 Pass：Chunk → Entity → Cluster → Coref → Relation → GLUCOSE → CoVe。Pass-7 作为验证门控被高亮，要求 evidence_span 字面匹配率 ≥ 95% 才能通过。" width="100%" />
+  <img src="assets/7-pass-pipeline.svg" alt="七个顺序 Pass：Chunk → Entity → Cluster → Coref → Relation → GLUCOSE → CoVe。Pass-7 用金色高亮，作为验证闸门，要求 evidence_span 字面匹配率 ≥ 95%。" width="100%" />
 </div>
 
 | Pass | 目标 | 关键技术 |
@@ -93,14 +107,14 @@ loregraph view --book-id 1                            # 浏览器打开 http://l
 | **4** 共指 | 提及 → canonical 绑定 | LingMess / LLM coref；代词级共指 v0.2 落地 |
 | **5** 关系+事件 | 5 类关系边 | 事件按 LitBank **realis-trigger** 严格定义；端点强制约束 |
 | **6** GLUCOSE | 10 维隐式信息 | `cause / emotion / location / possession / attribute` × `before / after` |
-| **7** CoVe | 验证门控 | Chain-of-Verification；**字面匹配率 ≥ 95%** 才能过关 |
+| **7** CoVe | 验证闸门 | Chain-of-Verification；**字面匹配率 ≥ 95%** 才能过关 |
 
 ---
 
 ## 🧬 图谱里有什么
 
 <div align="center">
-  <img src="assets/ontology.svg" alt="LoreGraph 本体总览：4 类节点卡片（Agent / Object / Event / Concept）+ 示例对象，5 类关系卡片 + 适用场景，以及 GLUCOSE 10 维隐式信息 schema（5 维度 × 2 时间向 + inference_depth 推理深度标签）。" width="100%" />
+  <img src="assets/ontology.svg" alt="LoreGraph 本体总览：4 类节点卡片（Agent 圆 / Object 方 / Event 菱 / Concept 六边形）+ 示例，5 类关系卡片用不同线型编码类型，底部 GLUCOSE 10 维隐式信息 schema 长条（5 维度 × 2 时间向 × inference depth）。" width="100%" />
 </div>
 
 ---
@@ -108,36 +122,17 @@ loregraph view --book-id 1                            # 浏览器打开 http://l
 ## 🏗️ 架构
 
 <div align="center">
-  <img src="assets/architecture.svg" alt="五层架构：Web UI（FastAPI + React + Cytoscape）、CLI（Typer）、Pipeline（7-Pass 协调器）、LLM（Anthropic SDK + prompt cache）、Storage（SQLAlchemy 2.0 + Postgres + pgvector）。单 LLM 出口，单存储后端，全链路证据接地。" width="100%" />
+  <img src="assets/architecture.svg" alt="五层水平堆叠：Web UI（FastAPI + React + Cytoscape）、CLI（Typer）、Pipeline（7-Pass 协调器）、LLM（Anthropic SDK + prompt cache）、Storage（SQLAlchemy 2.0 + Postgres + pgvector）。单 LLM 出口，单存储后端，全链路证据接地。" width="100%" />
 </div>
 
 完整设计原由 + 论文逐项映射 + WMG → LoreGraph 血缘：[**`docs/architecture.md`**](docs/architecture.md)。
 
 ---
 
-## 🛠️ 技术栈
-
-<p>
-  <img src="https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white" />
-  <img src="https://img.shields.io/badge/Anthropic-Sonnet_4.6-d97757?style=flat-square&logo=anthropic&logoColor=white" />
-  <img src="https://img.shields.io/badge/SQLAlchemy-2.0_async-d71f00?style=flat-square&logo=sqlalchemy&logoColor=white" />
-  <img src="https://img.shields.io/badge/PostgreSQL-17 + pgvector-336791?style=flat-square&logo=postgresql&logoColor=white" />
-  <img src="https://img.shields.io/badge/Alembic-1.13-blue?style=flat-square" />
-  <img src="https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white" />
-  <img src="https://img.shields.io/badge/Typer-12-ff69b4?style=flat-square" />
-  <img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black" />
-  <img src="https://img.shields.io/badge/Vite-6-646CFF?style=flat-square&logo=vite&logoColor=white" />
-  <img src="https://img.shields.io/badge/Cytoscape.js-3.30-F7DF1E?style=flat-square&logo=javascript&logoColor=black" />
-  <img src="https://img.shields.io/badge/Tailwind-3.4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" />
-  <img src="https://img.shields.io/badge/Ruff-0.15-FCC21B?style=flat-square&logo=ruff&logoColor=black" />
-</p>
-
----
-
 ## 🚢 部署你自己的 demo
 
 <div align="center">
-  <img src="assets/deploy-flow.svg" alt="部署拓扑：Cloudflare Pages 部署 React SPA，调用 Render Web 服务（FastAPI + LoreGraph），后者连接 Neon Serverless Postgres + pgvector。最后一步：`gh repo edit --homepage` 把上线 URL 挂到 GitHub About 卡片。" width="100%" />
+  <img src="assets/deploy-flow.svg" alt="部署拓扑：Cloudflare Pages 部署 React SPA，调用 Render Web 服务（FastAPI + LoreGraph），后者连接 Neon Serverless Postgres + pgvector。最后一步：gh repo edit --homepage 把上线 URL 挂到 GitHub About 卡片。" width="100%" />
 </div>
 
 > **国内访问提示**：Cloudflare 在国内有时延和稳定性问题，必要时可换成 Vercel / Netlify；Render 免费层 15 分钟空闲后会休眠，首次访问需 ~30s 唤醒。
@@ -162,7 +157,7 @@ loregraph view --book-id 1                            # 浏览器打开 http://l
 LoreGraph 站在四条线的工作之上。完整 BibTeX 在 [**`docs/references.bib`**](docs/references.bib)。
 
 <details>
-<summary><strong>📚 叙事 NLP</strong> — BookNLP / LitBank / GLUCOSE / 文学事件检测</summary>
+<summary><strong>叙事 NLP</strong> — BookNLP / LitBank / GLUCOSE / 文学事件检测</summary>
 
 <br>
 
@@ -175,19 +170,19 @@ LoreGraph 站在四条线的工作之上。完整 BibTeX 在 [**`docs/references
 </details>
 
 <details>
-<summary><strong>🏛️ 工业级 KG-RAG</strong> — GraphRAG / HippoRAG 2 / LightRAG / Zep</summary>
+<summary><strong>工业级 KG-RAG</strong> — GraphRAG / HippoRAG 2 / LightRAG / Zep</summary>
 
 <br>
 
 - Edge 等.《GraphRAG：从局部到全局的查询聚焦摘要》，arXiv:2404.16130，2024（**Microsoft GraphRAG**）
-- Gutiérrez 等.《HippoRAG 2：从 RAG 到记忆》，arXiv:2502.14802，2025
+- Gutiérrez 等.《HippoRAG 2:从 RAG 到记忆》，arXiv:2502.14802，2025
 - Guo 等.《LightRAG：简洁快速的检索增强生成》，arXiv:2410.05779，2024
 - Rasmussen 等.《Zep：用于 Agent 记忆的时序知识图谱架构》，arXiv:2501.13956，2025
 
 </details>
 
 <details>
-<summary><strong>⚗️ LLM 抽取与验证</strong> — GPT-NER / CoVe / BOOKCOREF</summary>
+<summary><strong>LLM 抽取与验证</strong> — GPT-NER / CoVe / BOOKCOREF</summary>
 
 <br>
 
@@ -199,7 +194,7 @@ LoreGraph 站在四条线的工作之上。完整 BibTeX 在 [**`docs/references
 </details>
 
 <details>
-<summary><strong>🎭 Agent 模拟</strong> — Generative Agents / SymbolicToM / FANToM / MCTS 叙事（v0.4 方向）</summary>
+<summary><strong>Agent 模拟</strong> — Generative Agents / SymbolicToM / FANToM / MCTS 叙事（v0.4 方向）</summary>
 
 <br>
 
@@ -244,6 +239,6 @@ Apache 2.0，详见 [`LICENSE`](LICENSE)。
 
 <div align="center">
 
-<sub>由 <a href="https://github.com/YunyueLi">@YunyueLi</a> 用心打磨 · <i>让图谱替自己作证。</i></sub>
+<sub>由 <a href="https://github.com/YunyueLi">@YunyueLi</a> 用心打磨 · <em>让图谱替自己作证。</em></sub>
 
 </div>

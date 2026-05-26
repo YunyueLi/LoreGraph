@@ -1,90 +1,76 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 340" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, system-ui, sans-serif">
   <defs>
-    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
-      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.10"/>
-    </filter>
-    <linearGradient id="bg" x1="0" x2="0" y1="0" y2="1">
-      <stop offset="0" stop-color="#f8fafc"/>
-      <stop offset="1" stop-color="#eef2f7"/>
-    </linearGradient>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-      <path d="M0,0 L10,5 L0,10 Z" fill="#94a3b8"/>
+      <path d="M0,0 L10,5 L0,10 Z" fill="#1a1a1a"/>
     </marker>
-    <linearGradient id="p1" x1="0" x2="1"><stop offset="0" stop-color="#dbeafe"/><stop offset="1" stop-color="#bfdbfe"/></linearGradient>
-    <linearGradient id="p2" x1="0" x2="1"><stop offset="0" stop-color="#c7d8ff"/><stop offset="1" stop-color="#a5b4fc"/></linearGradient>
-    <linearGradient id="p3" x1="0" x2="1"><stop offset="0" stop-color="#bfdbfe"/><stop offset="1" stop-color="#a5b4fc"/></linearGradient>
-    <linearGradient id="p4" x1="0" x2="1"><stop offset="0" stop-color="#a5b4fc"/><stop offset="1" stop-color="#c4b5fd"/></linearGradient>
-    <linearGradient id="p5" x1="0" x2="1"><stop offset="0" stop-color="#c4b5fd"/><stop offset="1" stop-color="#d8b4fe"/></linearGradient>
-    <linearGradient id="p6" x1="0" x2="1"><stop offset="0" stop-color="#d8b4fe"/><stop offset="1" stop-color="#f0abfc"/></linearGradient>
-    <linearGradient id="p7" x1="0" x2="1"><stop offset="0" stop-color="#fda4af"/><stop offset="1" stop-color="#fb7185"/></linearGradient>
   </defs>
 
-  <rect width="1280" height="340" fill="url(#bg)"/>
+  <rect width="1280" height="340" fill="#f3ede0"/>
 
   <!-- Title -->
-  <text x="640" y="44" text-anchor="middle" font-size="22" font-weight="700" fill="#0f172a">The 7-Pass Extraction Pipeline</text>
-  <text x="640" y="68" text-anchor="middle" font-size="13" fill="#64748b">From raw text to evidence-grounded knowledge graph in seven deterministic steps.</text>
+  <text x="640" y="44" text-anchor="middle" font-size="22" font-weight="700" fill="#1a1a1a">The 7-Pass Extraction Pipeline</text>
+  <text x="640" y="68" text-anchor="middle" font-size="13" fill="#666666" font-style="italic">From raw text to evidence-grounded knowledge graph in seven deterministic steps.</text>
 
-  <!-- Pipeline -->
-  <g filter="url(#shadow)">
+  <!-- Passes 1-6 (standard cards) -->
+  <g>
     <!-- Pass 1 -->
-    <rect x="40"  y="130" width="150" height="100" rx="14" fill="url(#p1)" stroke="#60a5fa" stroke-width="1"/>
-    <text x="115" y="160" text-anchor="middle" font-size="11" font-weight="700" fill="#1e3a8a" letter-spacing="1.2">PASS 1</text>
-    <text x="115" y="186" text-anchor="middle" font-size="16" font-weight="700" fill="#0f172a">Chunk</text>
-    <text x="115" y="208" text-anchor="middle" font-size="11" fill="#475569">600-1200 tok</text>
+    <rect x="40"  y="130" width="150" height="100" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.2"/>
+    <text x="115" y="158" text-anchor="middle" font-size="11" font-weight="700" fill="#8a6f37" letter-spacing="1.6">PASS 1</text>
+    <text x="115" y="186" text-anchor="middle" font-size="17" font-weight="700" fill="#1a1a1a">Chunk</text>
+    <text x="115" y="210" text-anchor="middle" font-size="11" fill="#666666" font-family="ui-monospace, monospace">600–1200 tok</text>
 
     <!-- Pass 2 -->
-    <rect x="215" y="130" width="150" height="100" rx="14" fill="url(#p2)" stroke="#6366f1" stroke-width="1"/>
-    <text x="290" y="160" text-anchor="middle" font-size="11" font-weight="700" fill="#312e81" letter-spacing="1.2">PASS 2</text>
-    <text x="290" y="186" text-anchor="middle" font-size="16" font-weight="700" fill="#0f172a">Entity</text>
-    <text x="290" y="208" text-anchor="middle" font-size="11" fill="#475569">4 types · gleaning</text>
+    <rect x="215" y="130" width="150" height="100" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.2"/>
+    <text x="290" y="158" text-anchor="middle" font-size="11" font-weight="700" fill="#8a6f37" letter-spacing="1.6">PASS 2</text>
+    <text x="290" y="186" text-anchor="middle" font-size="17" font-weight="700" fill="#1a1a1a">Entity</text>
+    <text x="290" y="210" text-anchor="middle" font-size="11" fill="#666666" font-family="ui-monospace, monospace">4 types · gleaning</text>
 
     <!-- Pass 3 -->
-    <rect x="390" y="130" width="150" height="100" rx="14" fill="url(#p3)" stroke="#818cf8" stroke-width="1"/>
-    <text x="465" y="160" text-anchor="middle" font-size="11" font-weight="700" fill="#312e81" letter-spacing="1.2">PASS 3</text>
-    <text x="465" y="186" text-anchor="middle" font-size="16" font-weight="700" fill="#0f172a">Cluster</text>
-    <text x="465" y="208" text-anchor="middle" font-size="11" fill="#475569">canonical IDs</text>
+    <rect x="390" y="130" width="150" height="100" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.2"/>
+    <text x="465" y="158" text-anchor="middle" font-size="11" font-weight="700" fill="#8a6f37" letter-spacing="1.6">PASS 3</text>
+    <text x="465" y="186" text-anchor="middle" font-size="17" font-weight="700" fill="#1a1a1a">Cluster</text>
+    <text x="465" y="210" text-anchor="middle" font-size="11" fill="#666666" font-family="ui-monospace, monospace">canonical IDs</text>
 
     <!-- Pass 4 -->
-    <rect x="565" y="130" width="150" height="100" rx="14" fill="url(#p4)" stroke="#a78bfa" stroke-width="1"/>
-    <text x="640" y="160" text-anchor="middle" font-size="11" font-weight="700" fill="#4c1d95" letter-spacing="1.2">PASS 4</text>
-    <text x="640" y="186" text-anchor="middle" font-size="16" font-weight="700" fill="#0f172a">Coref</text>
-    <text x="640" y="208" text-anchor="middle" font-size="11" fill="#475569">mention → entity</text>
+    <rect x="565" y="130" width="150" height="100" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.2"/>
+    <text x="640" y="158" text-anchor="middle" font-size="11" font-weight="700" fill="#8a6f37" letter-spacing="1.6">PASS 4</text>
+    <text x="640" y="186" text-anchor="middle" font-size="17" font-weight="700" fill="#1a1a1a">Coref</text>
+    <text x="640" y="210" text-anchor="middle" font-size="11" fill="#666666" font-family="ui-monospace, monospace">mention → entity</text>
 
     <!-- Pass 5 -->
-    <rect x="740" y="130" width="150" height="100" rx="14" fill="url(#p5)" stroke="#c084fc" stroke-width="1"/>
-    <text x="815" y="160" text-anchor="middle" font-size="11" font-weight="700" fill="#581c87" letter-spacing="1.2">PASS 5</text>
-    <text x="815" y="186" text-anchor="middle" font-size="16" font-weight="700" fill="#0f172a">Relation</text>
-    <text x="815" y="208" text-anchor="middle" font-size="11" fill="#475569">5 classes + events</text>
+    <rect x="740" y="130" width="150" height="100" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.2"/>
+    <text x="815" y="158" text-anchor="middle" font-size="11" font-weight="700" fill="#8a6f37" letter-spacing="1.6">PASS 5</text>
+    <text x="815" y="186" text-anchor="middle" font-size="17" font-weight="700" fill="#1a1a1a">Relation</text>
+    <text x="815" y="210" text-anchor="middle" font-size="11" fill="#666666" font-family="ui-monospace, monospace">5 classes + events</text>
 
     <!-- Pass 6 -->
-    <rect x="915" y="130" width="150" height="100" rx="14" fill="url(#p6)" stroke="#d946ef" stroke-width="1"/>
-    <text x="990" y="160" text-anchor="middle" font-size="11" font-weight="700" fill="#86198f" letter-spacing="1.2">PASS 6</text>
-    <text x="990" y="186" text-anchor="middle" font-size="16" font-weight="700" fill="#0f172a">GLUCOSE</text>
-    <text x="990" y="208" text-anchor="middle" font-size="11" fill="#475569">10-dim implicit</text>
+    <rect x="915" y="130" width="150" height="100" fill="#fdfbf6" stroke="#1a1a1a" stroke-width="1.2"/>
+    <text x="990" y="158" text-anchor="middle" font-size="11" font-weight="700" fill="#8a6f37" letter-spacing="1.6">PASS 6</text>
+    <text x="990" y="186" text-anchor="middle" font-size="17" font-weight="700" fill="#1a1a1a">GLUCOSE</text>
+    <text x="990" y="210" text-anchor="middle" font-size="11" fill="#666666" font-family="ui-monospace, monospace">10-dim implicit</text>
 
-    <!-- Pass 7 — highlighted as verification gate -->
-    <rect x="1090" y="120" width="150" height="120" rx="14" fill="url(#p7)" stroke="#e11d48" stroke-width="1.5"/>
-    <text x="1165" y="148" text-anchor="middle" font-size="11" font-weight="700" fill="#881337" letter-spacing="1.2">PASS 7 · GATE</text>
-    <text x="1165" y="176" text-anchor="middle" font-size="16" font-weight="700" fill="#0f172a">CoVe</text>
-    <text x="1165" y="198" text-anchor="middle" font-size="11" fill="#475569">verification</text>
-    <text x="1165" y="220" text-anchor="middle" font-size="11" font-weight="700" fill="#9f1239">≥ 95% match</text>
+    <!-- Pass 7 · the gate — GOLD FILL -->
+    <rect x="1090" y="118" width="150" height="124" fill="#b8954a" stroke="#1a1a1a" stroke-width="1.6"/>
+    <text x="1165" y="148" text-anchor="middle" font-size="11" font-weight="700" fill="#1a1a1a" letter-spacing="1.6">PASS 7 · GATE</text>
+    <text x="1165" y="178" text-anchor="middle" font-size="17" font-weight="700" fill="#1a1a1a">CoVe</text>
+    <text x="1165" y="200" text-anchor="middle" font-size="11" fill="#1a1a1a" font-family="ui-monospace, monospace">verification</text>
+    <text x="1165" y="224" text-anchor="middle" font-size="11" font-weight="700" fill="#1a1a1a">≥ 95% match</text>
   </g>
 
   <!-- Arrows between passes -->
-  <line x1="195" y1="180" x2="208" y2="180" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
-  <line x1="370" y1="180" x2="383" y2="180" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
-  <line x1="545" y1="180" x2="558" y2="180" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
-  <line x1="720" y1="180" x2="733" y2="180" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
-  <line x1="895" y1="180" x2="908" y2="180" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
-  <line x1="1070" y1="180" x2="1083" y2="180" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="195" y1="180" x2="208" y2="180" stroke="#1a1a1a" stroke-width="1.4" marker-end="url(#arrow)"/>
+  <line x1="370" y1="180" x2="383" y2="180" stroke="#1a1a1a" stroke-width="1.4" marker-end="url(#arrow)"/>
+  <line x1="545" y1="180" x2="558" y2="180" stroke="#1a1a1a" stroke-width="1.4" marker-end="url(#arrow)"/>
+  <line x1="720" y1="180" x2="733" y2="180" stroke="#1a1a1a" stroke-width="1.4" marker-end="url(#arrow)"/>
+  <line x1="895" y1="180" x2="908" y2="180" stroke="#1a1a1a" stroke-width="1.4" marker-end="url(#arrow)"/>
+  <line x1="1070" y1="180" x2="1083" y2="180" stroke="#1a1a1a" stroke-width="1.4" marker-end="url(#arrow)"/>
 
   <!-- Bottom annotation -->
-  <text x="640" y="290" text-anchor="middle" font-size="12" fill="#475569">
-    <tspan font-weight="600" fill="#0f172a">Evidence on every edge.</tspan>
+  <text x="640" y="290" text-anchor="middle" font-size="13" fill="#666666">
+    <tspan font-weight="700" fill="#1a1a1a">Evidence on every edge.</tspan>
     Every mention, edge, and implicit fact carries a literal substring of the source chunk.
   </text>
-  <text x="640" y="312" text-anchor="middle" font-size="11" fill="#94a3b8" font-style="italic">
+  <text x="640" y="312" text-anchor="middle" font-size="11" fill="#999999" font-style="italic">
     Pass-7 is the hallucination gate — if literal-match rate falls below 95%, the run is marked FAILED.
   </text>
 </svg>
