@@ -1,11 +1,12 @@
 #!/usr/bin/env node
-// Build the LoreGraph landing site into the gh-pages worktree (frontend/dist)
-// as a PRODUCTION bundle: JSX is precompiled (no in-browser Babel) and React is
-// loaded from its production CDN build. The editable source stays in ./landing
-// (which still runs via Babel-in-browser for quick local previews).
+// Build the LoreGraph landing site into frontend/dist as a PRODUCTION bundle:
+// JSX is precompiled (no in-browser Babel) and React is loaded from its
+// production CDN build. The editable source stays in ./landing (which still
+// runs via Babel-in-browser for quick local previews).
 //
+// To build AND publish to GitHub Pages in one step, run `npm run deploy` from
+// the frontend/ directory. This script only builds (into frontend/dist):
 //   node src/loregraph/web/build-landing.cjs
-//   cd src/loregraph/web/frontend/dist && git add -A && git commit -m "deploy: ..." && git push <remote> gh-pages
 //
 // Each source file is transformed and wrapped in its OWN IIFE, exactly mirroring
 // how Babel-standalone runs each <script type="text/babel"> in an isolated scope.
@@ -47,6 +48,7 @@ const HTML = `<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="description" content="LoreGraph — knowledge graphs from closed-world fiction, with evidence on every edge." />
 <title>LoreGraph</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%231a1714'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%23b8954a' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='3.5' fill='%23d1ac5e'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="${FONTS}" rel="stylesheet">

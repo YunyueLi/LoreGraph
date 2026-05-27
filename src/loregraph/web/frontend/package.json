@@ -9,6 +9,8 @@
     "dev:demo": "VITE_DEMO_MODE=1 vite",
     "build": "tsc --noEmit && vite build",
     "build:demo": "tsc --noEmit && VITE_DEMO_MODE=1 VITE_BASE=/LoreGraph/ vite build",
+    "build:landing": "node ../build-landing.cjs",
+    "deploy": "npm run build:landing && gh-pages -d dist -b gh-pages -t -m \"deploy: update landing page\"",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit"
   },
@@ -26,6 +28,7 @@
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
+    "gh-pages": "^6.3.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.16",
     "typescript": "^5.7.0",
