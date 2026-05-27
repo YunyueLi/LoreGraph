@@ -6,7 +6,9 @@
   "description": "React + Vite + Cytoscape frontend for LoreGraph.",
   "scripts": {
     "dev": "vite",
+    "dev:demo": "VITE_DEMO_MODE=1 vite",
     "build": "tsc --noEmit && vite build",
+    "build:demo": "tsc --noEmit && VITE_DEMO_MODE=1 VITE_BASE=/LoreGraph/ vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit"
   },
