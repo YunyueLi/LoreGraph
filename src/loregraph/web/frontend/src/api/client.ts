@@ -5,16 +5,13 @@ import type {
   EntityDetail,
   GraphResponse,
 } from "../types";
-import {
-  DEMO_BOOKS,
-  DEMO_GRAPH,
-  demoChunkDetail,
-  demoEntityDetail,
-} from "../demo/fixture";
+import { getBookFixture } from "../demo/books";
+import { useI18n } from "../i18n";
 
 // Demo mode (GitHub Pages landing page): when VITE_DEMO_MODE=1 the app
-// serves the bundled Pride-and-Prejudice fixture instead of hitting a
-// backend, so the whole UI is explorable with no server at all.
+// serves a bundled public-domain fixture (one classic per UI language)
+// instead of hitting a backend, so the whole UI is explorable with no
+// server at all.
 const DEMO: boolean = import.meta.env.VITE_DEMO_MODE === "1";
 
 // In dev: Vite proxies /api to localhost:8000.
@@ -34,39 +31,43 @@ async function fetchJson<T>(path: string): Promise<T> {
 }
 
 export function useBooks() {
+  const { locale } = useI18n();
   return useQuery<BookSummary[]>({
-    queryKey: ["books"],
+    queryKey: ["books", DEMO ? locale : "live"],
     queryFn: DEMO
-      ? async () => DEMO_BOOKS
+      ? async () => [getBookFixture(locale).book]
       : () => fetchJson<BookSummary[]>("/api/books"),
   });
 }
 
 export function useBookGraph(bookId: number | null) {
+  const { locale } = useI18n();
   return useQuery<GraphResponse>({
-    queryKey: ["book-graph", bookId],
+    queryKey: ["book-graph", DEMO ? locale : "live", bookId],
     queryFn: DEMO
-      ? async () => DEMO_GRAPH
+      ? async () => getBookFixture(locale).graph
       : () => fetchJson<GraphResponse>(`/api/books/${bookId}/graph`),
     enabled: bookId !== null,
   });
 }
 
 export function useEntityDetail(entityDbId: number | null) {
+  const { locale } = useI18n();
   return useQuery<EntityDetail>({
-    queryKey: ["entity", entityDbId],
+    queryKey: ["entity", DEMO ? locale : "live", entityDbId],
     queryFn: DEMO
-      ? async () => demoEntityDetail(entityDbId as number)
+      ? async () => getBookFixture(locale).entityDetail(entityDbId as number)
       : () => fetchJson<EntityDetail>(`/api/entities/${entityDbId}`),
     enabled: entityDbId !== null,
   });
 }
 
 export function useChunkDetail(chunkId: number | null) {
+  const { locale } = useI18n();
   return useQuery<ChunkDetail>({
-    queryKey: ["chunk", chunkId],
+    queryKey: ["chunk", DEMO ? locale : "live", chunkId],
     queryFn: DEMO
-      ? async () => demoChunkDetail(chunkId as number)
+      ? async () => getBookFixture(locale).chunkDetail(chunkId as number)
       : () => fetchJson<ChunkDetail>(`/api/chunks/${chunkId}`),
     enabled: chunkId !== null,
   });

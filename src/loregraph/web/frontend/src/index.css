@@ -3,10 +3,33 @@
 @tailwind utilities;
 
 /* ════════════════════════════════════════════════════════════════════
-   LoreGraph design tokens (in lock-step with the README figures):
-   #ffffff paper · #1a1a1a ink · #b8954a gold · #fafafa surface ·
-   #666 muted · #999 whisper · #e8e8e8 soft · #cfcfcf ghost.
+   Design tokens as CSS variables. Light is the README figure palette;
+   .dark is a warm near-black (mighta-style) with brighter gold.
    ════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --paper: #ffffff;
+  --surface: #fafafa;
+  --ink: #1a1a1a;
+  --ink-muted: #666666;
+  --ink-whisper: #999999;
+  --ink-soft: #e8e8e8;
+  --ink-ghost: #cfcfcf;
+  --gold: #b8954a;
+  --gold-deep: #8a6f37;
+}
+
+.dark {
+  --paper: #0e0e0d;
+  --surface: #1a1a17;
+  --ink: #f0ebe0;
+  --ink-muted: #a39e92;
+  --ink-whisper: #6b6b63;
+  --ink-soft: #2a2a26;
+  --ink-ghost: #3a3a34;
+  --gold: #d4af6a;
+  --gold-deep: #c9a25c;
+}
 
 @layer base {
   html,
@@ -16,20 +39,20 @@
     margin: 0;
   }
   body {
-    background: #ffffff;
-    color: #1a1a1a;
+    background: var(--paper);
+    color: var(--ink);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-feature-settings: "ss01", "cv11", "cv02";
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
   ::selection {
-    background: #b8954a;
-    color: #ffffff;
+    background: var(--gold);
+    color: var(--paper);
   }
 }
 
 @layer components {
-  /* ── Chips · neutral by default; gold reserved for true emphasis ── */
   .chip {
     @apply inline-flex items-center px-2 py-0.5 text-[10px] font-bold uppercase tracking-caps;
   }
@@ -37,26 +60,24 @@
     @apply chip bg-surface border border-ink-soft text-ink;
   }
   .chip-gold {
-    @apply chip bg-gold text-ink;
+    @apply chip bg-gold text-paper;
   }
   .chip-relation {
     @apply inline-flex items-center px-2 py-0.5 text-[10px] font-bold font-mono uppercase tracking-wider bg-surface border border-ink-soft text-ink;
   }
 
-  /* ── Section header pattern (small caps + gold underline) ── */
   .section-label {
     @apply text-[10px] font-bold uppercase tracking-caps text-gold-deep;
   }
   .section-rule {
     height: 1px;
-    background: #b8954a;
+    background: var(--gold);
     @apply mb-3 mt-1;
   }
   .section {
     @apply mb-6 last:mb-0;
   }
 
-  /* ── Literary quote (Fraunces italic) ── */
   .quote {
     @apply font-serif italic text-ink-muted leading-relaxed;
   }
@@ -69,11 +90,9 @@
     @apply font-serif italic text-gold text-lg leading-none align-middle ml-1;
   }
 
-  /* ── Card / panel surfaces ── */
-  .card {
-    @apply bg-surface border border-ink-soft;
-  }
-  .hairline {
-    @apply border-ink-soft;
+  /* Hero handwritten emphasis word (Caveat, gold, hand-underlined) */
+  .hand-emphasis {
+    @apply font-hand text-gold;
+    font-weight: 700;
   }
 }

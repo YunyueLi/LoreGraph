@@ -1,62 +1,52 @@
-import { BookSummary } from "../types";
+import { useI18n } from "../i18n";
+import LanguageMenu from "./LanguageMenu";
+import ThemeToggle from "./ThemeToggle";
 
 interface HeaderProps {
-  books: BookSummary[];
-  selectedBookId: number | null;
-  onSelectBook: (id: number) => void;
+  dark: boolean;
+  onToggleTheme: () => void;
+  onNavGraph: () => void;
 }
 
-export default function Header({ books, selectedBookId, onSelectBook }: HeaderProps) {
+// Fixed top navigation, mighta-style: wordmark left; nav link + language
+// menu + theme toggle + GitHub right. Transparent over the hero, with a
+// hairline bottom border.
+export default function Header({ dark, onToggleTheme, onNavGraph }: HeaderProps) {
+  const { t } = useI18n();
+
   return (
-    <header className="px-8 py-5 bg-paper border-b border-ink-soft">
-      <div className="flex items-end justify-between gap-8 flex-wrap">
-        {/* Wordmark + italic tagline · mighta-style */}
-        <div className="flex items-baseline gap-5">
-          <span className="text-title font-bold tracking-tight text-ink">LoreGraph</span>
-          <span className="font-serif italic text-body text-ink-muted hidden sm:inline">
-            knowledge graphs that quote the page they came from.
-          </span>
-        </div>
+    <header className="fixed top-0 inset-x-0 z-40 bg-paper/85 backdrop-blur border-b border-ink-soft">
+      <div className="flex items-center justify-between px-6 py-3">
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="font-serif italic text-large font-semibold text-ink tracking-tight"
+        >
+          LoreGraph
+        </button>
 
-        <div className="flex items-end gap-8">
-          {/* Book selector */}
-          {books.length > 0 && (
-            <label className="flex items-end gap-3">
-              <span className="section-label">Book</span>
-              <select
-                value={selectedBookId ?? ""}
-                onChange={(e) => onSelectBook(Number(e.target.value))}
-                className="bg-paper text-body text-ink border-b border-ink hover:border-gold focus:border-gold focus:outline-none px-1 py-1 pr-6 font-medium cursor-pointer"
-                style={{
-                  backgroundImage:
-                    "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M0 0 L5 6 L10 0' fill='none' stroke='%231a1a1a' stroke-width='1.2'/></svg>\")",
-                  backgroundRepeat: "no-repeat",
-                  backgroundPosition: "right 4px center",
-                  appearance: "none",
-                  WebkitAppearance: "none",
-                }}
-              >
-                {selectedBookId === null && <option value="">— choose —</option>}
-                {books.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.title}
-                    {b.author && ` · ${b.author}`}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-
-          {/* GitHub link */}
+        <nav className="flex items-center gap-5">
+          <button
+            onClick={onNavGraph}
+            className="text-tiny font-bold uppercase tracking-caps text-ink-muted hover:text-ink transition-colors hidden sm:inline"
+          >
+            {t.navGraph}
+          </button>
+          <span className="text-ink-soft hidden sm:inline">·</span>
+          <LanguageMenu />
+          <ThemeToggle dark={dark} onToggle={onToggleTheme} />
           <a
             href="https://github.com/YunyueLi/LoreGraph"
             target="_blank"
             rel="noreferrer"
-            className="section-label hover:text-ink transition-colors"
+            className="p-1.5 text-ink-muted hover:text-ink transition-colors"
+            aria-label="GitHub"
+            title="GitHub"
           >
-            GitHub  →
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.7 1.3 3.4 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z" />
+            </svg>
           </a>
-        </div>
+        </nav>
       </div>
     </header>
   );

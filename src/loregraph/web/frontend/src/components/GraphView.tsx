@@ -5,25 +5,13 @@ import coseBilkent from "cytoscape-cose-bilkent";
 import type { GraphResponse } from "../types";
 
 if (
-  !(cytoscape as unknown as { _coseBilkentRegistered?: boolean })
-    ._coseBilkentRegistered
+  !(cytoscape as unknown as { _coseBilkentRegistered?: boolean })._coseBilkentRegistered
 ) {
   cytoscape.use(coseBilkent);
   (cytoscape as unknown as { _coseBilkentRegistered?: boolean })._coseBilkentRegistered = true;
 }
 
-// ────────────────────────────────────────────────────────────────────
-// Shape encodes ontological type. Color stays uniform (ink on paper)
-// except for the gold PREDICTS edge and selected highlights. Matches
-// the README/SVG figure language exactly.
-// ────────────────────────────────────────────────────────────────────
-
-type NodeShape =
-  | "ellipse"
-  | "round-rectangle"
-  | "diamond"
-  | "hexagon"
-  | "rectangle";
+type NodeShape = "ellipse" | "round-rectangle" | "diamond" | "hexagon" | "rectangle";
 
 const ENTITY_SHAPES: Record<string, NodeShape> = {
   Agent: "ellipse",
@@ -34,16 +22,41 @@ const ENTITY_SHAPES: Record<string, NodeShape> = {
 
 interface GraphViewProps {
   data: GraphResponse;
+  dark: boolean;
   onSelectNode: (dbId: number) => void;
   onSelectEdge: (chunkId: number, edgeDbId: number) => void;
 }
 
-export default function GraphView({ data, onSelectNode, onSelectEdge }: GraphViewProps) {
+export default function GraphView({ data, dark, onSelectNode, onSelectEdge }: GraphViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<Core | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
+
+    const C = dark
+      ? {
+          nodeFill: "#1a1a17",
+          nodeBorder: "#f0ebe0",
+          nodeSelFill: "#0e0e0d",
+          text: "#f0ebe0",
+          outline: "#0e0e0d",
+          edge: "#8f8a7e",
+          gold: "#d4af6a",
+          goldText: "#d4af6a",
+          label: "#a39e92",
+        }
+      : {
+          nodeFill: "#fafafa",
+          nodeBorder: "#1a1a1a",
+          nodeSelFill: "#ffffff",
+          text: "#1a1a1a",
+          outline: "#ffffff",
+          edge: "#1a1a1a",
+          gold: "#b8954a",
+          goldText: "#8a6f37",
+          label: "#666666",
+        };
 
     const elements = [
       ...data.nodes.map((n) => ({
@@ -74,23 +87,22 @@ export default function GraphView({ data, onSelectNode, onSelectEdge }: GraphVie
       container: containerRef.current,
       elements,
       style: [
-        // ── nodes · shape encodes type, fill stays neutral ──
         {
           selector: "node",
           style: {
             label: "data(label)",
             shape: ((ele: cytoscape.NodeSingular) =>
               ENTITY_SHAPES[ele.data("type") as string] ?? "ellipse") as unknown as NodeShape,
-            "background-color": "#fafafa",
-            "border-color": "#1a1a1a",
+            "background-color": C.nodeFill,
+            "border-color": C.nodeBorder,
             "border-width": 1.5,
-            color: "#1a1a1a",
+            color: C.text,
             "text-valign": "bottom",
             "text-margin-y": 6,
             "font-size": "11px",
             "font-family": "Inter, system-ui, sans-serif",
             "font-weight": 500,
-            "text-outline-color": "#ffffff",
+            "text-outline-color": C.outline,
             "text-outline-width": 2,
             width: (ele: cytoscape.NodeSingular) =>
               Math.min(64, 18 + Math.sqrt((ele.data("mentionCount") as number) ?? 1) * 4),
@@ -101,18 +113,16 @@ export default function GraphView({ data, onSelectNode, onSelectEdge }: GraphVie
         {
           selector: "node:selected",
           style: {
-            "border-color": "#b8954a",
+            "border-color": C.gold,
             "border-width": 3,
-            "background-color": "#ffffff",
+            "background-color": C.nodeSelFill,
           },
         },
-
-        // ── edges · base style (overridden below per relation) ──
         {
           selector: "edge",
           style: {
-            "line-color": "#1a1a1a",
-            "target-arrow-color": "#1a1a1a",
+            "line-color": C.edge,
+            "target-arrow-color": C.edge,
             "target-arrow-shape": "triangle",
             "curve-style": "bezier",
             "arrow-scale": 0.9,
@@ -122,16 +132,14 @@ export default function GraphView({ data, onSelectNode, onSelectEdge }: GraphVie
             "font-size": "9px",
             "font-family": "JetBrains Mono, monospace",
             "font-weight": 600,
-            color: "#666666",
+            color: C.label,
             "text-rotation": "autorotate",
-            "text-background-color": "#ffffff",
+            "text-background-color": dark ? "#0e0e0d" : "#ffffff",
             "text-background-opacity": 1,
             "text-background-padding": "2",
             "text-margin-y": -2,
           },
         },
-
-        // ── per-relation styling · line weight + dash pattern encodes type ──
         { selector: 'edge[relation = "STRUCTURAL"]', style: { width: 1.2 } },
         { selector: 'edge[relation = "INTERACTS"]', style: { width: 2.4 } },
         {
@@ -145,24 +153,23 @@ export default function GraphView({ data, onSelectNode, onSelectEdge }: GraphVie
         {
           selector: 'edge[relation = "PREDICTS"]',
           style: {
-            "line-color": "#b8954a",
-            "target-arrow-color": "#b8954a",
-            color: "#8a6f37",
+            "line-color": C.gold,
+            "target-arrow-color": C.gold,
+            color: C.goldText,
             "line-style": "dashed",
             "line-dash-pattern": [6, 3],
             width: 1.8,
             opacity: 1,
           },
         },
-
         {
           selector: "edge:selected",
           style: {
-            "line-color": "#b8954a",
-            "target-arrow-color": "#b8954a",
+            "line-color": C.gold,
+            "target-arrow-color": C.gold,
             width: 3,
             opacity: 1,
-            color: "#8a6f37",
+            color: C.goldText,
           },
         },
       ],
@@ -179,22 +186,18 @@ export default function GraphView({ data, onSelectNode, onSelectEdge }: GraphVie
     });
 
     cy.on("tap", "node", (e: EventObjectNode) => {
-      const dbId = e.target.data("dbId") as number;
-      onSelectNode(dbId);
+      onSelectNode(e.target.data("dbId") as number);
     });
     cy.on("tap", "edge", (e: EventObjectEdge) => {
-      const dbId = e.target.data("dbId") as number;
-      const chunkId = e.target.data("chunkId") as number;
-      onSelectEdge(chunkId, dbId);
+      onSelectEdge(e.target.data("chunkId") as number, e.target.data("dbId") as number);
     });
 
     cyRef.current = cy;
-
     return () => {
       cy.destroy();
       cyRef.current = null;
     };
-  }, [data, onSelectNode, onSelectEdge]);
+  }, [data, dark, onSelectNode, onSelectEdge]);
 
   return <div ref={containerRef} className="w-full h-full bg-paper" />;
 }
