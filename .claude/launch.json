@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "loregraph-demo",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "src/loregraph/web/frontend", "run", "dev:demo"],
+      "port": 5173
+    }
+  ]
+}
