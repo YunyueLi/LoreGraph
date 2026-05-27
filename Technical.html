@@ -1,0 +1,2049 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LoreGraph — 让图谱替自己作证</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --ink-soft: #2a2724;
+    --ink-line: #3a342c;
+    --paper: #f5efe2;
+    --paper-deep: #ece4cf;
+    --paper-line: #d9cfb3;
+    --gold: #b8954a;
+    --gold-bright: #d1ac5e;
+    --gold-deep: #8a6e36;
+    --rust: #a04a2a;
+    --moss: #5a6a3f;
+    --paper-text: #1f1c17;
+    --ink-text: #f0e8d4;
+    --ink-text-mute: #a89c80;
+    --paper-text-mute: #6b6253;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--paper);
+    color: var(--paper-text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  .serif { font-family: 'Spectral', 'Songti SC', serif; }
+  .mono { font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace; }
+
+  /* ============ NAV ============ */
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: 64px; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 48px;
+    background: rgba(26, 26, 26, 0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(184, 149, 74, 0.2);
+    color: var(--ink-text);
+  }
+  .nav-brand {
+    display: flex; align-items: center; gap: 12px;
+    font-family: 'Spectral', serif;
+    font-size: 18px; font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+  .nav-mark {
+    width: 26px; height: 26px;
+    display: grid; place-items: center;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    font-family: 'Spectral', serif;
+    font-style: italic;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .nav-links {
+    display: flex; gap: 28px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--ink-text-mute);
+  }
+  .nav-links a {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--gold); }
+  .nav-cta {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--gold);
+    border: 1px solid var(--gold);
+    padding: 8px 16px;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .nav-cta:hover { background: var(--gold); color: var(--ink); }
+
+  /* ============ COMMON ============ */
+  section {
+    padding: 120px 48px;
+    position: relative;
+  }
+  .container { max-width: 1280px; margin: 0 auto; }
+  .container-narrow { max-width: 880px; margin: 0 auto; }
+
+  .ink { background: var(--ink); color: var(--ink-text); }
+  .paper { background: var(--paper); color: var(--paper-text); }
+  .paper-deep { background: var(--paper-deep); color: var(--paper-text); }
+
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.24em;
+    color: var(--gold);
+    margin-bottom: 24px;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .eyebrow::before {
+    content: "";
+    width: 24px; height: 1px;
+    background: var(--gold);
+  }
+
+  h1, h2, h3 {
+    font-family: 'Spectral', serif;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+
+  /* ============ HERO ============ */
+  .hero {
+    min-height: 100vh;
+    background: var(--ink);
+    color: var(--ink-text);
+    padding: 160px 48px 100px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 80px;
+    max-width: 1280px;
+    margin: 0 auto;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+  }
+  .hero-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 40px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .hero-eyebrow::before {
+    content: ""; width: 36px; height: 1px; background: var(--gold);
+  }
+  .hero-title {
+    font-family: 'Spectral', serif;
+    font-size: 92px;
+    line-height: 0.98;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    margin-bottom: 36px;
+    color: #f7eed8;
+  }
+  .hero-title em {
+    font-style: italic;
+    color: var(--gold);
+    font-weight: 400;
+  }
+  .hero-slogan {
+    font-family: 'Spectral', serif;
+    font-style: italic;
+    font-size: 22px;
+    color: var(--ink-text-mute);
+    line-height: 1.5;
+    margin-bottom: 48px;
+    max-width: 540px;
+  }
+  .hero-slogan span {
+    color: var(--gold-bright);
+    font-style: normal;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    letter-spacing: 0.04em;
+    display: block;
+    margin-top: 8px;
+  }
+  .hero-cta-row {
+    display: flex; gap: 16px; align-items: center;
+    margin-bottom: 64px;
+  }
+  .btn-primary {
+    background: var(--gold);
+    color: var(--ink);
+    padding: 16px 28px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    text-decoration: none;
+    border: 1px solid var(--gold);
+    transition: all 0.2s;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .btn-primary:hover { background: var(--gold-bright); border-color: var(--gold-bright); }
+  .btn-ghost {
+    color: var(--ink-text);
+    padding: 16px 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    text-decoration: none;
+    border: 1px solid var(--ink-line);
+    transition: all 0.2s;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .btn-ghost:hover { border-color: var(--gold); color: var(--gold); }
+
+  .hero-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 32px;
+    padding-top: 32px;
+    border-top: 1px solid var(--ink-line);
+  }
+  .hero-stat-num {
+    font-family: 'Spectral', serif;
+    font-size: 40px;
+    color: var(--gold);
+    font-weight: 300;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .hero-stat-num small {
+    font-size: 18px;
+    color: var(--ink-text-mute);
+    margin-left: 4px;
+  }
+  .hero-stat-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-text-mute);
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+  }
+
+  /* hero right — node demo */
+  .hero-visual {
+    position: relative;
+    height: 520px;
+  }
+  .hero-card {
+    position: absolute;
+    background: var(--ink-soft);
+    border: 1px solid var(--ink-line);
+    padding: 18px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-text);
+    line-height: 1.5;
+    box-shadow: 0 24px 60px -20px rgba(0,0,0,0.5);
+  }
+  .hero-card .hc-tag {
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 9px;
+    margin-bottom: 8px;
+    display: block;
+  }
+  .hero-card .hc-claim {
+    font-family: 'Spectral', serif;
+    font-style: italic;
+    font-size: 15px;
+    color: #efe5cb;
+    margin-bottom: 12px;
+    line-height: 1.4;
+  }
+  .hero-card .hc-quote {
+    border-left: 2px solid var(--gold);
+    padding: 6px 0 6px 12px;
+    color: var(--ink-text-mute);
+    font-size: 10.5px;
+    line-height: 1.55;
+  }
+  .hero-card .hc-meta {
+    margin-top: 10px;
+    display: flex; gap: 12px;
+    color: var(--ink-text-mute);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+  }
+  .hero-card .hc-meta span:first-child::before { content: "▸ "; color: var(--gold); }
+
+  .hc-1 { top: 0; left: 0; width: 310px; }
+  .hc-2 { top: 200px; right: 0; width: 320px; }
+  .hc-3 { bottom: 0; left: 40px; width: 290px; }
+
+  .hero-bg-lines {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.5;
+  }
+
+  /* ============ SECTION: epigraph ============ */
+  .epigraph {
+    background: var(--paper);
+    padding: 100px 48px;
+    text-align: center;
+  }
+  .epigraph-rule {
+    width: 1px; height: 64px;
+    background: var(--paper-line);
+    margin: 0 auto 40px;
+  }
+  .epigraph blockquote {
+    font-family: 'Spectral', serif;
+    font-style: italic;
+    font-size: 36px;
+    line-height: 1.4;
+    color: var(--paper-text);
+    max-width: 720px;
+    margin: 0 auto 24px;
+    font-weight: 300;
+  }
+  .epigraph cite {
+    font-style: normal;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--gold-deep);
+  }
+  .epigraph cite span {
+    font-family: 'Spectral', serif;
+    font-style: italic;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--paper-text-mute);
+    font-size: 13px;
+    display: block;
+    margin-top: 6px;
+  }
+
+  /* ============ SECTION: why ============ */
+  .why {
+    background: var(--paper);
+    color: var(--paper-text);
+  }
+  .why-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 100px;
+    align-items: start;
+  }
+  .why-title {
+    font-size: 56px;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    color: var(--paper-text);
+  }
+  .why-title em {
+    font-style: italic;
+    color: var(--gold-deep);
+  }
+  .why-body p {
+    font-size: 17px;
+    line-height: 1.7;
+    margin-bottom: 20px;
+    color: var(--paper-text);
+  }
+  .why-body p.lead {
+    font-family: 'Spectral', serif;
+    font-size: 22px;
+    line-height: 1.5;
+    color: var(--paper-text);
+    margin-bottom: 28px;
+  }
+  .why-body strong {
+    background: linear-gradient(transparent 65%, rgba(184,149,74,0.35) 65%);
+    font-weight: 500;
+  }
+  .why-pillars {
+    margin-top: 56px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    border-top: 1px solid var(--paper-line);
+    padding-top: 40px;
+  }
+  .pillar-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--gold-deep);
+    letter-spacing: 0.2em;
+    margin-bottom: 12px;
+  }
+  .pillar-title {
+    font-family: 'Spectral', serif;
+    font-size: 17px;
+    margin-bottom: 8px;
+    line-height: 1.3;
+  }
+  .pillar-desc {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--paper-text-mute);
+  }
+
+  /* ============ SECTION: ontology ============ */
+  .ontology {
+    background: var(--ink);
+    color: var(--ink-text);
+  }
+  .ontology-header {
+    text-align: center;
+    margin-bottom: 72px;
+  }
+  .ontology-title {
+    font-size: 56px;
+    line-height: 1.05;
+    margin-bottom: 16px;
+    color: #f0e6d0;
+  }
+  .ontology-sub {
+    font-family: 'Spectral', serif;
+    font-style: italic;
+    color: var(--ink-text-mute);
+    font-size: 18px;
+  }
+  .nodes-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    margin-bottom: 80px;
+  }
+  .node-card {
+    background: var(--ink-soft);
+    border: 1px solid var(--ink-line);
+    padding: 36px 28px;
+    position: relative;
+    transition: all 0.3s;
+  }
+  .node-card:hover {
+    border-color: var(--gold);
+    transform: translateY(-2px);
+  }
+  .node-card-shape {
+    height: 80px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 24px;
+  }
+  .shape-circle {
+    width: 64px; height: 64px;
+    border: 1.5px solid var(--gold);
+    border-radius: 50%;
+    background: rgba(184,149,74,0.08);
+  }
+  .shape-square {
+    width: 60px; height: 60px;
+    border: 1.5px solid var(--gold);
+    background: rgba(184,149,74,0.08);
+  }
+  .shape-diamond {
+    width: 56px; height: 56px;
+    border: 1.5px solid var(--gold);
+    background: rgba(184,149,74,0.08);
+    transform: rotate(45deg);
+  }
+  .shape-hex {
+    width: 64px; height: 36px;
+    background: rgba(184,149,74,0.08);
+    border: 1.5px solid var(--gold);
+    position: relative;
+  }
+  .shape-hex::before, .shape-hex::after {
+    content: "";
+    position: absolute;
+    width: 0; height: 0;
+    border-left: 33px solid transparent;
+    border-right: 33px solid transparent;
+  }
+  /* simpler hex via clip-path */
+  .shape-hex {
+    width: 64px; height: 72px;
+    background: rgba(184,149,74,0.08);
+    border: none;
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    position: relative;
+  }
+  .shape-hex::before, .shape-hex::after { display: none; }
+  .shape-hex-inner {
+    position: absolute;
+    inset: 1.5px;
+    background: var(--ink-soft);
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  }
+  .shape-hex {
+    background: var(--gold);
+  }
+  .node-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 10px;
+  }
+  .node-name {
+    font-family: 'Spectral', serif;
+    font-size: 26px;
+    margin-bottom: 6px;
+    color: #f0e6d0;
+  }
+  .node-zh {
+    font-family: 'Spectral', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--ink-text-mute);
+    margin-bottom: 20px;
+  }
+  .node-desc {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--ink-text-mute);
+    margin-bottom: 20px;
+  }
+  .node-examples {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    color: var(--ink-text);
+    padding-top: 16px;
+    border-top: 1px solid var(--ink-line);
+    line-height: 1.7;
+  }
+  .node-examples span {
+    color: var(--gold-deep);
+  }
+
+  /* edges */
+  .edges-section {
+    border-top: 1px solid var(--ink-line);
+    padding-top: 60px;
+  }
+  .edges-header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  .edges-header h3 {
+    font-size: 32px;
+    color: #f0e6d0;
+    margin-bottom: 8px;
+  }
+  .edges-header p {
+    font-family: 'Spectral', serif;
+    font-style: italic;
+    color: var(--ink-text-mute);
+    font-size: 15px;
+  }
+  .edges-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+  }
+  .edge-card {
+    border: 1px solid var(--ink-line);
+    padding: 24px 18px;
+    text-align: center;
+    transition: all 0.3s;
+  }
+  .edge-card:hover { border-color: var(--gold); }
+  .edge-viz {
+    height: 60px;
+    margin-bottom: 16px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .edge-viz svg {
+    width: 100%; height: 100%;
+  }
+  .edge-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+  .edge-zh {
+    font-family: 'Spectral', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--ink-text-mute);
+  }
+
+  /* ============ SECTION: pipeline ============ */
+  .pipeline {
+    background: var(--paper);
+    color: var(--paper-text);
+  }
+  .pipeline-header { margin-bottom: 64px; }
+  .pipeline-header h2 {
+    font-size: 56px;
+    line-height: 1.05;
+    margin-bottom: 16px;
+  }
+  .pipeline-header h2 em {
+    font-style: italic;
+    color: var(--gold-deep);
+  }
+  .pipeline-header p {
+    font-family: 'Spectral', serif;
+    font-style: italic;
+    font-size: 19px;
+    color: var(--paper-text-mute);
+    max-width: 640px;
+  }
+
+  .pipeline-rail {
+    position: relative;
+    padding: 32px 0;
+  }
+  .pipeline-rail::before {
+    content: "";
+    position: absolute;
+    left: 0; right: 0;
+    top: 80px;
+    height: 1px;
+    background: repeating-linear-gradient(
+      to right,
+      var(--paper-line) 0, var(--paper-line) 6px,
+      transparent 6px, transparent 12px
+    );
+  }
+  .pipeline-steps {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    position: relative;
+    z-index: 2;
+  }
+  .p-step {
+    padding: 0 4px;
+  }
+  .p-step-num {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: var(--paper);
+    border: 1.5px solid var(--paper-line);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Spectral', serif;
+    font-size: 22px;
+    color: var(--paper-text);
+    margin: 0 auto 24px;
+    position: relative;
+    transition: all 0.3s;
+  }
+  .p-step.gate .p-step-num {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--ink);
+    box-shadow: 0 0 0 6px rgba(184,149,74,0.15);
+  }
+  .p-step-name {
+    font-family: 'Spectral', serif;
+    font-size: 19px;
+    text-align: center;
+    margin-bottom: 8px;
+    line-height: 1.2;
+  }
+  .p-step-zh {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    text-align: center;
+    color: var(--gold-deep);
+    margin-bottom: 14px;
+  }
+  .p-step-desc {
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--paper-text-mute);
+    text-align: center;
+  }
+  .p-step-tech {
+    margin-top: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--paper-text-mute);
+    text-align: center;
+    line-height: 1.6;
+  }
+  .p-step-tech span {
+    color: var(--gold-deep);
+  }
+
+  .pipeline-gate {
+    margin-top: 56px;
+    padding: 28px 36px;
+    background: var(--ink);
+    color: var(--ink-text);
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 32px;
+    border-left: 4px solid var(--gold);
+  }
+  .pipeline-gate-left {
+    display: flex; align-items: center; gap: 20px;
+  }
+  .pipeline-gate-icon {
+    width: 44px; height: 44px;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    display: grid; place-items: center;
+    font-family: 'Spectral', serif;
+    font-style: italic;
+    font-size: 22px;
+  }
+  .pipeline-gate-text strong {
+    font-family: 'Spectral', serif;
+    font-weight: 400;
+    font-size: 18px;
+    display: block;
+    margin-bottom: 4px;
+    color: #f0e6d0;
+  }
+  .pipeline-gate-text span {
+    font-size: 13px;
+    color: var(--ink-text-mute);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .pipeline-gate-rate {
+    font-family: 'Spectral', serif;
+    font-size: 56px;
+    color: var(--gold);
+    font-weight: 300;
+    line-height: 1;
+  }
+  .pipeline-gate-rate small {
+    font-size: 18px;
+    color: var(--ink-text-mute);
+    margin-left: 2px;
+  }
+
+  /* ============ SECTION: evidence demo ============ */
+  .demo {
+    background: var(--paper-deep);
+    color: var(--paper-text);
+  }
+  .demo-header {
+    margin-bottom: 56px;
+    display: flex; justify-content: space-between; align-items: end;
+    gap: 40px;
+  }
+  .demo-header h2 {
+    font-size: 56px;
+    line-height: 1.05;
+    max-width: 700px;
+  }
+  .demo-header h2 em {
+    font-style: italic;
+    color: var(--gold-deep);
+  }
+  .demo-header p {
+    font-family: 'Spectral', serif;
+    font-style: italic;
+    font-size: 17px;
+    color: var(--paper-text-mute);
+    max-width: 360px;
+  }
+
+  /* mock UI window */
+  .demo-window {
+    background: var(--paper);
+    border: 1px solid var(--paper-line);
+    box-shadow: 0 40px 100px -30px rgba(60,40,10,0.25);
+    overflow: hidden;
+  }
+  .demo-titlebar {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 20px;
+    background: var(--paper-deep);
+    border-bottom: 1px solid var(--paper-line);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--paper-text-mute);
+  }
+  .demo-dots { display: flex; gap: 6px; }
+  .demo-dots span {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--paper-line);
+  }
+  .demo-url {
+    flex: 1;
+    text-align: center;
+    letter-spacing: 0.04em;
+  }
+  .demo-url::before { content: "▾  "; color: var(--gold-deep); }
+  .demo-body {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    min-height: 540px;
+  }
+
+  /* left: graph */
+  .demo-graph {
+    background: #fbf7ea;
+    border-right: 1px solid var(--paper-line);
+    padding: 28px;
+    position: relative;
+  }
+  .demo-graph-toolbar {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--paper-text-mute);
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+  }
+  .demo-graph-toolbar span.title {
+    font-family: 'Spectral', serif;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--paper-text);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .demo-graph-svg {
+    width: 100%;
+    height: 460px;
+  }
+
+  /* right: evidence panel */
+  .demo-panel {
+    padding: 28px;
+    overflow: hidden;
+  }
+  .demo-panel-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .panel-pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: var(--gold);
+    padding: 4px 10px;
+  }
+  .panel-close {
+    color: var(--paper-text-mute);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+  }
+  .panel-canonical {
+    font-family: 'Spectral', serif;
+    font-size: 30px;
+    color: var(--paper-text);
+    margin-bottom: 6px;
+    line-height: 1.1;
+  }
+  .panel-canonical em { font-style: italic; }
+  .panel-aliases {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--paper-text-mute);
+    margin-bottom: 6px;
+  }
+  .panel-aliases span {
+    color: var(--gold-deep);
+  }
+  .panel-mentions {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--paper-text-mute);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--paper-line);
+  }
+  .panel-section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold-deep);
+    margin: 22px 0 14px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .panel-section-label::before, .panel-section-label::after {
+    content: ""; flex: 1; height: 1px; background: var(--paper-line);
+  }
+  .panel-section-label::before { max-width: 8px; }
+
+  .claim {
+    margin-bottom: 18px;
+    padding-left: 16px;
+    border-left: 2px solid var(--paper-line);
+  }
+  .claim:hover { border-left-color: var(--gold); }
+  .claim-rel {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold-deep);
+    margin-bottom: 6px;
+  }
+  .claim-rel span { color: var(--paper-text-mute); }
+  .claim-text {
+    font-family: 'Spectral', serif;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--paper-text);
+    margin-bottom: 8px;
+  }
+  .claim-text strong {
+    font-weight: 500;
+    border-bottom: 1px dotted var(--gold-deep);
+  }
+  .claim-evidence {
+    background: rgba(184,149,74,0.1);
+    padding: 10px 12px;
+    font-family: 'Spectral', serif;
+    font-style: italic;
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: var(--paper-text);
+    border-left: 2px solid var(--gold);
+  }
+  .claim-evidence::before {
+    content: "“";
+    font-size: 18px;
+    color: var(--gold);
+    margin-right: 2px;
+  }
+  .claim-evidence::after {
+    content: "”";
+    font-size: 18px;
+    color: var(--gold);
+    margin-left: 2px;
+  }
+  .claim-meta {
+    margin-top: 6px;
+    display: flex; gap: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px;
+    color: var(--paper-text-mute);
+    letter-spacing: 0.06em;
+  }
+  .claim-meta span.verified { color: var(--gold-deep); }
+  .claim-meta span.verified::before { content: "✓ "; }
+
+  /* ============ SECTION: providers ============ */
+  .providers {
+    background: var(--ink);
+    color: var(--ink-text);
+  }
+  .providers-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: start;
+  }
+  .providers-left h2 {
+    font-size: 48px;
+    line-height: 1.1;
+    margin-bottom: 24px;
+    color: #f0e6d0;
+  }
+  .providers-left h2 em {
+    font-style: italic;
+    color: var(--gold);
+  }
+  .providers-left p {
+    font-size: 16px;
+    line-height: 1.7;
+    color: var(--ink-text-mute);
+    margin-bottom: 24px;
+  }
+  .providers-code {
+    background: #0f0f0f;
+    border: 1px solid var(--ink-line);
+    padding: 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    margin-top: 24px;
+  }
+  .providers-code .c { color: #7a715b; }
+  .providers-code .k { color: var(--gold); }
+  .providers-code .v { color: #c8b88a; }
+
+  .providers-table {
+    border-top: 1px solid var(--ink-line);
+  }
+  .provider-row {
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--ink-line);
+    gap: 24px;
+    align-items: start;
+  }
+  .provider-cat {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold);
+    padding-top: 4px;
+  }
+  .provider-list {
+    display: flex; flex-wrap: wrap; gap: 8px;
+  }
+  .provider-chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-text);
+    border: 1px solid var(--ink-line);
+    padding: 6px 12px;
+    transition: all 0.2s;
+  }
+  .provider-chip:hover { border-color: var(--gold); color: var(--gold); }
+  .provider-chip span {
+    color: var(--ink-text-mute);
+    margin-left: 6px;
+    font-size: 10px;
+  }
+
+  /* ============ SECTION: architecture ============ */
+  .arch {
+    background: var(--paper);
+    color: var(--paper-text);
+  }
+  .arch-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.3fr;
+    gap: 80px;
+    align-items: center;
+  }
+  .arch-left h2 {
+    font-size: 48px;
+    line-height: 1.1;
+    margin-bottom: 24px;
+  }
+  .arch-left h2 em { font-style: italic; color: var(--gold-deep); }
+  .arch-left p {
+    font-size: 16px;
+    line-height: 1.7;
+    color: var(--paper-text-mute);
+    margin-bottom: 16px;
+  }
+  .arch-stack {
+    background: var(--ink);
+    color: var(--ink-text);
+    padding: 0;
+    box-shadow: 0 30px 80px -20px rgba(60,40,10,0.3);
+  }
+  .arch-layer {
+    display: grid;
+    grid-template-columns: 80px 1fr 160px;
+    padding: 22px 28px;
+    border-bottom: 1px solid var(--ink-line);
+    align-items: center;
+    gap: 24px;
+    transition: all 0.3s;
+  }
+  .arch-layer:last-child { border-bottom: none; }
+  .arch-layer:hover { background: var(--ink-soft); }
+  .arch-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+  .arch-name {
+    font-family: 'Spectral', serif;
+    font-size: 18px;
+    color: #f0e6d0;
+  }
+  .arch-name small {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-text-mute);
+    margin-top: 4px;
+    letter-spacing: 0.04em;
+  }
+  .arch-version {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-text-mute);
+    text-align: right;
+    letter-spacing: 0.18em;
+  }
+  .arch-version span {
+    color: var(--gold);
+  }
+
+  /* ============ SECTION: roadmap ============ */
+  .roadmap {
+    background: var(--ink);
+    color: var(--ink-text);
+  }
+  .roadmap-header {
+    text-align: center;
+    margin-bottom: 64px;
+  }
+  .roadmap-header h2 {
+    font-size: 56px;
+    line-height: 1.05;
+    color: #f0e6d0;
+    margin-bottom: 12px;
+  }
+  .roadmap-header h2 em {
+    font-style: italic;
+    color: var(--gold);
+  }
+  .roadmap-header p {
+    font-family: 'Spectral', serif;
+    font-style: italic;
+    color: var(--ink-text-mute);
+    font-size: 17px;
+  }
+  .roadmap-rail {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--ink-line);
+  }
+  .roadmap-card {
+    background: var(--ink);
+    padding: 36px 28px;
+    position: relative;
+  }
+  .roadmap-card.active {
+    background: var(--ink-soft);
+    border-top: 3px solid var(--gold);
+    margin-top: -3px;
+  }
+  .roadmap-version {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    color: var(--gold);
+    margin-bottom: 14px;
+  }
+  .roadmap-card.active .roadmap-version::after {
+    content: "● 当前版本";
+    margin-left: 12px;
+    font-size: 9px;
+    color: var(--gold-bright);
+  }
+  .roadmap-title {
+    font-family: 'Spectral', serif;
+    font-size: 22px;
+    color: #f0e6d0;
+    margin-bottom: 18px;
+    line-height: 1.2;
+  }
+  .roadmap-features {
+    list-style: none;
+  }
+  .roadmap-features li {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--ink-text-mute);
+    padding-left: 18px;
+    position: relative;
+    margin-bottom: 8px;
+  }
+  .roadmap-features li::before {
+    content: "—";
+    position: absolute;
+    left: 0;
+    color: var(--gold-deep);
+  }
+  .roadmap-status {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--ink-line);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-text-mute);
+  }
+  .roadmap-status.shipped { color: var(--gold-bright); }
+
+  /* ============ FOOTER ============ */
+  .footer {
+    background: var(--paper);
+    padding: 100px 48px 64px;
+    border-top: 1px solid var(--paper-line);
+  }
+  .footer-cta {
+    text-align: center;
+    max-width: 720px;
+    margin: 0 auto 72px;
+  }
+  .footer-cta-quote {
+    font-family: 'Spectral', serif;
+    font-style: italic;
+    font-size: 36px;
+    line-height: 1.3;
+    color: var(--paper-text);
+    margin-bottom: 32px;
+  }
+  .footer-cta-quote em {
+    color: var(--gold-deep);
+    font-style: italic;
+  }
+  .footer-cta-row {
+    display: flex; gap: 14px; justify-content: center;
+  }
+  .btn-primary-light {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 16px 28px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    text-decoration: none;
+    transition: all 0.2s;
+    display: inline-flex; gap: 10px; align-items: center;
+  }
+  .btn-primary-light:hover { background: var(--gold); color: var(--ink); }
+  .btn-ghost-light {
+    color: var(--paper-text);
+    padding: 16px 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    text-decoration: none;
+    border: 1px solid var(--paper-line);
+    transition: all 0.2s;
+    display: inline-flex; gap: 10px; align-items: center;
+  }
+  .btn-ghost-light:hover { border-color: var(--gold); color: var(--gold-deep); }
+
+  .footer-bottom {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 40px;
+    padding-top: 56px;
+    border-top: 1px solid var(--paper-line);
+  }
+  .footer-brand {
+    font-family: 'Spectral', serif;
+    font-size: 26px;
+    line-height: 1.2;
+    color: var(--paper-text);
+  }
+  .footer-brand em { font-style: italic; color: var(--gold-deep); }
+  .footer-brand p {
+    font-family: 'Spectral', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--paper-text-mute);
+    margin-top: 12px;
+  }
+  .footer-col h4 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--gold-deep);
+    margin-bottom: 18px;
+  }
+  .footer-col a {
+    display: block;
+    color: var(--paper-text);
+    text-decoration: none;
+    font-size: 13px;
+    line-height: 2;
+    transition: color 0.2s;
+  }
+  .footer-col a:hover { color: var(--gold-deep); }
+  .footer-meta {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px solid var(--paper-line);
+    display: flex; justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--paper-text-mute);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ NAV ============ -->
+<nav class="nav">
+  <div class="nav-brand">
+    <div class="nav-mark">L</div>
+    <span>LoreGraph</span>
+    <span style="opacity:.4;font-size:11px;font-family:'JetBrains Mono',monospace;margin-left:8px;">v0.1 · ALPHA</span>
+  </div>
+  <div class="nav-links">
+    <a href="#why">立场</a>
+    <a href="#ontology">本体</a>
+    <a href="#pipeline">流水线</a>
+    <a href="#demo">证据</a>
+    <a href="#roadmap">路线</a>
+  </div>
+  <a class="nav-cta" href="#">View on GitHub →</a>
+</nav>
+
+<!-- ============ HERO ============ -->
+<section class="hero" data-screen-label="01 Hero">
+  <svg class="hero-bg-lines" preserveAspectRatio="none" viewBox="0 0 1280 600">
+    <g stroke="#b8954a" stroke-width="0.5" opacity="0.18" fill="none">
+      <path d="M 0 100 Q 400 60 800 140 T 1280 80" />
+      <path d="M 0 220 Q 300 280 700 240 T 1280 280" />
+      <path d="M 0 380 Q 500 320 900 400 T 1280 360" />
+      <path d="M 0 520 Q 400 480 800 540 T 1280 500" />
+    </g>
+    <g fill="#b8954a" opacity="0.4">
+      <circle cx="180" cy="100" r="2" />
+      <circle cx="620" cy="120" r="2" />
+      <circle cx="940" cy="80" r="2" />
+      <circle cx="320" cy="250" r="2" />
+      <circle cx="780" cy="260" r="2" />
+      <circle cx="1140" cy="280" r="2" />
+      <circle cx="240" cy="380" r="2" />
+      <circle cx="660" cy="400" r="2" />
+      <circle cx="1020" cy="360" r="2" />
+    </g>
+  </svg>
+
+  <div class="hero-grid">
+    <div>
+      <div class="hero-eyebrow">CLOSED-WORLD · KNOWLEDGE GRAPHS · FROM FICTION</div>
+      <h1 class="hero-title">
+        让<em>图谱</em><br/>
+        替自己<em>作证。</em>
+      </h1>
+      <p class="hero-slogan">
+        一条 7-Pass LLM 流水线，把一部小说、剧本或电影分镜本，<br/>
+        变成每条主张都引用原文字面片段的可查询知识图谱。
+        <span>every node cites the page it came from.</span>
+      </p>
+      <div class="hero-cta-row">
+        <a href="#demo" class="btn-primary">Try the demo →</a>
+        <a href="#pipeline" class="btn-ghost">Read the 7-pass spec</a>
+      </div>
+      <div class="hero-stats">
+        <div>
+          <div class="hero-stat-num">7<small>-pass</small></div>
+          <div class="hero-stat-label">Extraction Pipeline</div>
+        </div>
+        <div>
+          <div class="hero-stat-num">95<small>%+</small></div>
+          <div class="hero-stat-label">字面匹配门控</div>
+        </div>
+        <div>
+          <div class="hero-stat-num">$0.20<small>–1</small></div>
+          <div class="hero-stat-label">每篇短篇成本</div>
+        </div>
+        <div>
+          <div class="hero-stat-num">12<small>+</small></div>
+          <div class="hero-stat-label">LLM Providers</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="hero-card hc-1">
+        <span class="hc-tag">▢ Object · Pass-2</span>
+        <div class="hc-claim">"the yellow wall-paper" — 房间内的壁纸，叙述者反复观察的对象。</div>
+        <div class="hc-quote">"It is the strangest yellow, that wall-paper! It makes me think of all the yellow things I ever saw…"</div>
+        <div class="hc-meta">
+          <span>ch3_p07</span>
+          <span>conf 0.97</span>
+        </div>
+      </div>
+      <div class="hero-card hc-2">
+        <span class="hc-tag">◇ Event · Pass-5 · realis</span>
+        <div class="hc-claim">叙述者从壁纸后撕下纸层，凝视其中纠缠的图案。</div>
+        <div class="hc-quote">"I pulled and she shook, I shook and she pulled, and before morning we had peeled off yards of that paper."</div>
+        <div class="hc-meta">
+          <span>ch12_p03</span>
+          <span>conf 0.92</span>
+        </div>
+      </div>
+      <div class="hero-card hc-3">
+        <span class="hc-tag">○ Agent · Pass-3 · cluster</span>
+        <div class="hc-claim">叙述者 ≡ "I" / "the narrator" / "she who creeps" — 别名合并完成。</div>
+        <div class="hc-quote">aliases merged via BookNLP-style gating; 14 mentions canonicalized.</div>
+        <div class="hc-meta">
+          <span>entity #0001</span>
+          <span>✓ Pass-7</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ EPIGRAPH ============ -->
+<section class="epigraph" data-screen-label="02 Epigraph">
+  <div class="epigraph-rule"></div>
+  <blockquote>
+    "书不是用来被相信的，<br/>
+    书是用来被审视的。"
+  </blockquote>
+  <cite>
+    UMBERTO ECO
+    <span>《玫瑰之名》　·　Il nome della rosa</span>
+  </cite>
+</section>
+
+<!-- ============ WHY ============ -->
+<section class="why" id="why" data-screen-label="03 Why">
+  <div class="container">
+    <div class="why-grid">
+      <div>
+        <div class="eyebrow">为什么需要它</div>
+        <h2 class="why-title">主流 GraphRAG 为<em>开放网络</em>设计 ——<br/>但文学不一样。</h2>
+      </div>
+      <div class="why-body">
+        <p class="lead">当你问"<em>这个角色相信什么</em>"，答案必须只来自文本本身。每一条推断必须 <strong>引用原文</strong>。图谱要能处理 <strong>多角色视角</strong>、<strong>伏笔回收</strong>、<strong>反事实续写</strong>。</p>
+        <p>LoreGraph 把一部小说、剧本或电影分镜本，自动抽取成一个可查询的知识图谱 —— 每一条主张都锚定在原文的字面片段上 —— 并通过命令行和交互式 Web UI 暴露出来。</p>
+        <p>以严格的 <strong>证据片段字面匹配率 ≥ 95%</strong> 作为防幻觉硬门控。</p>
+      </div>
+    </div>
+
+    <div class="why-pillars">
+      <div>
+        <div class="pillar-num">01 / NARRATIVE NLP</div>
+        <div class="pillar-title">叙事 NLP</div>
+        <div class="pillar-desc">BookNLP · LitBank · GLUCOSE · 文学事件检测</div>
+      </div>
+      <div>
+        <div class="pillar-num">02 / KG-RAG</div>
+        <div class="pillar-title">工业级图谱检索</div>
+        <div class="pillar-desc">GraphRAG · HippoRAG 2 · LightRAG · Zep</div>
+      </div>
+      <div>
+        <div class="pillar-num">03 / EXTRACTION</div>
+        <div class="pillar-title">LLM 抽取与验证</div>
+        <div class="pillar-desc">GPT-NER · Chain-of-Verification · BOOKCOREF</div>
+      </div>
+      <div>
+        <div class="pillar-num">04 / SIMULATION</div>
+        <div class="pillar-title">Agent 模拟 <span style="opacity:.6">(v0.4)</span></div>
+        <div class="pillar-desc">Generative Agents · SymbolicToM · MCTS 叙事</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ONTOLOGY ============ -->
+<section class="ontology" id="ontology" data-screen-label="04 Ontology">
+  <div class="container">
+    <div class="ontology-header">
+      <div class="eyebrow" style="justify-content:center;display:inline-flex;">本体 · ontology</div>
+      <h2 class="ontology-title">四种<em style="font-style:italic;color:var(--gold);">节点</em>，五类<em style="font-style:italic;color:var(--gold);">边</em>。<br/>足以装下一部小说。</h2>
+      <p class="ontology-sub">Agent · Object · Event · Concept —— each shape carries its own truth conditions.</p>
+    </div>
+
+    <div class="nodes-grid">
+      <div class="node-card">
+        <div class="node-card-shape"><div class="shape-circle"></div></div>
+        <div class="node-tag">○ AGENT</div>
+        <div class="node-name">行动者</div>
+        <div class="node-zh">有意图、有视角、能行动的实体</div>
+        <div class="node-desc">角色、叙述者、群体。携带信念、欲望、关系网；是 v0.4 Generative Agent 模拟的载体。</div>
+        <div class="node-examples">
+          <span>e.g.</span> the narrator · John · the housekeeper
+        </div>
+      </div>
+
+      <div class="node-card">
+        <div class="node-card-shape"><div class="shape-square"></div></div>
+        <div class="node-tag">▢ OBJECT</div>
+        <div class="node-name">物件</div>
+        <div class="node-zh">可被指称、被持有、被观察的实物</div>
+        <div class="node-desc">道具、场景元素、文档与信件。位置 / 所有权可随事件改变；进入 GLUCOSE 的 possession & location 维度。</div>
+        <div class="node-examples">
+          <span>e.g.</span> the yellow wall-paper · the locked door
+        </div>
+      </div>
+
+      <div class="node-card">
+        <div class="node-card-shape"><div class="shape-diamond"></div></div>
+        <div class="node-tag">◇ EVENT</div>
+        <div class="node-name">事件</div>
+        <div class="node-zh">realis-trigger，确实发生的</div>
+        <div class="node-desc">按 LitBank 标准严格定义 —— 不收假设、不收概括、不收否定、不收"角色相信但未发生"。</div>
+        <div class="node-examples">
+          <span>e.g.</span> she pulled the paper down · he left at dawn
+        </div>
+      </div>
+
+      <div class="node-card">
+        <div class="node-card-shape">
+          <div class="shape-hex"><div class="shape-hex-inner"></div></div>
+        </div>
+        <div class="node-tag">⬡ CONCEPT</div>
+        <div class="node-name">概念</div>
+        <div class="node-zh">主题、意象、抽象指涉</div>
+        <div class="node-desc">由对象象征化或人物所信奉的非物质概念。作为 SYMBOLIZES 边的端点存在，是文学性的承载层。</div>
+        <div class="node-examples">
+          <span>e.g.</span> confinement · sanity · domestic order
+        </div>
+      </div>
+    </div>
+
+    <!-- edges -->
+    <div class="edges-section">
+      <div class="edges-header">
+        <h3>五类关系边</h3>
+        <p>each typed; each grounded in a literal evidence span.</p>
+      </div>
+      <div class="edges-grid">
+        <div class="edge-card">
+          <div class="edge-viz">
+            <svg viewBox="0 0 120 60">
+              <line x1="10" y1="30" x2="110" y2="30" stroke="#b8954a" stroke-width="1.5" />
+              <circle cx="10" cy="30" r="6" fill="none" stroke="#b8954a" stroke-width="1.5" />
+              <circle cx="110" cy="30" r="6" fill="none" stroke="#b8954a" stroke-width="1.5" />
+            </svg>
+          </div>
+          <div class="edge-name">STRUCTURAL</div>
+          <div class="edge-zh">结构 / 从属</div>
+        </div>
+        <div class="edge-card">
+          <div class="edge-viz">
+            <svg viewBox="0 0 120 60">
+              <line x1="10" y1="30" x2="110" y2="30" stroke="#b8954a" stroke-width="1.5" stroke-dasharray="5 3" />
+              <circle cx="10" cy="30" r="6" fill="none" stroke="#b8954a" stroke-width="1.5" />
+              <circle cx="110" cy="30" r="6" fill="none" stroke="#b8954a" stroke-width="1.5" />
+            </svg>
+          </div>
+          <div class="edge-name">INTERACTS</div>
+          <div class="edge-zh">交互</div>
+        </div>
+        <div class="edge-card">
+          <div class="edge-viz">
+            <svg viewBox="0 0 120 60">
+              <line x1="10" y1="30" x2="110" y2="30" stroke="#b8954a" stroke-width="1.5" />
+              <polyline points="100,24 110,30 100,36" fill="none" stroke="#b8954a" stroke-width="1.5" />
+              <circle cx="10" cy="30" r="6" fill="none" stroke="#b8954a" stroke-width="1.5" />
+              <rect x="104" y="24" width="12" height="12" fill="none" stroke="#b8954a" stroke-width="1.5" transform="rotate(45 110 30)" />
+            </svg>
+          </div>
+          <div class="edge-name">ASSERTS</div>
+          <div class="edge-zh">断言 / 主张</div>
+        </div>
+        <div class="edge-card">
+          <div class="edge-viz">
+            <svg viewBox="0 0 120 60">
+              <path d="M 10 30 Q 60 10 110 30" fill="none" stroke="#b8954a" stroke-width="1.5" />
+              <polyline points="100,24 110,30 100,36" fill="none" stroke="#b8954a" stroke-width="1.5" />
+              <circle cx="10" cy="30" r="6" fill="none" stroke="#b8954a" stroke-width="1.5" />
+              <circle cx="110" cy="30" r="6" fill="none" stroke="#b8954a" stroke-width="1.5" />
+            </svg>
+          </div>
+          <div class="edge-name">INFLUENCES</div>
+          <div class="edge-zh">影响</div>
+        </div>
+        <div class="edge-card">
+          <div class="edge-viz">
+            <svg viewBox="0 0 120 60">
+              <line x1="10" y1="30" x2="110" y2="30" stroke="#b8954a" stroke-width="1.5" stroke-dasharray="2 3" />
+              <polyline points="100,24 110,30 100,36" fill="none" stroke="#b8954a" stroke-width="1.5" />
+              <circle cx="10" cy="30" r="6" fill="none" stroke="#b8954a" stroke-width="1.5" />
+              <circle cx="110" cy="30" r="6" fill="none" stroke="#b8954a" stroke-width="1.5" />
+            </svg>
+          </div>
+          <div class="edge-name">PREDICTS</div>
+          <div class="edge-zh">预示 / 伏笔</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PIPELINE ============ -->
+<section class="pipeline" id="pipeline" data-screen-label="05 Pipeline">
+  <div class="container">
+    <div class="pipeline-header">
+      <div class="eyebrow">7-PASS PIPELINE</div>
+      <h2>七<em>道工序</em>，把一部小说<br/>磨成一张可审视的图谱。</h2>
+      <p>每个 Pass 写到自己的表里；Pass-7 是不可逾越的字面匹配闸门。</p>
+    </div>
+
+    <div class="pipeline-rail">
+      <div class="pipeline-steps">
+        <div class="p-step">
+          <div class="p-step-num">1</div>
+          <div class="p-step-name">Chunk</div>
+          <div class="p-step-zh">切片</div>
+          <div class="p-step-desc">章节感知文本切分</div>
+          <div class="p-step-tech"><span>600-1200 tok</span><br/>20% overlap<br/>ch{N}_p{seq}</div>
+        </div>
+        <div class="p-step">
+          <div class="p-step-num">2</div>
+          <div class="p-step-name">Entity</div>
+          <div class="p-step-zh">实体</div>
+          <div class="p-step-desc">四类提及抽取</div>
+          <div class="p-step-tech"><span>LLM + Pydantic</span><br/>gleaning ≤ 2<br/>evidence required</div>
+        </div>
+        <div class="p-step">
+          <div class="p-step-num">3</div>
+          <div class="p-step-name">Cluster</div>
+          <div class="p-step-zh">聚合</div>
+          <div class="p-step-desc">全书角色归一</div>
+          <div class="p-step-tech"><span>BookNLP-style</span><br/>cosine + edit<br/>LLM pairwise</div>
+        </div>
+        <div class="p-step">
+          <div class="p-step-num">4</div>
+          <div class="p-step-name">Coref</div>
+          <div class="p-step-zh">共指</div>
+          <div class="p-step-desc">提及 → canonical</div>
+          <div class="p-step-tech"><span>LingMess / LLM</span><br/>pronoun-aware<br/>canonical_id</div>
+        </div>
+        <div class="p-step">
+          <div class="p-step-num">5</div>
+          <div class="p-step-name">Relation</div>
+          <div class="p-step-zh">关系 + 事件</div>
+          <div class="p-step-desc">五类关系边</div>
+          <div class="p-step-tech"><span>realis-trigger</span><br/>LitBank-style<br/>endpoint-typed</div>
+        </div>
+        <div class="p-step">
+          <div class="p-step-num">6</div>
+          <div class="p-step-name">GLUCOSE</div>
+          <div class="p-step-zh">隐式信息</div>
+          <div class="p-step-desc">十维推断</div>
+          <div class="p-step-tech"><span>5 dims × 2 time</span><br/>explicit /<br/>one_step / multi</div>
+        </div>
+        <div class="p-step gate">
+          <div class="p-step-num">7</div>
+          <div class="p-step-name">CoVe</div>
+          <div class="p-step-zh">验证闸门</div>
+          <div class="p-step-desc">Chain-of-Verification</div>
+          <div class="p-step-tech"><span>match rate ≥ 95%</span><br/>literal substring<br/>hard gate</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pipeline-gate">
+      <div class="pipeline-gate-left">
+        <div class="pipeline-gate-icon">✓</div>
+        <div class="pipeline-gate-text">
+          <strong>证据片段字面匹配率</strong>
+          <span>literal_match(evidence_span, chunks.text[chunk_id])</span>
+        </div>
+      </div>
+      <div class="pipeline-gate-rate">≥ 95<small>%</small></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DEMO / EVIDENCE ============ -->
+<section class="demo" id="demo" data-screen-label="06 Evidence Demo">
+  <div class="container">
+    <div class="demo-header">
+      <div>
+        <div class="eyebrow">EVIDENCE-FIRST UI</div>
+        <h2>点任何节点 ——<br/>看到它<em>引用的那一行原文</em>。</h2>
+      </div>
+      <p>左边是图谱视图，右边是 entity 详情。每条边、每条 GLUCOSE 隐式事实下方都挂着原文的字面引文与 chunk 坐标。</p>
+    </div>
+
+    <div class="demo-window">
+      <div class="demo-titlebar">
+        <div class="demo-dots"><span></span><span></span><span></span></div>
+        <div class="demo-url">loregraph view —— Yellow Wallpaper · book #1 · 14 entities · 32 edges</div>
+        <div style="width:32px;"></div>
+      </div>
+      <div class="demo-body">
+        <!-- LEFT: GRAPH -->
+        <div class="demo-graph">
+          <div class="demo-graph-toolbar">
+            <span class="title">"The Yellow Wall-Paper" — Charlotte Perkins Gilman</span>
+            <span>ZOOM 1.0 ·  FIT</span>
+          </div>
+          <svg class="demo-graph-svg" viewBox="0 0 600 460">
+            <defs>
+              <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a6e36" />
+              </marker>
+              <marker id="arr-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#b8954a" />
+              </marker>
+            </defs>
+
+            <!-- edges (drawn first so under nodes) -->
+            <g stroke="#c9b078" fill="none" stroke-width="1.1">
+              <line x1="300" y1="230" x2="170" y2="120" />
+              <line x1="300" y1="230" x2="450" y2="120" />
+              <line x1="300" y1="230" x2="160" y2="340" />
+              <line x1="300" y1="230" x2="470" y2="330" />
+              <line x1="170" y1="120" x2="450" y2="120" stroke-dasharray="4 3" />
+              <path d="M 170 120 Q 200 230 160 340" stroke-dasharray="2 3" />
+              <line x1="160" y1="340" x2="470" y2="330" marker-end="url(#arr)" />
+            </g>
+            <!-- selected edge highlighted -->
+            <line x1="300" y1="230" x2="170" y2="120" stroke="#b8954a" stroke-width="2.2" marker-end="url(#arr-gold)" />
+
+            <!-- nodes -->
+            <!-- center: AGENT narrator -->
+            <g>
+              <circle cx="300" cy="230" r="38" fill="#fbf7ea" stroke="#b8954a" stroke-width="2.5" />
+              <text x="300" y="226" text-anchor="middle" font-family="Spectral" font-size="13" fill="#1a1a1a" font-style="italic">the</text>
+              <text x="300" y="244" text-anchor="middle" font-family="Spectral" font-size="13" fill="#1a1a1a" font-weight="500">narrator</text>
+            </g>
+
+            <!-- top-left: OBJECT wallpaper (selected) -->
+            <g>
+              <rect x="130" y="80" width="80" height="80" fill="#b8954a" stroke="#8a6e36" stroke-width="2.5" />
+              <text x="170" y="115" text-anchor="middle" font-family="Spectral" font-size="11" fill="#1a1a1a" font-style="italic">yellow</text>
+              <text x="170" y="132" text-anchor="middle" font-family="Spectral" font-size="11" fill="#1a1a1a">wall-paper</text>
+              <text x="170" y="148" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#3a342c" letter-spacing="1">▢ OBJECT</text>
+            </g>
+
+            <!-- top-right: AGENT John -->
+            <g>
+              <circle cx="450" cy="120" r="32" fill="#fbf7ea" stroke="#b8954a" stroke-width="1.5" />
+              <text x="450" y="118" text-anchor="middle" font-family="Spectral" font-size="13" fill="#1a1a1a">John</text>
+              <text x="450" y="134" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#6b6253">husband</text>
+            </g>
+
+            <!-- bottom-left: EVENT peeling -->
+            <g transform="translate(160 340) rotate(45)">
+              <rect x="-30" y="-30" width="60" height="60" fill="#fbf7ea" stroke="#b8954a" stroke-width="1.5" />
+            </g>
+            <text x="160" y="338" text-anchor="middle" font-family="Spectral" font-size="11" fill="#1a1a1a" font-style="italic">peeling</text>
+            <text x="160" y="354" text-anchor="middle" font-family="Spectral" font-size="11" fill="#1a1a1a">the paper</text>
+
+            <!-- bottom-right: CONCEPT confinement -->
+            <g>
+              <path d="M 470 295 L 505 313 L 505 348 L 470 366 L 435 348 L 435 313 z"
+                    fill="#fbf7ea" stroke="#b8954a" stroke-width="1.5" />
+              <text x="470" y="328" text-anchor="middle" font-family="Spectral" font-size="11" font-style="italic" fill="#1a1a1a">confine-</text>
+              <text x="470" y="344" text-anchor="middle" font-family="Spectral" font-size="11" font-style="italic" fill="#1a1a1a">ment</text>
+            </g>
+
+            <!-- small floating labels for edges -->
+            <g font-family="JetBrains Mono" font-size="9" fill="#8a6e36" letter-spacing="1">
+              <text x="220" y="180" transform="rotate(-38 220 180)">OBSERVES</text>
+              <text x="385" y="180" transform="rotate(38 385 180)" fill="#6b6253">INTERACTS</text>
+              <text x="220" y="295" transform="rotate(40 220 295)" fill="#6b6253">CAUSES</text>
+              <text x="395" y="290" transform="rotate(-32 395 290)" fill="#6b6253">SYMBOLIZES</text>
+            </g>
+
+            <!-- selection ring on wallpaper -->
+            <rect x="124" y="74" width="92" height="92" fill="none" stroke="#b8954a" stroke-width="1" stroke-dasharray="3 3" />
+
+            <!-- chapter atom labels -->
+            <g font-family="JetBrains Mono" font-size="8.5" fill="#a89c80" opacity="0.7">
+              <text x="20" y="30">ch3 · ch5 · ch9</text>
+              <text x="20" y="450">▾ click any node for evidence →</text>
+            </g>
+          </svg>
+        </div>
+
+        <!-- RIGHT: PANEL -->
+        <div class="demo-panel">
+          <div class="demo-panel-head">
+            <div class="panel-pill">▢ OBJECT · ENTITY #0042</div>
+            <div class="panel-close">✕</div>
+          </div>
+          <div class="panel-canonical">the <em>yellow wall-paper</em></div>
+          <div class="panel-aliases"><span>aliases:</span> "the paper" · "that yellow stuff" · "the wall-paper"</div>
+          <div class="panel-mentions">14 MENTIONS · ch3–ch12 · CONF 0.94</div>
+
+          <div class="panel-section-label">Outgoing claims</div>
+
+          <div class="claim">
+            <div class="claim-rel"><span>← OBSERVES ←</span> the narrator</div>
+            <div class="claim-text">叙述者将壁纸视为<strong>有意识的对手</strong>，反复凝视并描述其图案。</div>
+            <div class="claim-evidence">It is the strangest yellow, that wall-paper! It makes me think of all the yellow things I ever saw — not beautiful ones like buttercups, but old foul, bad yellow things.</div>
+            <div class="claim-meta">
+              <span>ch3_p07</span>
+              <span class="verified">Pass-7 verified</span>
+              <span>conf 0.97</span>
+            </div>
+          </div>
+
+          <div class="claim">
+            <div class="claim-rel"><span>→ SYMBOLIZES →</span> confinement</div>
+            <div class="claim-text">壁纸的纹样被叙述者解读为<strong>困禁的隐喻</strong>。</div>
+            <div class="claim-evidence">The faint figure behind seemed to shake the pattern, just as if she wanted to get out.</div>
+            <div class="claim-meta">
+              <span>ch9_p12</span>
+              <span class="verified">Pass-7 verified</span>
+              <span>conf 0.91</span>
+            </div>
+          </div>
+
+          <div class="panel-section-label">GLUCOSE · implicit · location after</div>
+
+          <div class="claim">
+            <div class="claim-rel">multi_step · inference</div>
+            <div class="claim-text">叙述结束时，壁纸的大部分<strong>已被撕落于地面</strong>。</div>
+            <div class="claim-evidence">…before morning we had peeled off yards of that paper. A strip about as high as my head and half around the room.</div>
+            <div class="claim-meta">
+              <span>ch12_p03</span>
+              <span class="verified">Pass-7 verified</span>
+              <span>conf 0.88</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PROVIDERS ============ -->
+<section class="providers" id="providers" data-screen-label="07 Providers">
+  <div class="container">
+    <div class="providers-grid">
+      <div class="providers-left">
+        <div class="eyebrow">BRING YOUR OWN LLM</div>
+        <h2>一个环境变量<br/>切换<em>任何 provider。</em></h2>
+        <p>LoreGraph 兼容任何说 Anthropic native 或 OpenAI-compatible chat-completions 协议的 LLM。Anthropic 保留 prompt caching；OpenAI auto-cache 与 DeepSeek context cache 在 provider 暴露 <span class="mono" style="color:var(--gold);">cached_tokens</span> 时自动累积。</p>
+        <p style="color:var(--ink-text);">一篇短篇（约 6000 词）：<strong style="color:var(--gold);">Anthropic 含 prompt cache 折扣 ~$0.20–1.00</strong>；DeepSeek / 通义 / Gemini Flash 通常便宜 3–10 倍；本地 Ollama 完全免费。</p>
+
+        <div class="providers-code">
+          <div><span class="c"># Anthropic Claude (默认 · prompt caching)</span></div>
+          <div><span class="k">LOREGRAPH_LLM_PROVIDER</span>=<span class="v">anthropic</span></div>
+          <div><span class="k">ANTHROPIC_API_KEY</span>=<span class="v">sk-ant-...</span></div>
+          <div style="margin-top:14px;"><span class="c"># 切换到本地 Ollama —— 免 key、免费</span></div>
+          <div><span class="k">LOREGRAPH_LLM_PROVIDER</span>=<span class="v">ollama</span></div>
+          <div><span class="k">LOREGRAPH_LLM_MODEL</span>=<span class="v">llama3.2</span></div>
+        </div>
+      </div>
+
+      <div class="providers-table">
+        <div class="provider-row">
+          <div class="provider-cat">国际头部</div>
+          <div class="provider-list">
+            <div class="provider-chip">anthropic <span>claude</span></div>
+            <div class="provider-chip">openai <span>gpt</span></div>
+            <div class="provider-chip">gemini <span>google</span></div>
+            <div class="provider-chip">grok <span>xai</span></div>
+          </div>
+        </div>
+        <div class="provider-row">
+          <div class="provider-cat">国内</div>
+          <div class="provider-list">
+            <div class="provider-chip">deepseek</div>
+            <div class="provider-chip">kimi <span>月之暗面</span></div>
+            <div class="provider-chip">zhipu <span>GLM</span></div>
+            <div class="provider-chip">qwen <span>通义</span></div>
+          </div>
+        </div>
+        <div class="provider-row">
+          <div class="provider-cat">开源托管</div>
+          <div class="provider-list">
+            <div class="provider-chip">groq</div>
+            <div class="provider-chip">together</div>
+            <div class="provider-chip">fireworks</div>
+            <div class="provider-chip">mistral</div>
+          </div>
+        </div>
+        <div class="provider-row">
+          <div class="provider-cat">本地</div>
+          <div class="provider-list">
+            <div class="provider-chip">ollama <span>llama / qwen</span></div>
+            <div class="provider-chip">vllm <span>self-hosted</span></div>
+          </div>
+        </div>
+        <div class="provider-row">
+          <div class="provider-cat">自定义</div>
+          <div class="provider-list">
+            <div class="provider-chip">openai_compatible <span>任何 OAI 端点</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ARCH ============ -->
+<section class="arch" id="arch" data-screen-label="08 Architecture">
+  <div class="container">
+    <div class="arch-grid">
+      <div class="arch-left">
+        <div class="eyebrow">ARCHITECTURE</div>
+        <h2>单一 LLM 出口，<br/>单一存储后端，<br/><em>全链路证据接地。</em></h2>
+        <p>所有 LLM 调用经过 <span class="mono" style="color:var(--gold-deep);">llm/client.py</span> —— token 计数、成本核算和 prompt caching 都依赖这条收口。</p>
+        <p>Pydantic ↔ SQLAlchemy 强制 lockstep；任何模型改动必须伴随一条 Alembic migration 与一个 round-trip 集成测试。</p>
+      </div>
+
+      <div class="arch-stack">
+        <div class="arch-layer">
+          <div class="arch-tag">01 / UI</div>
+          <div class="arch-name">Web UI<small>FastAPI + React + Cytoscape</small></div>
+          <div class="arch-version">v0.1 <span>●</span></div>
+        </div>
+        <div class="arch-layer">
+          <div class="arch-tag">02 / CLI</div>
+          <div class="arch-name">Command-line<small>Typer (loregraph ingest / extract / view)</small></div>
+          <div class="arch-version">v0.1 <span>●</span></div>
+        </div>
+        <div class="arch-layer">
+          <div class="arch-tag">03 / CORE</div>
+          <div class="arch-name">Pipeline<small>7-Pass orchestrator (Pass-1 → Pass-7)</small></div>
+          <div class="arch-version">v0.1 <span>●</span></div>
+        </div>
+        <div class="arch-layer">
+          <div class="arch-tag">04 / LLM</div>
+          <div class="arch-name">Provider Layer<small>Anthropic SDK + prompt cache · OAI-compat</small></div>
+          <div class="arch-version">v0.1 <span>●</span></div>
+        </div>
+        <div class="arch-layer">
+          <div class="arch-tag">05 / DATA</div>
+          <div class="arch-name">Storage<small>SQLAlchemy 2.0 + Postgres + pgvector</small></div>
+          <div class="arch-version">v0.1 <span>●</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ROADMAP ============ -->
+<section class="roadmap" id="roadmap" data-screen-label="09 Roadmap">
+  <div class="container">
+    <div class="roadmap-header">
+      <div class="eyebrow" style="justify-content:center;display:inline-flex;">ROADMAP</div>
+      <h2>从抽取，到检索，<br/>到<em>角色信念的反事实推演</em>。</h2>
+      <p>v0.1 已经发布。后面三步逐步走向 Generative Agent 模拟。</p>
+    </div>
+
+    <div class="roadmap-rail">
+      <div class="roadmap-card active">
+        <div class="roadmap-version">V 0 · 1</div>
+        <div class="roadmap-title">抽取与证据基线</div>
+        <ul class="roadmap-features">
+          <li>7-Pass 抽取流水线</li>
+          <li>CLI · Web UI</li>
+          <li>多 provider 配置</li>
+          <li>部署模板（Render / Neon / Cloudflare）</li>
+        </ul>
+        <div class="roadmap-status shipped">✓ 已发布</div>
+      </div>
+      <div class="roadmap-card">
+        <div class="roadmap-version">V 0 · 2</div>
+        <div class="roadmap-title">社区检测与图谱检索</div>
+        <ul class="roadmap-features">
+          <li>Leiden 社区检测</li>
+          <li>HippoRAG 2 个性化 PageRank</li>
+          <li>LightRAG 双层关键词索引</li>
+          <li>代词级共指落地</li>
+        </ul>
+        <div class="roadmap-status">▸ 计划中</div>
+      </div>
+      <div class="roadmap-card">
+        <div class="roadmap-version">V 0 · 3</div>
+        <div class="roadmap-title">内省、伏笔、矛盾</div>
+        <ul class="roadmap-features">
+          <li>内省精炼 (self-reflection)</li>
+          <li>伏笔检测 (foreshadowing)</li>
+          <li>跨章矛盾扫描</li>
+          <li>主题轨迹分析</li>
+        </ul>
+        <div class="roadmap-status">○ 待开</div>
+      </div>
+      <div class="roadmap-card">
+        <div class="roadmap-version">V 0 · 4</div>
+        <div class="roadmap-title">角色模拟与反事实</div>
+        <ul class="roadmap-features">
+          <li>Generative Agent 角色</li>
+          <li>SymbolicToM 信念图</li>
+          <li>MCTS 反事实续写</li>
+          <li>多视角矛盾推演</li>
+        </ul>
+        <div class="roadmap-status">○ 待开</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="footer" data-screen-label="10 Footer">
+  <div class="container">
+    <div class="footer-cta">
+      <div class="footer-cta-quote">
+        让<em>图谱</em>替自己作证。<br/>
+        让<em>原文</em>替图谱作证。
+      </div>
+      <div class="footer-cta-row">
+        <a class="btn-primary-light" href="#">克隆仓库 →</a>
+        <a class="btn-ghost-light" href="#">阅读 7-Pass 规格</a>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div>
+        <div class="footer-brand">
+          LoreGraph<br/><em style="font-size:18px;">every node cites the page it came from.</em>
+          <p>知识图谱 × 封闭世界文本 · Apache 2.0 · Python 3.11+</p>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Docs</h4>
+        <a href="#">README</a>
+        <a href="#">Architecture</a>
+        <a href="#">7-Pass Spec</a>
+        <a href="#">Deployment</a>
+      </div>
+      <div class="footer-col">
+        <h4>Project</h4>
+        <a href="#">GitHub</a>
+        <a href="#">Issues</a>
+        <a href="#">Changelog</a>
+        <a href="#">License</a>
+      </div>
+      <div class="footer-col">
+        <h4>References</h4>
+        <a href="#">BookNLP / LitBank</a>
+        <a href="#">GraphRAG</a>
+        <a href="#">HippoRAG 2</a>
+        <a href="#">GLUCOSE</a>
+      </div>
+    </div>
+
+    <div class="footer-meta">
+      <span>© 2026 · YUNYUE LI · APACHE 2.0</span>
+      <span>BUILT WITH CLAUDE · CITED BY HAND</span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
