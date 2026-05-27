@@ -430,11 +430,17 @@ function GraphCanvas({ visibleEntities, visibleEdges, positions, entities, selec
     setIsPanning(true);
   };
   const handleMouseMove = (e) => {
-    if (!dragRef.current) return;
-    const dx = e.clientX - dragRef.current.startX;
-    const dy = e.clientY - dragRef.current.startY;
-    if (Math.abs(dx) + Math.abs(dy) > 3) dragRef.current.moved = true;
-    if (dragRef.current.moved) setTransform(t => ({ ...t, x: dragRef.current.origX + dx, y: dragRef.current.origY + dy }));
+    const d = dragRef.current;
+    if (!d) return;
+    const dx = e.clientX - d.startX;
+    const dy = e.clientY - d.startY;
+    if (Math.abs(dx) + Math.abs(dy) > 3) d.moved = true;
+    // Capture origin into locals: the setTransform updater can run after
+    // mouseup/mouseleave nulls dragRef.current, so it must not read it lazily.
+    if (d.moved) {
+      const ox = d.origX, oy = d.origY;
+      setTransform(t => ({ ...t, x: ox + dx, y: oy + dy }));
+    }
   };
   const handleMouseUp = () => {
     if (dragRef.current && !dragRef.current.moved) setSelectedEdgeId(null);
