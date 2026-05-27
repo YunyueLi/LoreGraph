@@ -6,6 +6,18 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "src/loregraph/web/frontend", "run", "dev:demo"],
       "port": 5173
+    },
+    {
+      "name": "landing",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["src/loregraph/web/serve-landing.cjs"],
+      "port": 4178
+    },
+    {
+      "name": "landing-dist",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["src/loregraph/web/serve-landing.cjs", "frontend/dist"],
+      "port": 4179
     }
   ]
 }
