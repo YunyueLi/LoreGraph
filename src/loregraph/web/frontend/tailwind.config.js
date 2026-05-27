@@ -1,6 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
+  darkMode: "class",
   theme: {
     extend: {
       fontFamily: {
@@ -11,42 +12,46 @@ export default {
           "-apple-system",
           "Segoe UI",
           "Roboto",
+          // CJK fallbacks (system fonts — no heavy Noto download)
+          '"PingFang SC"',
+          '"Hiragino Sans"',
+          '"Microsoft YaHei"',
+          '"Malgun Gothic"',
+          '"Noto Sans CJK SC"',
           "sans-serif",
         ],
         serif: [
           "Fraunces",
           "Georgia",
           "Cambria",
+          '"Songti SC"',
+          '"Yu Mincho"',
           '"Times New Roman"',
-          "Times",
           "serif",
         ],
-        mono: [
-          '"JetBrains Mono"',
-          "ui-monospace",
-          "SFMono-Regular",
-          "Menlo",
-          "monospace",
-        ],
+        hand: ["Caveat", "Fraunces", "cursive"],
+        mono: ['"JetBrains Mono"', "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
       colors: {
-        // Figure palette — same tokens as the README SVGs.
-        paper: "#ffffff",
-        surface: "#fafafa",
+        // All driven by CSS variables so the .dark class flips the whole
+        // palette at once (see index.css).
+        paper: "var(--paper)",
+        surface: "var(--surface)",
         ink: {
-          DEFAULT: "#1a1a1a",
-          muted: "#666666",
-          whisper: "#999999",
-          soft: "#e8e8e8",
-          ghost: "#cfcfcf",
+          DEFAULT: "var(--ink)",
+          muted: "var(--ink-muted)",
+          whisper: "var(--ink-whisper)",
+          soft: "var(--ink-soft)",
+          ghost: "var(--ink-ghost)",
         },
         gold: {
-          DEFAULT: "#b8954a",
-          deep: "#8a6f37",
+          DEFAULT: "var(--gold)",
+          deep: "var(--gold-deep)",
         },
       },
       letterSpacing: {
         caps: "0.18em",
+        wide2: "0.28em",
       },
       fontSize: {
         tiny: ["10px", "14px"],
@@ -55,6 +60,7 @@ export default {
         h2: ["14px", "20px"],
         large: ["18px", "26px"],
         title: ["22px", "30px"],
+        hero: ["clamp(2.6rem, 7vw, 5.5rem)", "1.05"],
       },
     },
   },
