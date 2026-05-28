@@ -2,31 +2,33 @@
 // Left TOC · center prose with highlighted entities · right chunk info.
 
 function ViewReader({ ctx }) {
-  const { tt, data, entities, locale, selectedEntityId, setSelectedEntityId } = ctx;
-  const { useState, useMemo } = React;
+  const { tt, data, entities, locale, selectedEntityId, setSelectedEntityId, chunks, activeBook } = ctx;
+  const { useState, useMemo, useEffect } = React;
 
-  const chunks = data.chunks;
-  const [selectedChunkId, setSelectedChunkId] = useState("ch36_p04");
+  const defaultChunkId = chunks[0] ? chunks[0].id : null;
+  const [selectedChunkId, setSelectedChunkId] = useState(defaultChunkId);
+  // Re-anchor when switching books so a stale id from one book doesn't show null.
+  useEffect(() => {
+    if (!chunks.find(c => c.id === selectedChunkId)) {
+      setSelectedChunkId(chunks[0] ? chunks[0].id : null);
+    }
+  }, [activeBook && activeBook.id]);
   const currentChunk = chunks.find(c => c.id === selectedChunkId) || chunks[0];
 
-  // chapters list (simplified — show only chapters that have chunks)
-  const chapters = [
-    { n: 1,  name: "It is a truth universally acknowledged", entities: 6 },
-    { n: 3,  name: "The Assembly at Meryton", entities: 8 },
-    { n: 11, name: "Mr. Darcy's character", entities: 4 },
-    { n: 19, name: "Mr. Collins proposes", entities: 5 },
-    { n: 22, name: "Charlotte's pragmatism", entities: 4 },
-    { n: 34, name: "First proposal at Hunsford", entities: 5 },
-    { n: 35, name: "The Letter", entities: 7 },
-    { n: 36, name: "Till this moment, I never knew myself", entities: 4 },
-    { n: 43, name: "Visit to Pemberley", entities: 9 },
-    { n: 46, name: "Lydia is gone off with Wickham", entities: 8 },
-    { n: 52, name: "Mrs. Gardiner's letter", entities: 6 },
-    { n: 56, name: "Lady Catherine confronts Elizabeth", entities: 3 },
-    { n: 58, name: "Second proposal", entities: 3 },
-  ];
+  // Chapters list — derived from the scoped chunks for the active book. Each
+  // chunk may carry an optional `chapterName`; we take the first one we see.
+  const chapters = useMemo(() => {
+    const byNum = new Map();
+    for (const c of chunks) {
+      if (!byNum.has(c.chapter)) {
+        byNum.set(c.chapter, { n: c.chapter, name: c.chapterName || `Chapter ${c.chapter}`, entities: 0 });
+      }
+    }
+    for (const c of chunks) byNum.get(c.chapter).entities += (c.mentions || 0);
+    return [...byNum.values()].sort((a, b) => a.n - b.n);
+  }, [activeBook && activeBook.id]);
 
-  const currentChapter = chapters.find(c => c.n === currentChunk.chapter) || chapters[0];
+  const currentChapter = (currentChunk && chapters.find(c => c.n === currentChunk.chapter)) || chapters[0];
 
   // build a single token aliases map for highlight
   const aliasMap = useMemo(() => {

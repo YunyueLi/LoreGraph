@@ -2,7 +2,7 @@
 // Left: list (search + type tabs) · Right: detail (summary + outgoing/incoming/glucose/mentions).
 
 function ViewEntities({ ctx }) {
-  const { tt, data, entities, edges, locale, selectedEntityId, setSelectedEntityId } = ctx;
+  const { tt, data, entities, edges, locale, selectedEntityId, setSelectedEntityId, glucose: bookGlucose } = ctx;
   const { useState } = React;
   const [search, setSearch] = useState("");
   const [typeTab, setTypeTab] = useState("all");
@@ -33,7 +33,7 @@ function ViewEntities({ ctx }) {
 
   const outgoing = edges.filter(e => e.src === selected.id);
   const incoming = edges.filter(e => e.dst === selected.id);
-  const glucose = data.glucose.filter(g => g.entity === selected.id);
+  const glucose = bookGlucose.filter(g => g.entity === selected.id);
 
   return (
     <div className="ev">

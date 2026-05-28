@@ -64,8 +64,15 @@ function App() {
   // helpers
   const tt = (key, params) => window.t(key, locale, params);
   const activeBook = data.books.find(b => b.id === activeBookId) || data.books[0];
-  const entities = data.entities;
-  const edges = data.edges;
+
+  // Per-book scoping. Legacy records (no bookId) belong to P&P.
+  const _abId = activeBook ? activeBook.id : "pap";
+  const _belongs = (rec) => (rec.bookId || "pap") === _abId;
+  const entities = data.entities.filter(_belongs);
+  const edges = data.edges.filter(_belongs);
+  const chunks = data.chunks.filter(_belongs);
+  const glucose = data.glucose.filter(_belongs);
+  const conversations = data.conversations.filter(_belongs);
 
   // navigate to entity from anywhere
   const gotoEntity = (entId, view) => {
@@ -73,7 +80,7 @@ function App() {
     if (view) setActiveView(view);
   };
 
-  const ctx = { data, locale, setLocale, tt, activeView, setActiveView, activeBook, setActiveBookId, entities, edges, selectedEntityId, setSelectedEntityId, gotoEntity, selectedConvId, setSelectedConvId, settingsSection, setSettingsSection, graphViewMode, setGraphViewMode, graphLeftHidden, setGraphLeftHidden, graphRightHidden, setGraphRightHidden, tlMode, setTlMode };
+  const ctx = { data, locale, setLocale, tt, activeView, setActiveView, activeBook, setActiveBookId, entities, edges, chunks, glucose, conversations, selectedEntityId, setSelectedEntityId, gotoEntity, selectedConvId, setSelectedConvId, settingsSection, setSettingsSection, graphViewMode, setGraphViewMode, graphLeftHidden, setGraphLeftHidden, graphRightHidden, setGraphRightHidden, tlMode, setTlMode };
 
   return (
     <div className={"app" + (sbCollapsed ? " sb-collapsed" : "")}>
@@ -102,7 +109,7 @@ function App() {
 
 /* =============== SIDEBAR =============== */
 function Sidebar({ ctx, collapsed, setCollapsed, goToSettings }) {
-  const { tt, activeView, setActiveView, data, activeBook } = ctx;
+  const { tt, activeView, setActiveView, data, activeBook, conversations } = ctx;
 
   const counts = {
     library:  data.books.length,
@@ -110,7 +117,7 @@ function Sidebar({ ctx, collapsed, setCollapsed, goToSettings }) {
     reader:   activeBook ? activeBook.chapters : "—",
     entities: activeBook ? activeBook.entities : "—",
     pipeline: data.runs.filter(r => r.status === "running").length || null,
-    ask:      data.conversations.length,
+    ask:      conversations.length,
   };
 
   const NavItem = ({ id, icon, label, count, dot }) => (
