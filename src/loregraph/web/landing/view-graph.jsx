@@ -1,21 +1,25 @@
 // LoreGraph — Graph view
 // Three view modes: SOCIAL (people in places), THEMES (concepts), CHRONICLE (events on a timeline).
 
-// ====== Force-directed simulation ======
-// Lightweight bespoke physics, tuned for 20–40 nodes. Three forces:
-//   - SPRINGS on edges (target length 165, gentle k)
-//   - CHARGE between every pair of nodes (Coulomb-ish, repulsive)
-//   - GRAVITY (social mode only): each node is softly pulled to its region centre
-// Velocities decay every frame (DAMPING). Alpha cools toward 0 so the system
-// settles; drag / book-switch reignites it.
+// ====== Anchored force simulation ======
+// Each node has an ANCHOR — by default its curated (cx, cy) inside a region.
+// A strong spring pulls every node toward its anchor, so the social layout
+// stays semantically correct (Bennets in Longbourn, Darcy in Pemberley, …)
+// no matter what the rest of the forces do.
+// On top of that:
+//   - CHARGE between every pair so nodes don't visually overlap
+//   - SPRINGS on edges, weak, only nudging close pairs together
+// Drag updates the dragged node's anchor in real-time — release leaves the
+// new layout. Reset Layout button restores all anchors to the curated seed.
 const SIM = {
-  LINK_DIST: 165,
-  LINK_K:    0.045,
-  CHARGE:    2600,
-  MIN_DIST2: 400,
-  GRAVITY:   0.022,
-  DAMPING:   0.55,
-  MAX_SPEED: 32,
+  ANCHOR_K:     0.085,    // dominant — keeps each node near its assigned position
+  CHARGE:       1100,     // pairwise repulsion (always on)
+  MIN_DIST2:    2700,     // ≈52px minimum centre-to-centre, prevents overlap
+  CHARGE_RANGE2: 22500,   // only compute charge if pairs are within 150px
+  LINK_K:       0.012,    // very weak: edges just whisper, anchor decides
+  LINK_DIST:    140,
+  DAMPING:      0.6,
+  MAX_SPEED:    20,
 };
 
 function deepClonePos(pos) {
@@ -24,27 +28,38 @@ function deepClonePos(pos) {
   return out;
 }
 
-function stepSimulation(prev, vels, edges, regions, alpha, draggedId) {
+function stepSimulation(prev, vels, edges, anchors, alpha, draggedId) {
   const ids = Object.keys(prev);
   const next = {};
   for (const id of ids) next[id] = { x: prev[id].x, y: prev[id].y };
 
-  // ensure velocity slots
   for (const id of ids) if (!vels[id]) vels[id] = { vx: 0, vy: 0 };
 
-  // 1) charge — pairwise repulsion (1/r²)
+  // 1) anchor pull — strong spring back to the node's home position
+  for (const id of ids) {
+    const a = anchors[id];
+    if (!a) continue;
+    const dx = a.x - next[id].x;
+    const dy = a.y - next[id].y;
+    vels[id].vx += dx * SIM.ANCHOR_K;
+    vels[id].vy += dy * SIM.ANCHOR_K;
+  }
+
+  // 2) charge — pairwise repulsion (1/r²). NOT scaled by alpha: this force
+  // must stay active so two anchors dragged close to each other still
+  // visually separate. Only kicks in below CHARGE_RANGE2.
   for (let i = 0; i < ids.length; i++) {
     const a = next[ids[i]];
     for (let j = i + 1; j < ids.length; j++) {
       const b = next[ids[j]];
       let dx = b.x - a.x, dy = b.y - a.y;
       let d2 = dx*dx + dy*dy;
+      if (d2 > SIM.CHARGE_RANGE2) continue;  // far apart, ignore (cheap)
       if (d2 < SIM.MIN_DIST2) {
-        // jitter & clamp
         if (d2 < 1) { dx = (Math.random() - 0.5); dy = (Math.random() - 0.5); d2 = dx*dx + dy*dy + 1; }
         d2 = SIM.MIN_DIST2;
       }
-      const f = SIM.CHARGE * alpha / d2;
+      const f = SIM.CHARGE / d2;
       const d = Math.sqrt(d2);
       const fx = (dx / d) * f, fy = (dy / d) * f;
       vels[ids[i]].vx -= fx; vels[ids[i]].vy -= fy;
@@ -52,7 +67,7 @@ function stepSimulation(prev, vels, edges, regions, alpha, draggedId) {
     }
   }
 
-  // 2) springs — each edge pulls its endpoints toward LINK_DIST
+  // 3) springs on edges — very weak nudge, anchor force dominates
   for (const edge of edges) {
     const a = next[edge.src], b = next[edge.dst];
     if (!a || !b) continue;
@@ -64,20 +79,7 @@ function stepSimulation(prev, vels, edges, regions, alpha, draggedId) {
     if (vels[edge.dst]) { vels[edge.dst].vx -= fx; vels[edge.dst].vy -= fy; }
   }
 
-  // 3) region gravity (social mode)
-  if (regions) {
-    for (const r of regions) {
-      for (const memberId of r.members) {
-        if (!next[memberId] || !vels[memberId]) continue;
-        const dx = r.cx - next[memberId].x;
-        const dy = r.cy - next[memberId].y;
-        vels[memberId].vx += dx * SIM.GRAVITY * alpha;
-        vels[memberId].vy += dy * SIM.GRAVITY * alpha;
-      }
-    }
-  }
-
-  // 4) integrate (skip dragged node — it's pinned to the cursor)
+  // 4) integrate (skip dragged node — pinned to cursor)
   for (const id of ids) {
     if (id === draggedId) { vels[id].vx = 0; vels[id].vy = 0; continue; }
     const v = vels[id];
@@ -326,34 +328,54 @@ function ViewGraph({ ctx }) {
     SYMBOLIZES: edges.filter(e => e.rel === "SYMBOLIZES").length,
   };
 
-  // ====== Live positions — physics-driven, seeded from the curated layout ======
-  // Each entity has a steady-state position from SOCIAL_POS / THEMES_POS. We
-  // then run a slow force simulation on top: edges act as soft springs, nodes
-  // weakly repel each other, and region centres (social mode) gently pull
-  // their members back. The seed already gives a good layout, so the sim's
-  // job is just to make the graph feel alive — drag a node, see neighbours
-  // shift; release, the cloud relaxes back into balance.
+  // ====== Anchored physics ======
+  // Each node has an ANCHOR — by default its curated (cx, cy) inside a
+  // region. The simulation pulls each node toward its anchor (strong),
+  // repels overlapping pairs (medium), and applies a weak spring per edge
+  // (just for liveness). Dragging a node moves its anchor in real-time, so
+  // release leaves the new layout. Reset Layout restores anchors from seed.
   const [livePositions, setLivePositions] = useState(() => deepClonePos(seedPositions));
-  const velRef = useRef({});           // id -> {vx, vy}
-  const draggedRef = useRef(null);     // currently-dragged node id
-  const alphaRef = useRef(1.0);        // simulation "temperature", decays toward 0
-  const reignite = useCallback((to = 0.7) => { alphaRef.current = Math.max(alphaRef.current, to); }, []);
+  const anchorsRef = useRef(deepClonePos(seedPositions));
+  const velRef = useRef({});
+  const draggedRef = useRef(null);
+  const alphaRef = useRef(1.0);
+  const restingRef = useRef(0);
+  const reignite = useCallback((to = 0.7) => {
+    alphaRef.current = Math.max(alphaRef.current, to);
+    restingRef.current = 0;  // wake the loop if it parked at rest
+  }, []);
 
   // Reset to seed when book or view-mode changes.
   useEffect(() => {
+    anchorsRef.current = deepClonePos(seedPositions);
     setLivePositions(deepClonePos(seedPositions));
     velRef.current = {};
     draggedRef.current = null;
     reignite(1.0);
   }, [bookId, viewMode]);
 
-  // Single rAF loop, alpha-cooled. Cheap when idle.
+  // Single rAF loop. Anchor pull and charge are always active so the layout
+  // self-enforces (no overlap; everyone stays near their region). Alpha only
+  // scales the spring-on-edges so the initial settle is lively without
+  // permanent jitter. Skip the step once nothing is moving AND no drag.
   useEffect(() => {
     let raf = 0;
     const tick = () => {
       raf = requestAnimationFrame(tick);
-      if (alphaRef.current < 0.005 && !draggedRef.current) return;
-      setLivePositions(prev => stepSimulation(prev, velRef.current, visibleEdges, viewMode === "social" ? SOCIAL_REGIONS : null, alphaRef.current, draggedRef.current));
+      if (restingRef.current > 8 && !draggedRef.current) return;
+      setLivePositions(prev => {
+        const next = stepSimulation(prev, velRef.current, visibleEdges, anchorsRef.current, alphaRef.current, draggedRef.current);
+        // detect rest: max velocity magnitude under 0.1 → resting
+        let maxV = 0;
+        for (const id in velRef.current) {
+          const v = velRef.current[id];
+          const m = Math.abs(v.vx) + Math.abs(v.vy);
+          if (m > maxV) maxV = m;
+        }
+        if (maxV < 0.1) restingRef.current += 1;
+        else restingRef.current = 0;
+        return next;
+      });
       alphaRef.current *= 0.985;
     };
     raf = requestAnimationFrame(tick);
@@ -363,6 +385,7 @@ function ViewGraph({ ctx }) {
   const selected = entities.find(e => e.id === selectedEntityId) || entities[0];
   const toggleEdge = (r) => setEdgeFilter(f => ({...f, [r]: !f[r]}));
   const resetLayout = () => {
+    anchorsRef.current = deepClonePos(seedPositions);
     setLivePositions(deepClonePos(seedPositions));
     velRef.current = {};
     reignite(1.0);
@@ -426,6 +449,7 @@ function ViewGraph({ ctx }) {
         visibleEdges={visibleEdges}
         positions={livePositions}
         setLivePositions={setLivePositions}
+        anchorsRef={anchorsRef}
         draggedRef={draggedRef}
         reignite={reignite}
         resetLayout={resetLayout}
@@ -595,7 +619,7 @@ function ChronicleOverlay({ chToX, axisY }) {
 }
 
 // =========================== Graph canvas ===========================
-function GraphCanvas({ visibleEntities, visibleEdges, positions, setLivePositions, draggedRef, reignite, resetLayout, entities, selectedEntityId, setSelectedEntityId, selectedEdgeId, setSelectedEdgeId, locale, tt, selected, fullscreen, toggleFullscreen, viewMode, overlays }) {
+function GraphCanvas({ visibleEntities, visibleEdges, positions, setLivePositions, anchorsRef, draggedRef, reignite, resetLayout, entities, selectedEntityId, setSelectedEntityId, selectedEdgeId, setSelectedEdgeId, locale, tt, selected, fullscreen, toggleFullscreen, viewMode, overlays }) {
   const { useState, useRef, useEffect } = React;
   const svgRef = useRef(null);
   const [transform, setTransform] = useState({ x: 0, y: 0, k: 1 });
@@ -631,6 +655,12 @@ function GraphCanvas({ visibleEntities, visibleEdges, positions, setLivePosition
       const wx = (ev.clientX - r.left - tt2.x) / tt2.k - offsetX;
       const wy = (ev.clientY - r.top  - tt2.y) / tt2.k - offsetY;
       if (!moved && (Math.abs(ev.clientX - e.clientX) + Math.abs(ev.clientY - e.clientY) > 3)) moved = true;
+      // Move both the live position AND the anchor — release leaves the
+      // new layout, the dragged node's home becomes wherever it was dropped.
+      if (anchorsRef.current[entityId]) {
+        anchorsRef.current[entityId].x = wx;
+        anchorsRef.current[entityId].y = wy;
+      }
       setLivePositions(prev => ({ ...prev, [entityId]: { x: wx, y: wy } }));
       setTick(n => n + 1);
       reignite(0.4);
