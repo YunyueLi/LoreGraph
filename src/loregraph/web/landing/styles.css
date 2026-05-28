@@ -5310,79 +5310,125 @@ a { color: inherit; }
 .tl2-stage-nav svg { width: 16px; height: 16px; }
 
 /* bottom dock */
-.tl2-stage-dock {
-  flex-shrink: 0;
-  position: relative;
-  border-top: 1px solid rgba(184,149,74,0.2);
-  background: rgba(245,239,226,0.4);
-  display: flex; flex-direction: column;
-  transition: height 0.2s cubic-bezier(0.4,0,0.2,1);
-}
-.tl2-stage-dock.collapsed {
-  height: 48px;
-  overflow: hidden;
-}
-.tl2-stage-dock.open {
-  /* height set inline */
-  overflow: hidden;
-}
-
-/* drag handle at top edge */
-.tl2-stage-dock-grip {
+/* Stage dock trigger — small bottom-center pill, same visual language as
+   the ribbon trigger. Different content (label + count vs Roman + title). */
+.tl2-stage-dock-trigger {
   position: absolute;
-  top: -5px; left: 0; right: 0;
-  height: 10px;
-  cursor: row-resize;
-  display: flex; justify-content: center; align-items: center;
-  z-index: 4;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px 7px 12px;
+  background: rgba(255,253,247,0.86);
+  border: 1px solid rgba(184,149,74,0.28);
+  border-radius: 999px;
+  color: var(--paper-text-mute);
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 6px 16px -8px rgba(40,28,14,0.25);
+  opacity: 0.82;
+  z-index: 12;
+  transition: opacity 0.2s, transform 0.2s, box-shadow 0.2s, border-color 0.2s, background 0.2s;
 }
-.tl2-stage-dock-grip > span {
-  display: block;
-  width: 56px; height: 3px;
-  border-radius: 2px;
-  background: rgba(184,149,74,0.22);
-  transition: background 0.15s;
+.tl2-stage-dock-trigger:hover {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-2px);
+  border-color: rgba(184,149,74,0.55);
+  box-shadow: 0 12px 24px -10px rgba(40,28,14,0.4);
+  background: var(--paper);
 }
-.tl2-stage-dock-grip:hover > span { background: var(--gold); width: 72px; }
-.tl2-stage-dock.collapsed .tl2-stage-dock-grip { display: none; }
+.tl2-stage-dock-trigger-dot {
+  width: 6px; height: 6px; border-radius: 999px;
+  background: var(--gold-deep);
+  flex-shrink: 0;
+}
+.tl2-stage-dock-trigger-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--gold-deep);
+}
+.tl2-stage-dock-trigger-count {
+  font-family: 'Spectral', serif;
+  font-style: italic;
+  font-size: 13px;
+  color: var(--paper-text);
+  flex-shrink: 0;
+}
+.tl2-stage-dock-trigger-chev {
+  display: inline-flex;
+  color: var(--paper-text-faint);
+  flex-shrink: 0;
+}
+.tl2-stage-dock-trigger:hover .tl2-stage-dock-trigger-chev { color: var(--gold-deep); }
 
-.tl2-stage-dock-head {
+/* Stage drawer — overlay + sheet, scoped to .tl2-stage (which is
+   position: relative). Visually identical to the ribbon drawer. */
+.tl2-stage-dock-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(20,14,4,0.14);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 14;
+  animation: tl2-dock-fade 0.18s ease-out;
+}
+.tl2-stage-dock-sheet {
+  width: 100%;
+  max-height: 70%;
+  background:
+    linear-gradient(to bottom, #f6efdc 0, var(--paper) 60%, var(--paper) 100%);
+  border-top: 1px solid rgba(184,149,74,0.35);
+  border-radius: 16px 16px 0 0;
+  box-shadow:
+    inset 0 1px 0 rgba(255,239,205,0.6),
+    0 -16px 36px -14px rgba(40,28,14,0.3);
+  padding: 8px 32px 18px;
+  overflow: auto;
+  animation: tl2-dock-rise 0.3s cubic-bezier(0.22,1,0.36,1);
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 12px;
+}
+.tl2-stage-dock-handle {
+  width: 34px;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(40,28,14,0.18);
+  margin: 4px auto 4px;
+  cursor: pointer;
+}
+.tl2-stage-dock-label {
   display: flex; align-items: center; justify-content: center; gap: 12px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px; letter-spacing: 0.32em; text-transform: uppercase;
   color: var(--gold-deep);
-  padding: 14px 40px 12px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  width: 100%;
-  flex-shrink: 0;
-  transition: color 0.18s;
+  padding-bottom: 4px;
 }
-.tl2-stage-dock-head:hover { color: var(--gold); }
-.tl2-stage-dock-head .rule {
+.tl2-stage-dock-label .rule {
   flex: 1; max-width: 180px; height: 1px;
   background: var(--gold-deep); opacity: 0.3;
 }
-.tl2-stage-dock-head .ct { color: var(--paper-text-faint); }
-.tl2-stage-dock-head .caret {
-  display: inline-flex; align-items: center;
-  transition: transform 0.2s;
-  color: var(--gold-deep);
-  margin-left: 4px;
-}
-
+.tl2-stage-dock-label .ct { color: var(--paper-text-faint); font-family: 'Spectral', serif; font-style: italic; letter-spacing: 0; text-transform: none; font-size: 13px; }
 .tl2-stage-dock-list {
-  flex: 1; min-height: 0;
   overflow: auto;
-  padding: 0 40px 22px;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 10px;
   align-content: start;
   max-width: 1280px;
   margin: 0 auto;
   width: 100%;
+}
+@media (max-width: 800px) {
+  .tl2-stage-dock-sheet { padding: 8px 18px 14px; max-height: 80%; }
+  .tl2-stage-dock-trigger { max-width: calc(100% - 24px); padding: 6px 12px; }
+  .tl2-stage-dock-list { grid-template-columns: 1fr; }
 }
 
 /* ===================================================================== */
