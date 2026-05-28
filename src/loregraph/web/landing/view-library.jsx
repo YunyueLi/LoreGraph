@@ -5,8 +5,8 @@ function ViewLibrary({ ctx }) {
   const { tt, data, activeBook, setActiveBookId, setActiveView, locale } = ctx;
   const { useState } = React;
   const [filter, setFilter] = useState("all");
-  const [coverStyle, setCoverStyle] = useState(() => localStorage.getItem("lg_cover_style") || "photo");
-  React.useEffect(() => { localStorage.setItem("lg_cover_style", coverStyle); }, [coverStyle]);
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem("lg_view_mode") || "grid");
+  React.useEffect(() => { localStorage.setItem("lg_view_mode", viewMode); }, [viewMode]);
 
   const books = data.books;
   const filtered = filter === "all" ? books : books.filter(b => (b.type || "novel") === filter);
@@ -77,51 +77,55 @@ function ViewLibrary({ ctx }) {
           ))}
         </div>
         <div style={{flex:1}} />
-        <div className="lib-cover-toggle">
+        <div className="lib-view-toggle">
           <button
-            className={coverStyle === "photo" ? "active" : ""}
-            onClick={() => setCoverStyle("photo")}
-            title={locale === "en" ? "Period photographs" : locale === "zh-CN" ? "原版扫描" : locale === "zh-TW" ? "原版掃描" : locale === "ja" ? "原版スキャン" : locale === "ko" ? "원본 스캔" : locale === "fr" ? "Scans d'époque" : locale === "es" ? "Escáneos de época" : "Originalscans"}>
+            className={viewMode === "grid" ? "active" : ""}
+            onClick={() => setViewMode("grid")}
+            title={tt("lib.view.grid")}>
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3">
-              <rect x="2" y="3" width="12" height="10" />
-              <circle cx="6.5" cy="7" r="1.5" />
-              <path d="M 2 11 L 6 8 L 9 10 L 14 6" />
+              <rect x="2" y="2" width="5" height="5" />
+              <rect x="9" y="2" width="5" height="5" />
+              <rect x="2" y="9" width="5" height="5" />
+              <rect x="9" y="9" width="5" height="5" />
             </svg>
-            <span>{locale === "en" ? "Original" : locale === "zh-CN" ? "原版" : locale === "zh-TW" ? "原版" : locale === "ja" ? "原版" : locale === "ko" ? "원본" : locale === "fr" ? "Original" : locale === "es" ? "Original" : "Original"}</span>
+            <span>{tt("lib.view.grid")}</span>
           </button>
           <button
-            className={coverStyle === "illustrated" ? "active" : ""}
-            onClick={() => setCoverStyle("illustrated")}
-            title={locale === "en" ? "Illustrated covers" : locale === "zh-CN" ? "插画版" : locale === "zh-TW" ? "插畫版" : locale === "ja" ? "イラスト版" : locale === "ko" ? "일러스트 판" : locale === "fr" ? "Couvertures illustrées" : locale === "es" ? "Cubiertas ilustradas" : "Illustrierte Cover"}>
+            className={viewMode === "shelf" ? "active" : ""}
+            onClick={() => setViewMode("shelf")}
+            title={tt("lib.view.shelf")}>
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3">
-              <path d="M 4 2 L 12 2 L 12 14 L 4 14 z" />
-              <line x1="6" y1="5" x2="10" y2="5" />
-              <line x1="6" y1="7.5" x2="10" y2="7.5" />
-              <line x1="6.5" y1="10" x2="9.5" y2="10" />
-              <circle cx="8" cy="12" r="0.5" fill="currentColor" />
+              <rect x="2"    y="3" width="2.4" height="10" />
+              <rect x="5.2"  y="2" width="2.4" height="11" />
+              <rect x="8.4"  y="4" width="2.4" height="9" />
+              <rect x="11.6" y="3" width="2.4" height="10" />
             </svg>
-            <span>{locale === "en" ? "Illustrated" : locale === "zh-CN" ? "插画" : locale === "zh-TW" ? "插畫" : locale === "ja" ? "イラスト" : locale === "ko" ? "일러스트" : locale === "fr" ? "Illustré" : locale === "es" ? "Ilustrado" : "Illustriert"}</span>
+            <span>{tt("lib.view.shelf")}</span>
           </button>
         </div>
       </div>
 
-      <div className="lib-grid">
-        {filtered.map(b => (
-          <BookCard key={b.id} book={b} active={b.id === activeBook.id} onClick={() => openBook(b)} ctx={ctx} coverStyle={coverStyle} />
-        ))}
-        <div className="lib-card import">
-          <div>
-            <div className="plus">+</div>
-            <p>{tt("lib.import.text")}</p>
-            <div className="formats">{tt("lib.import.formats")}</div>
+      {viewMode === "grid" ? (
+        <div className="lib-grid">
+          {filtered.map(b => (
+            <BookCard key={b.id} book={b} active={b.id === activeBook.id} onClick={() => openBook(b)} ctx={ctx} />
+          ))}
+          <div className="lib-card import">
+            <div>
+              <div className="plus">+</div>
+              <p>{tt("lib.import.text")}</p>
+              <div className="formats">{tt("lib.import.formats")}</div>
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <BookShelf books={filtered} activeId={activeBook && activeBook.id} ctx={ctx} onOpen={openBook} />
+      )}
     </div>
   );
 }
 
-function BookCard({ book, active, onClick, ctx, coverStyle }) {
+function BookCard({ book, active, onClick, ctx }) {
   const { tt, locale } = ctx;
   const title = window.bookTitle(book, locale);
   const author = window.bookAuthor(book, locale);
@@ -143,7 +147,7 @@ function BookCard({ book, active, onClick, ctx, coverStyle }) {
   return (
     <div className={"lib-card " + (active ? "active" : "")} onClick={onClick}>
       <div className="lib-card-top">
-        {window.bookCover(book, coverStyle)}
+        {window.bookCover(book, "photo")}
       </div>
 
       <div className="lib-card-info">
@@ -168,6 +172,64 @@ function BookCard({ book, active, onClick, ctx, coverStyle }) {
           <div className="lib-card-stat-lbl">{tt("lib.card.words")}</div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* =============== BookShelf — books as physical spines on shelves =============== */
+// Each spine: width scaled by `tokens` (so epics look thick, short plays slim),
+// body color from book.coverTone, title typeset vertically along the spine
+// (writing-mode: vertical-rl + text-orientation: mixed = CJK reads top-down,
+// Latin scripts rotate 90° like real spine lettering). Gold "hub" rules at the
+// caps echo the bands on raised-cord bindings. Hover lifts the volume off the
+// shelf; click opens the book in the graph view.
+const SPINE_PALETTE = {
+  ink:    { bg: "#1a1714", fg: "#d1ac5e", accent: "#b8954a" },
+  dark:   { bg: "#221d18", fg: "#d1ac5e", accent: "#a08758" },
+  gold:   { bg: "#8a6e36", fg: "#fbf7ea", accent: "#f0d6ad" },
+  rust:   { bg: "#6b2d22", fg: "#f0d6ad", accent: "#d1ac5e" },
+  indigo: { bg: "#2b3056", fg: "#f0d6ad", accent: "#d1ac5e" },
+  cream:  { bg: "#d4c5a0", fg: "#3d2f1a", accent: "#8a6e36" },
+  deep:   { bg: "#152133", fg: "#d1ac5e", accent: "#b8954a" },
+};
+
+function BookShelf({ books, activeId, ctx, onOpen }) {
+  const { locale } = ctx;
+  const spineWidth = (tokens) =>
+    Math.round(Math.max(28, Math.min(60, 28 + Math.sqrt((tokens || 20000) / 30000) * 9)));
+
+  return (
+    <div className="lib-shelf">
+      {books.map((book) => {
+        const palette = SPINE_PALETTE[book.coverTone] || SPINE_PALETTE.ink;
+        const w = spineWidth(book.tokens);
+        const title = window.bookTitle(book, locale);
+        const author = window.bookAuthor(book, locale);
+        return (
+          <div
+            key={book.id}
+            className={"lib-spine " + (book.id === activeId ? "active" : "")}
+            onClick={() => onOpen(book)}
+            title={`${title} — ${author} (${book.year})`}
+            style={{
+              width: `${w}px`,
+              background: palette.bg,
+              color: palette.fg,
+            }}
+          >
+            <div className="lib-spine-cap top" style={{ color: palette.accent }}>
+              <div className="lib-spine-rule" />
+              <div className="lib-spine-rule" />
+            </div>
+            <div className="lib-spine-title">{title}</div>
+            <div className="lib-spine-cap bot" style={{ color: palette.accent }}>
+              <div className="lib-spine-rule" />
+              <div className="lib-spine-rule" />
+              <div className="lib-spine-year">{book.year > 0 ? book.year : ""}</div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
