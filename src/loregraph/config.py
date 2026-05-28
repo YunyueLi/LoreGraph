@@ -30,9 +30,9 @@ class Settings(BaseSettings):
         description=(
             "Which LLM backend to use. One of: anthropic, openai, deepseek, "
             "kimi/moonshot, zhipu/glm, qwen/dashscope, groq, grok/xai, "
-            "gemini/google, together, fireworks, mistral, ollama, vllm, "
-            "openai_compatible. The non-anthropic options all dispatch "
-            "through the OpenAI-compatible SDK."
+            "gemini/google, together, fireworks, mistral, openrouter, "
+            "ollama, vllm, openai_compatible. The non-anthropic options "
+            "all dispatch through the OpenAI-compatible SDK."
         ),
     )
     llm_api_key: str | None = Field(

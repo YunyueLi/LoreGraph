@@ -92,6 +92,11 @@ ANTHROPIC_API_KEY=sk-ant-...
 LOREGRAPH_LLM_PROVIDER=deepseek
 DEEPSEEK_API_KEY=sk-...
 
+# OpenRouter（一个 key 接入 100+ 模型）
+LOREGRAPH_LLM_PROVIDER=openrouter
+OPENROUTER_API_KEY=sk-or-v1-...
+LOREGRAPH_LLM_MODEL=anthropic/claude-sonnet-4.5   # 任意 OpenRouter model id
+
 # 本地 Ollama，免 key
 LOREGRAPH_LLM_PROVIDER=ollama
 LOREGRAPH_LLM_MODEL=llama3.2          # 可选 override
@@ -110,6 +115,7 @@ LOREGRAPH_LLM_MODEL=your-model
 | **国际头部** | `anthropic` · `openai` · `gemini` · `grok` |
 | **国内** | `deepseek` · `kimi`（月之暗面）· `zhipu`（智谱 GLM）· `qwen`（通义千问 DashScope）|
 | **开源模型托管** | `groq` · `together` · `fireworks` · `mistral` |
+| **聚合网关** | `openrouter`（一个 key 接入 100+ 模型）|
 | **本地** | `ollama` · `vllm` |
 | **自定义** | `openai_compatible` |
 

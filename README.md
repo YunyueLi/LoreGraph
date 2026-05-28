@@ -92,6 +92,11 @@ ANTHROPIC_API_KEY=sk-ant-...
 LOREGRAPH_LLM_PROVIDER=deepseek
 DEEPSEEK_API_KEY=sk-...
 
+# OpenRouter (gateway to 100+ models)
+LOREGRAPH_LLM_PROVIDER=openrouter
+OPENROUTER_API_KEY=sk-or-v1-...
+LOREGRAPH_LLM_MODEL=anthropic/claude-sonnet-4.5   # any OpenRouter model id
+
 # Local Ollama, no key
 LOREGRAPH_LLM_PROVIDER=ollama
 LOREGRAPH_LLM_MODEL=llama3.2          # optional override
@@ -110,6 +115,7 @@ Built-in provider presets (each ships with a sensible default model):
 | **Frontier** | `anthropic` · `openai` · `gemini` · `grok` |
 | **China** | `deepseek` · `kimi` (Moonshot) · `zhipu` (GLM) · `qwen` (DashScope) |
 | **Open-weights hosts** | `groq` · `together` · `fireworks` · `mistral` |
+| **Aggregators** | `openrouter` (100+ models behind one key) |
 | **Local** | `ollama` · `vllm` |
 | **Custom** | `openai_compatible` |
 
