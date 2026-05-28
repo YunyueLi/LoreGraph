@@ -68,6 +68,11 @@ PROVIDER_PRESETS: dict[str, tuple[str | None, str | None]] = {
         "accounts/fireworks/models/llama-v3p3-70b-instruct",
     ),
     "mistral": ("https://api.mistral.ai/v1", "mistral-large-latest"),
+    # OpenRouter aggregates ~200 models behind one OpenAI-compatible
+    # endpoint. Default model is Anthropic's Sonnet (matches the project's
+    # native default); override via LOREGRAPH_LLM_MODEL to use openai/*,
+    # deepseek/*, meta-llama/*, etc.
+    "openrouter": ("https://openrouter.ai/api/v1", "anthropic/claude-3.5-sonnet"),
     "ollama": ("http://localhost:11434/v1", "llama3.2"),
     "vllm": ("http://localhost:8000/v1", ""),
     "openai_compatible": (None, None),
@@ -93,6 +98,7 @@ _API_KEY_ENV_ALIASES: dict[str, tuple[str, ...]] = {
     "together": ("TOGETHER_API_KEY",),
     "fireworks": ("FIREWORKS_API_KEY",),
     "mistral": ("MISTRAL_API_KEY",),
+    "openrouter": ("OPENROUTER_API_KEY",),
     "ollama": (),
     "vllm": (),
     "openai_compatible": (),
