@@ -50,13 +50,16 @@ function CoverFrame({ children, bg = "#f5efe2" }) {
 }
 
 // Real photographs of public-domain title pages / first editions.
+// URLs verified via Wikipedia's REST summary API (canonical Wikimedia paths).
+// Rose: Eco's 1980 work is still copyrighted, so we use Book of Kells fol. 32v
+// "Christ Enthroned" — a thematically appropriate medieval illuminated page.
 window.LG_COVER_IMAGES = {
   pap:   "https://upload.wikimedia.org/wikipedia/commons/1/17/PrideAndPrejudiceTitlePage.jpg",
-  rose:  "https://upload.wikimedia.org/wikipedia/commons/9/95/KellsFol032vChristEnthroned.jpg",
-  frank: "https://upload.wikimedia.org/wikipedia/commons/9/91/Frontispiece_to_Frankenstein_1831.jpg",
-  drac:  "https://upload.wikimedia.org/wikipedia/commons/d/dd/Dracula1st.jpeg",
-  mob:   "https://upload.wikimedia.org/wikipedia/commons/8/8b/Moby-Dick_FE_title_page.jpg",
-  alice: "https://upload.wikimedia.org/wikipedia/commons/d/da/Alice%27s_Adventures_in_Wonderland_cover_%281865%29.jpg",
+  rose:  "https://upload.wikimedia.org/wikipedia/commons/b/b1/KellsFol032vChristEnthroned.jpg",
+  frank: "https://upload.wikimedia.org/wikipedia/commons/5/53/Christie%27s_auction_scan_of_Frankenstein_1818.jpg",
+  drac:  "https://upload.wikimedia.org/wikipedia/commons/4/45/Dracula_1st_ed_cover_reproduction.jpg",
+  mob:   "https://upload.wikimedia.org/wikipedia/commons/3/36/Moby-Dick_FE_title_page.jpg",
+  alice: "https://upload.wikimedia.org/wikipedia/commons/a/a9/Alice%27s_Adventures_in_Wonderland_cover_%281865%29.jpg",
 };
 
 window.LG_COVERS = {

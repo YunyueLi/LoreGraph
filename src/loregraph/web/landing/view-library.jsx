@@ -120,7 +120,9 @@ function ViewLibrary({ ctx }) {
 
 function BookCard({ book, active, onClick, ctx, coverStyle }) {
   const { tt, locale } = ctx;
-  const displayTitle = window.bookTitle(book, locale);
+  const title = window.bookTitle(book, locale);
+  const author = window.bookAuthor(book, locale);
+  const fmt = (n) => (n == null ? "—" : Number(n).toLocaleString());
 
   return (
     <div className={"lib-card " + (active ? "active" : "")} onClick={onClick}>
@@ -129,67 +131,24 @@ function BookCard({ book, active, onClick, ctx, coverStyle }) {
       </div>
 
       <div className="lib-card-info">
-        <div className="lib-card-title">{book.title}</div>
-        <div className="lib-card-meta">{book.author} · {book.year}</div>
-        {displayTitle !== book.title && (
-          <div className="lib-card-zh">{displayTitle}</div>
-        )}
+        <div className="lib-card-title">{title}</div>
+        <div className="lib-card-meta">{author} · {book.year}</div>
       </div>
 
-      {book.status === "running" && (
-        <div style={{marginTop: 14, padding: "0 4px"}}>
-          <div className="lib-card-progress">
-            <div style={{width: (book.progress*100)+"%"}} />
-          </div>
-          <div style={{fontFamily:"'Spectral', serif", fontStyle:"italic", fontSize:12.5, color:"var(--gold-deep)", marginTop: 6}}>
-            {tt("lib.card.progress", {n: book.currentPass, p: Math.round(book.progress*100)})}
-          </div>
+      <div className="lib-card-stats">
+        <div className="lib-card-stat">
+          <div className="lib-card-stat-num">{fmt(book.entities)}</div>
+          <div className="lib-card-stat-lbl">{tt("lib.card.characters")}</div>
         </div>
-      )}
-
-      {book.status !== "ingested" && book.status !== "running" && (
-        <div className="lib-card-stats">
-          <div className="lib-card-stat">
-            <div className="lib-card-stat-num">{book.entities}</div>
-            <div className="lib-card-stat-lbl">{tt("lib.card.entities")}</div>
-          </div>
-          <div className="lib-card-stat">
-            <div className="lib-card-stat-num">{book.edges || "—"}</div>
-            <div className="lib-card-stat-lbl">{tt("lib.card.edges")}</div>
-          </div>
-          <div className="lib-card-stat">
-            <div className="lib-card-stat-num">{book.glucose || "—"}</div>
-            <div className="lib-card-stat-lbl">{tt("lib.card.glucose")}</div>
-          </div>
+        <div className="lib-card-stat">
+          <div className="lib-card-stat-num">{fmt(book.edges)}</div>
+          <div className="lib-card-stat-lbl">{tt("lib.card.relations")}</div>
         </div>
-      )}
-
-      {book.status === "ingested" && (
-        <div style={{padding: "14px 4px 0", fontFamily:"'Spectral', serif", fontStyle:"italic", color:"var(--paper-text-mute)", fontSize: 13}}>
-          — {tt("lib.card.never")}
-        </div>
-      )}
-
-      <div className="lib-card-foot">
-        <div className={"lib-card-status " + book.status}>
-          <span className="dot" />
-          {book.status === "verified" && book.matchRate && <span>{(book.matchRate*100).toFixed(0)}% {tt("lib.card.match")}</span>}
-          {book.status === "running"  && <span>Pass-{book.currentPass}</span>}
-          {book.status === "ingested" && <span>{tt("status.ingested")}</span>}
-          {book.status === "failed"   && <span>{tt("status.failed")} · {(book.matchRate*100).toFixed(0)}%</span>}
-        </div>
-        <div>
-          {book.cost > 0 ? `$${book.cost.toFixed(2)}` : "—"}
-          <span style={{opacity:.35, margin:"0 6px"}}>·</span>
-          {book.provider}
+        <div className="lib-card-stat">
+          <div className="lib-card-stat-num">{fmt(book.tokens)}</div>
+          <div className="lib-card-stat-lbl">{tt("lib.card.words")}</div>
         </div>
       </div>
-
-      {book.status === "failed" && book.failedAt && (
-        <div style={{marginTop:10, padding:"8px 12px", background:"rgba(160,74,42,.07)", borderLeft:"2px solid var(--rust)", fontFamily:"'Spectral', serif", fontStyle:"italic", fontSize:11.5, color:"var(--rust)", lineHeight:1.5}}>
-          {book.failedAt}
-        </div>
-      )}
     </div>
   );
 }
