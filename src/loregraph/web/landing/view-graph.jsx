@@ -4,7 +4,8 @@
 function ViewGraph({ ctx }) {
   const { tt, data, entities, edges, locale, selectedEntityId, setSelectedEntityId, activeBook,
           graphViewMode, setGraphViewMode, graphLeftHidden, setGraphLeftHidden, graphRightHidden, setGraphRightHidden } = ctx;
-  const { useState, useMemo, useEffect } = React;
+  const { useState, useMemo, useEffect, useRef } = React;
+  const gvRef = useRef(null);
 
   const viewMode = graphViewMode;
   const setViewMode = setGraphViewMode;
@@ -21,27 +22,44 @@ function ViewGraph({ ctx }) {
   const MIN_W = 52;
   const SNAP  = 120;
 
+  // Resize drag — we keep React entirely out of the move loop. Each pointermove
+  // just writes the new pixel width to the `--gv-left` / `--gv-right` CSS var
+  // on the .gv container, so the grid recomputes layout without re-rendering
+  // the 25-edge SVG. React state is committed once on pointerup, which is when
+  // the snap-to-collapse decision matters anyway.
   const startDrag = (which) => (e) => {
     e.preventDefault();
     const startX = e.clientX;
     const startW = which === 'left' ? leftW : rightW;
+    const cssVar = which === 'left' ? '--gv-left' : '--gv-right';
+    const gv = gvRef.current;
+    let latest = startW;
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
+    // Disable the .gv grid transition during drag so it follows the cursor 1:1.
+    if (gv) gv.style.setProperty('--gv-transition', 'none');
     const onMove = (ev) => {
       ev.preventDefault();
       const dx = ev.clientX - startX;
       const next = which === 'left' ? startW + dx : startW - dx;
-      const clamped = Math.max(MIN_W, Math.min(560, next));
-      requestAnimationFrame(() => {
-        if (which === 'left') { setLeftW(clamped); if (clamped <= SNAP) setLeftCollapsed(true); else setLeftCollapsed(false); }
-        else                  { setRightW(clamped); if (clamped <= SNAP) setRightCollapsed(true); else setRightCollapsed(false); }
-      });
+      latest = Math.max(MIN_W, Math.min(560, next));
+      if (gv) gv.style.setProperty(cssVar, latest + 'px');
     };
     const onUp = () => {
       document.removeEventListener('pointermove', onMove);
       document.removeEventListener('pointerup', onUp);
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
+      if (gv) gv.style.removeProperty('--gv-transition');
+      // Commit once at the end — snaps to collapsed if under the threshold.
+      const collapsed = latest <= SNAP;
+      if (which === 'left') {
+        setLeftW(latest);
+        setLeftCollapsed(collapsed);
+      } else {
+        setRightW(latest);
+        setRightCollapsed(collapsed);
+      }
     };
     document.addEventListener('pointermove', onMove, { passive: false });
     document.addEventListener('pointerup', onUp);
@@ -226,7 +244,7 @@ function ViewGraph({ ctx }) {
     : <ThemesOverlay />;
 
   return (
-    <div className={gvClass} style={gvStyle}>
+    <div className={gvClass} style={gvStyle} ref={gvRef}>
 
       {/* ===== LEFT PANEL — always in DOM, hidden via CSS when collapsed ===== */}
       <div className="gv-left">
