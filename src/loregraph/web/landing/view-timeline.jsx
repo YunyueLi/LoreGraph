@@ -633,67 +633,50 @@ function StageMode({ ctx, tt, data, entities, locale, visibleEvents, setSelected
 
 function StageDock({ evidenceEdges, data, locale, tt }) {
   const [open, setOpen] = useState(() => localStorage.getItem("lg_tl_dock_open") === "1");
-  const [height, setHeight] = useState(() => {
-    const v = parseInt(localStorage.getItem("lg_tl_dock_h") || "260", 10);
-    return Number.isFinite(v) && v > 60 ? v : 260;
-  });
-  const dragRef = useRef(null);
-
   useEffect(() => { localStorage.setItem("lg_tl_dock_open", open ? "1" : "0"); }, [open]);
-  useEffect(() => { localStorage.setItem("lg_tl_dock_h", String(height)); }, [height]);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => { if (e.key === "Escape") setOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
 
-  const startDrag = (e) => {
-    e.preventDefault();
-    if (!open) setOpen(true);
-    const startY = e.clientY;
-    const startH = height;
-    dragRef.current = { startY, startH };
-    document.body.style.cursor = "row-resize";
-    document.body.style.userSelect = "none";
-    const onMove = (ev) => {
-      const dy = ev.clientY - dragRef.current.startY;
-      const next = Math.max(80, Math.min(window.innerHeight * 0.7, dragRef.current.startH - dy));
-      setHeight(next);
-    };
-    const onUp = () => {
-      document.removeEventListener("pointermove", onMove);
-      document.removeEventListener("pointerup", onUp);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-      dragRef.current = null;
-    };
-    document.addEventListener("pointermove", onMove, { passive: false });
-    document.addEventListener("pointerup", onUp);
-  };
+  const label = tt("tl.evidence");
 
-  return (
-    <div className={"tl2-stage-dock " + (open ? "open" : "collapsed")}
-      style={open ? {height} : undefined}>
-      {/* drag handle — only meaningful when open */}
-      <div className="tl2-stage-dock-grip"
-        onPointerDown={startDrag}
-        title={locale === "en" ? "Drag to resize" : "拖动调整高度"} >
-        <span />
-      </div>
-      <button className="tl2-stage-dock-head"
-        onClick={() => setOpen(o => !o)}>
-        <span className="rule" />
-        <span>{tt("tl.evidence")}</span>
-        <span className="ct">{evidenceEdges.length}</span>
-        <span className="rule" />
-        <span className="caret" style={{transform: open ? "rotate(180deg)" : ""}}>
-          <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.4">
-            <path d="M 4 6 L 8 10 L 12 6" />
+  if (!open) {
+    return (
+      <button className="tl2-stage-dock-trigger"
+        onClick={() => setOpen(true)}
+        title={locale === "en" ? "Show evidence" : "查看原文证据"}>
+        <span className="tl2-stage-dock-trigger-dot" />
+        <span className="tl2-stage-dock-trigger-label">{label}</span>
+        <span className="tl2-stage-dock-trigger-count">{evidenceEdges.length}</span>
+        <span className="tl2-stage-dock-trigger-chev">
+          <svg viewBox="0 0 12 12" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M 3 7.5 L 6 4.5 L 9 7.5" />
           </svg>
         </span>
       </button>
-      {open && (
+    );
+  }
+
+  return (
+    <div className="tl2-stage-dock-overlay"
+      onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
+      <div className="tl2-stage-dock-sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="tl2-stage-dock-handle" onClick={() => setOpen(false)} />
+        <div className="tl2-stage-dock-label">
+          <span className="rule" />
+          <span>{label}</span>
+          <span className="ct">{evidenceEdges.length}</span>
+          <span className="rule" />
+        </div>
         <div className="tl2-stage-dock-list">
           {evidenceEdges.map(e => (
             <EvidenceBlock key={e.id} edge={e} data={data} locale={locale} tt={tt} dense />
           ))}
         </div>
-      )}
+      </div>
     </div>
   );
 }
