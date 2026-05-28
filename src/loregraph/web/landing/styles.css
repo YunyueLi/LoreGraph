@@ -5656,3 +5656,142 @@ a { color: inherit; }
 /* Reduce timeline toolbar padding now that mode switcher is gone */
 .tl2-toolbar { padding-bottom: 16px; }
 .tl2-controls .tl2-phase-row { justify-content: end; max-width: 720px; }
+
+/* =================== BOOKSHELF SWITCHER (floating popover) =================== */
+/* On graph / index / timeline views: a small round trigger anchored to the
+   bottom-right of the main content. Click to slide a compact spine strip
+   up from the bottom; click a spine to switch the active book in place. */
+.bs-switcher-trigger {
+  position: absolute;
+  right: 24px;
+  bottom: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fbf7ea;
+  border: 1px solid rgba(184,149,74,0.55);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 6px 18px -6px rgba(60,40,10,0.55);
+  z-index: 20;
+  transition: transform 0.18s, box-shadow 0.18s, background 0.18s;
+}
+.bs-switcher-trigger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px -6px rgba(60,40,10,0.65);
+  background: #232017;
+}
+.bs-switcher-trigger svg { width: 18px; height: 18px; }
+.bs-switcher-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20,14,4,0.18);
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: bs-fade 0.16s ease-out;
+}
+@keyframes bs-fade { from { background: rgba(20,14,4,0); } to { background: rgba(20,14,4,0.18); } }
+.bs-switcher-strip {
+  width: min(1280px, calc(100% - 48px));
+  background: var(--paper);
+  border: 1px solid rgba(184,149,74,0.35);
+  border-radius: 14px 14px 0 0;
+  box-shadow: 0 -14px 40px -10px rgba(40,28,14,0.4);
+  padding: 14px 22px 18px;
+  margin-bottom: 0;
+  position: relative;
+  animation: bs-rise 0.22s cubic-bezier(0.4,0,0.2,1);
+}
+@keyframes bs-rise { from { transform: translateY(40px); opacity: 0.4; } to { transform: translateY(0); opacity: 1; } }
+.bs-switcher-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.26em;
+  color: var(--gold-deep);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  padding-left: 4px;
+}
+.bs-switcher-spines {
+  display: flex;
+  align-items: flex-end;
+  gap: 0;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  /* faint shelf rail */
+  background:
+    linear-gradient(to bottom, transparent calc(100% - 4px), rgba(184,149,74,0.32) calc(100% - 4px), rgba(184,149,74,0.32) calc(100% - 3px), rgba(40,28,14,0.45) calc(100% - 3px), rgba(40,28,14,0.45) calc(100% - 1px), transparent calc(100% - 1px));
+}
+.bs-switcher-spine {
+  height: 76px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 2px 2px 0 0;
+  box-shadow:
+    inset -1px 0 0 rgba(0,0,0,0.28),
+    inset 1px 0 0 rgba(255,255,255,0.05),
+    0 1px 3px -1px rgba(0,0,0,0.3);
+  transition: transform 0.18s cubic-bezier(0.4,0,0.2,1), box-shadow 0.18s;
+  margin-bottom: 6px;
+}
+.bs-switcher-spine:hover {
+  transform: translateY(-6px);
+  box-shadow:
+    inset -1px 0 0 rgba(0,0,0,0.28),
+    0 8px 18px -4px rgba(0,0,0,0.45);
+  z-index: 1;
+}
+.bs-switcher-spine.active {
+  outline: 1.5px solid rgba(209,172,94,0.7);
+  outline-offset: -1.5px;
+  transform: translateY(-4px);
+}
+.bs-switcher-spine-title {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-family: 'Spectral', serif;
+  font-style: italic;
+  font-size: 10.5px;
+  letter-spacing: 0.015em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-height: 60px;
+  padding: 3px 0;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.4);
+}
+.bs-switcher-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid rgba(184,149,74,0.3);
+  color: var(--paper-text-mute);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.16s, color 0.16s, border-color 0.16s;
+}
+.bs-switcher-close:hover {
+  background: rgba(184,149,74,0.12);
+  color: var(--gold-deep);
+  border-color: rgba(184,149,74,0.55);
+}
+.bs-switcher-close svg { width: 12px; height: 12px; }
+@media (max-width: 720px) {
+  .bs-switcher-trigger { right: 16px; bottom: 16px; width: 40px; height: 40px; }
+  .bs-switcher-strip { width: calc(100% - 16px); padding: 12px 14px 14px; }
+  .bs-switcher-spine { height: 64px; }
+}

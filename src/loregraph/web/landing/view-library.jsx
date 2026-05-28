@@ -2,13 +2,20 @@
 // Grid of books with status, stats, and "+ add new"
 
 function ViewLibrary({ ctx }) {
-  const { tt, data, activeBook, setActiveBookId, setActiveView, locale } = ctx;
+  const { tt, data, activeBook, setActiveBookId, setActiveView, locale, bookMru } = ctx;
   const { useState } = React;
   const [filter, setFilter] = useState("all");
   const [viewMode, setViewMode] = useState(() => localStorage.getItem("lg_view_mode") || "grid");
   React.useEffect(() => { localStorage.setItem("lg_view_mode", viewMode); }, [viewMode]);
 
-  const books = data.books;
+  // Order books most-recently-opened first; unopened follow in source order.
+  const mruIdx = new Map((bookMru || []).map((id, i) => [id, i]));
+  const books = [...data.books].sort((a, b) => {
+    const ai = mruIdx.has(a.id) ? mruIdx.get(a.id) : Infinity;
+    const bi = mruIdx.has(b.id) ? mruIdx.get(b.id) : Infinity;
+    if (ai !== bi) return ai - bi;
+    return data.books.indexOf(a) - data.books.indexOf(b);
+  });
   const filtered = filter === "all" ? books : books.filter(b => (b.type || "novel") === filter);
 
   // global stats

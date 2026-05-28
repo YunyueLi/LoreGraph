@@ -5,23 +5,35 @@ function ViewReader({ ctx }) {
   const { tt, data, entities, locale, selectedEntityId, setSelectedEntityId, chunks, activeBook } = ctx;
   const { useState, useMemo, useEffect } = React;
 
-  const defaultChunkId = chunks[0] ? chunks[0].id : null;
+  // Prefer the full-chapter chunk for a given chapter, falling back to any
+  // chunk that touches it (e.g. a paragraph chunk that exists only as an
+  // evidence anchor for an edge).
+  const chunkForChapter = (n) =>
+    chunks.find(c => c.chapter === n && c.full) || chunks.find(c => c.chapter === n);
+
+  const firstFull = chunks.find(c => c.full) || chunks[0];
+  const defaultChunkId = firstFull ? firstFull.id : null;
   const [selectedChunkId, setSelectedChunkId] = useState(defaultChunkId);
   // Re-anchor when switching books so a stale id from one book doesn't show null.
   useEffect(() => {
     if (!chunks.find(c => c.id === selectedChunkId)) {
-      setSelectedChunkId(chunks[0] ? chunks[0].id : null);
+      const f = chunks.find(c => c.full) || chunks[0];
+      setSelectedChunkId(f ? f.id : null);
     }
   }, [activeBook && activeBook.id]);
-  const currentChunk = chunks.find(c => c.id === selectedChunkId) || chunks[0];
+  const currentChunk = chunks.find(c => c.id === selectedChunkId) || firstFull || chunks[0];
 
-  // Chapters list — derived from the scoped chunks for the active book. Each
-  // chunk may carry an optional `chapterName`; we take the first one we see.
+  // Chapters list — derived from the scoped chunks. Prefer the full-chapter
+  // chunk's `chapterName` over a paragraph chunk's when both exist.
   const chapters = useMemo(() => {
     const byNum = new Map();
     for (const c of chunks) {
-      if (!byNum.has(c.chapter)) {
-        byNum.set(c.chapter, { n: c.chapter, name: c.chapterName || `Chapter ${c.chapter}`, entities: 0 });
+      const existing = byNum.get(c.chapter);
+      if (!existing) {
+        byNum.set(c.chapter, { n: c.chapter, name: c.chapterName || `Chapter ${c.chapter}`, entities: 0, hasFull: !!c.full });
+      } else if (c.full && !existing.hasFull) {
+        if (c.chapterName) existing.name = c.chapterName;
+        existing.hasFull = true;
       }
     }
     for (const c of chunks) byNum.get(c.chapter).entities += (c.mentions || 0);
@@ -61,19 +73,14 @@ function ViewReader({ ctx }) {
       <aside className="rd-toc">
         <h3>{tt("rd.toc")}</h3>
         {chapters.map(c => {
-          const hasChunk = chunks.some(ch => ch.chapter === c.n);
-          const active = currentChunk.chapter === c.n;
+          const target = chunkForChapter(c.n);
+          const active = currentChunk && currentChunk.chapter === c.n;
           return (
             <div
               key={c.n}
               className={"rd-ch " + (active ? "active" : "")}
-              onClick={() => {
-                if (hasChunk) {
-                  const ch = chunks.find(ch => ch.chapter === c.n);
-                  setSelectedChunkId(ch.id);
-                }
-              }}
-              style={{opacity: hasChunk ? 1 : 0.5}}
+              onClick={() => { if (target) setSelectedChunkId(target.id); }}
+              style={{opacity: target ? 1 : 0.5}}
             >
               <div className="rd-ch-num">{String(c.n).padStart(2, "0")}</div>
               <div className="rd-ch-name">{c.name}</div>

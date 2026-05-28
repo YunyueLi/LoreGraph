@@ -42,7 +42,21 @@ function App() {
   const data = window.LG_DATA;
   const [locale, setLocaleState] = useState(() => localStorage.getItem("lg_locale") || "zh-CN");
   const [activeView, setActiveView] = useState(() => localStorage.getItem("lg_view") || "library");
-  const [activeBookId, setActiveBookId] = useState("pap");
+  const [activeBookId, setActiveBookId] = useState(() => {
+    // Restore the most recently opened book if any.
+    try {
+      const mru = JSON.parse(localStorage.getItem("lg_book_mru") || "[]");
+      if (Array.isArray(mru) && mru.length) return mru[0];
+    } catch {}
+    return "pap";
+  });
+  // Most-recently-used book order. Prepended on every active-book change.
+  const [bookMru, setBookMru] = useState(() => {
+    try {
+      const mru = JSON.parse(localStorage.getItem("lg_book_mru") || "[]");
+      return Array.isArray(mru) ? mru : [];
+    } catch { return []; }
+  });
   const [selectedEntityId, setSelectedEntityId] = useState("e01");
   const [selectedConvId, setSelectedConvId] = useState(0);
   const [sbCollapsed, setSbCollapsed] = useState(() => localStorage.getItem("lg_sb_collapsed") === "1");
@@ -58,6 +72,16 @@ function App() {
   useEffect(() => { localStorage.setItem("lg_view", activeView); }, [activeView]);
   useEffect(() => { localStorage.setItem("lg_sb_collapsed", sbCollapsed ? "1" : "0"); }, [sbCollapsed]);
   useEffect(() => { localStorage.setItem("lg_tl_mode", tlMode); }, [tlMode]);
+  // Promote the active book to the head of the MRU list whenever it changes.
+  useEffect(() => {
+    if (!activeBookId) return;
+    setBookMru(prev => {
+      const filtered = (prev || []).filter(id => id !== activeBookId);
+      const next = [activeBookId, ...filtered];
+      try { localStorage.setItem("lg_book_mru", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, [activeBookId]);
 
   const setLocale = (l) => setLocaleState(l);
 
@@ -80,7 +104,7 @@ function App() {
     if (view) setActiveView(view);
   };
 
-  const ctx = { data, locale, setLocale, tt, activeView, setActiveView, activeBook, setActiveBookId, entities, edges, chunks, glucose, conversations, selectedEntityId, setSelectedEntityId, gotoEntity, selectedConvId, setSelectedConvId, settingsSection, setSettingsSection, graphViewMode, setGraphViewMode, graphLeftHidden, setGraphLeftHidden, graphRightHidden, setGraphRightHidden, tlMode, setTlMode };
+  const ctx = { data, locale, setLocale, tt, activeView, setActiveView, activeBook, setActiveBookId, bookMru, entities, edges, chunks, glucose, conversations, selectedEntityId, setSelectedEntityId, gotoEntity, selectedConvId, setSelectedConvId, settingsSection, setSettingsSection, graphViewMode, setGraphViewMode, graphLeftHidden, setGraphLeftHidden, graphRightHidden, setGraphRightHidden, tlMode, setTlMode };
 
   return (
     <div className={"app" + (sbCollapsed ? " sb-collapsed" : "")}>
@@ -99,6 +123,7 @@ function App() {
             {activeView === "pipeline"  && <ViewPipeline ctx={ctx} />}
             {activeView === "ask"       && <ViewAsk ctx={ctx} />}
             {activeView === "settings"  && <ViewSettings ctx={ctx} />}
+            {["graph","entities","timeline"].includes(activeView) && <BookshelfSwitcher ctx={ctx} />}
             {activeView === "technical" && <ViewTechnical ctx={ctx} />}
           </ViewErrorBoundary>
         </div>
@@ -432,6 +457,98 @@ const I = {
     </svg>
   ),
 };
+
+/* =============== BookshelfSwitcher — floating popover on graph/index/timeline =============== */
+const BS_PALETTE = {
+  ink:    { bg: "#1a1714", fg: "#d1ac5e" },
+  dark:   { bg: "#221d18", fg: "#d1ac5e" },
+  gold:   { bg: "#8a6e36", fg: "#fbf7ea" },
+  rust:   { bg: "#6b2d22", fg: "#f0d6ad" },
+  indigo: { bg: "#2b3056", fg: "#f0d6ad" },
+  cream:  { bg: "#d4c5a0", fg: "#3d2f1a" },
+  deep:   { bg: "#152133", fg: "#d1ac5e" },
+};
+
+function BookshelfSwitcher({ ctx }) {
+  const [open, setOpen] = useState(false);
+  const { data, activeBook, setActiveBookId, bookMru, locale } = ctx;
+
+  // Close on Esc.
+  useEffect(() => {
+    if (!open) return;
+    const k = (e) => { if (e.key === "Escape") setOpen(false); };
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  }, [open]);
+
+  const triggerLabel =
+    locale === "en"    ? "Bookshelf" :
+    locale === "zh-TW" ? "書架" :
+    locale === "ja"    ? "本棚" :
+    locale === "ko"    ? "책장" :
+    locale === "fr"    ? "Étagère" :
+    locale === "es"    ? "Estantería" :
+    locale === "de"    ? "Bücherregal" :
+                         "书架";
+
+  if (!open) {
+    return (
+      <button className="bs-switcher-trigger"
+        onClick={() => setOpen(true)}
+        title={triggerLabel}>
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4">
+          <rect x="3"    y="4" width="2.6" height="12" />
+          <rect x="6.5"  y="3" width="2.6" height="13" />
+          <rect x="10"   y="5" width="2.6" height="11" />
+          <rect x="13.5" y="4" width="2.6" height="12" />
+        </svg>
+      </button>
+    );
+  }
+
+  // Sort active first, then MRU order, then unopened books in original order.
+  const mruIdx = new Map((bookMru || []).map((id, i) => [id, i]));
+  const sorted = [...data.books].sort((a, b) => {
+    if (activeBook && a.id === activeBook.id) return -1;
+    if (activeBook && b.id === activeBook.id) return 1;
+    const ai = mruIdx.has(a.id) ? mruIdx.get(a.id) : Infinity;
+    const bi = mruIdx.has(b.id) ? mruIdx.get(b.id) : Infinity;
+    if (ai !== bi) return ai - bi;
+    return data.books.indexOf(a) - data.books.indexOf(b);
+  });
+
+  return (
+    <div className="bs-switcher-overlay" onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
+      <div className="bs-switcher-strip" onClick={(e) => e.stopPropagation()}>
+        <div className="bs-switcher-label">{triggerLabel}</div>
+        <div className="bs-switcher-spines">
+          {sorted.map((b) => {
+            const p = BS_PALETTE[b.coverTone] || BS_PALETTE.ink;
+            const w = Math.round(Math.max(20, Math.min(40, 20 + Math.sqrt((b.tokens || 20000) / 30000) * 6)));
+            const title = window.bookTitle(b, locale);
+            const author = window.bookAuthor(b, locale);
+            const isActive = activeBook && b.id === activeBook.id;
+            return (
+              <div key={b.id}
+                className={"bs-switcher-spine " + (isActive ? "active" : "")}
+                style={{ width: `${w}px`, background: p.bg, color: p.fg }}
+                title={`${title} — ${author}` + (b.year ? ` (${b.year})` : "")}
+                onClick={() => { setActiveBookId(b.id); setOpen(false); }}>
+                <div className="bs-switcher-spine-title">{title}</div>
+              </div>
+            );
+          })}
+        </div>
+        <button className="bs-switcher-close" onClick={() => setOpen(false)} title="close" aria-label="close">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6">
+            <line x1="4" y1="4" x2="12" y2="12" />
+            <line x1="12" y1="4" x2="4" y2="12" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
