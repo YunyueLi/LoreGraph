@@ -5390,8 +5390,8 @@ a { color: inherit; }
 /* ===================================================================== */
 .tl2-ribbon {
   flex: 1; min-height: 0;
-  display: grid;
-  grid-template-rows: 1fr auto;
+  display: flex;
+  flex-direction: column;
   position: relative;
 }
 .tl2-ribbon-zoom {
@@ -5537,15 +5537,103 @@ a { color: inherit; }
 .tl2-ribbon-card-title em { font-style: italic; }
 
 /* bottom dock for ribbon */
-.tl2-ribbon-dock {
-  border-top: 1px solid rgba(184,149,74,0.25);
-  background: rgba(245,239,226,0.55);
-  padding: 14px 32px 16px;
-  max-height: 32vh;
+/* --- bottom trigger pill --- subtle by default, accents on hover */
+.tl2-ribbon-dock-trigger {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(560px, calc(100% - 48px));
+  padding: 7px 14px 7px 12px;
+  background: rgba(255,253,247,0.86);
+  border: 1px solid rgba(184,149,74,0.28);
+  border-radius: 999px;
+  color: var(--paper-text-mute);
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 6px 16px -8px rgba(40,28,14,0.25);
+  opacity: 0.82;
+  z-index: 12;
+  transition: opacity 0.2s, transform 0.2s, box-shadow 0.2s, border-color 0.2s, background 0.2s;
+}
+.tl2-ribbon-dock-trigger:hover {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-2px);
+  border-color: rgba(184,149,74,0.55);
+  box-shadow: 0 12px 24px -10px rgba(40,28,14,0.4);
+  background: var(--paper);
+}
+.tl2-ribbon-dock-trigger-dot {
+  width: 6px; height: 6px; border-radius: 999px;
+  background: var(--phase-color, var(--gold-deep));
+  flex-shrink: 0;
+}
+.tl2-ribbon-dock-trigger-roman {
+  font-family: 'Spectral', serif;
+  font-style: italic;
+  font-size: 14px;
+  color: var(--phase-color, var(--gold-deep));
+  letter-spacing: 0.01em;
+  flex-shrink: 0;
+}
+.tl2-ribbon-dock-trigger-title {
+  font-family: 'Spectral', serif;
+  font-size: 13px;
+  color: var(--paper-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.tl2-ribbon-dock-trigger-title em { font-style: italic; }
+.tl2-ribbon-dock-trigger-chev {
+  display: inline-flex;
+  color: var(--paper-text-faint);
+  flex-shrink: 0;
+}
+.tl2-ribbon-dock-trigger:hover .tl2-ribbon-dock-trigger-chev { color: var(--gold-deep); }
+
+/* --- drawer overlay + sheet --- scoped to the ribbon area --- */
+.tl2-ribbon-dock-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(20,14,4,0.14);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 14;
+  animation: tl2-dock-fade 0.18s ease-out;
+}
+@keyframes tl2-dock-fade { from { background: rgba(20,14,4,0); } to { background: rgba(20,14,4,0.14); } }
+.tl2-ribbon-dock-sheet {
+  width: 100%;
+  max-height: 70%;
+  background:
+    linear-gradient(to bottom, #f6efdc 0, var(--paper) 60%, var(--paper) 100%);
+  border-top: 1px solid rgba(184,149,74,0.35);
+  border-radius: 16px 16px 0 0;
+  box-shadow:
+    inset 0 1px 0 rgba(255,239,205,0.6),
+    0 -16px 36px -14px rgba(40,28,14,0.3);
+  padding: 8px 32px 18px;
   overflow: auto;
+  animation: tl2-dock-rise 0.3s cubic-bezier(0.22,1,0.36,1);
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto 1fr;
   gap: 12px;
+}
+@keyframes tl2-dock-rise { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.tl2-ribbon-dock-handle {
+  width: 34px;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(40,28,14,0.18);
+  margin: 4px auto 4px;
+  cursor: pointer;
 }
 .tl2-ribbon-dock-head {
   display: grid;
@@ -5603,7 +5691,10 @@ a { color: inherit; }
 }
 @media (max-width: 800px) {
   .tl2-ribbon-dock-head { grid-template-columns: 1fr; }
-  .tl2-ribbon-dock-roman { font-size: 48px; }
+  .tl2-ribbon-dock-roman { font-size: 40px; }
+  .tl2-ribbon-dock-sheet { padding: 8px 18px 14px; max-height: 80%; }
+  .tl2-ribbon-dock-trigger { max-width: calc(100% - 24px); padding: 6px 12px; }
+  .tl2-ribbon-dock-trigger-title { font-size: 12.5px; }
 }
 
 
