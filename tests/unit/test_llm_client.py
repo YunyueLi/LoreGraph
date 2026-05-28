@@ -57,6 +57,7 @@ def _clear_llm_env(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
         "TOGETHER_API_KEY",
         "FIREWORKS_API_KEY",
         "MISTRAL_API_KEY",
+        "OPENROUTER_API_KEY",
     ]:
         monkeypatch.delenv(var, raising=False)
     yield
@@ -88,6 +89,7 @@ def test_provider_presets_cover_documented_set() -> None:
         "together",
         "fireworks",
         "mistral",
+        "openrouter",
         "ollama",
         "vllm",
         "openai_compatible",
@@ -105,12 +107,33 @@ def test_anthropic_preset_has_no_base_url_but_has_model() -> None:
 @pytest.mark.unit
 @pytest.mark.parametrize(
     "provider",
-    ["openai", "deepseek", "kimi", "zhipu", "qwen", "groq", "grok", "gemini"],
+    ["openai", "deepseek", "kimi", "zhipu", "qwen", "groq", "grok", "gemini", "openrouter"],
 )
 def test_openai_compat_presets_have_https_base_url(provider: str) -> None:
     base_url, _ = PROVIDER_PRESETS[provider]
     assert base_url is not None
     assert base_url.startswith("https://")
+
+
+@pytest.mark.unit
+def test_openrouter_preset_uses_namespaced_model() -> None:
+    """OpenRouter models are always `<vendor>/<model>` — fail loud if the default drifts."""
+    base_url, model = PROVIDER_PRESETS["openrouter"]
+    assert base_url == "https://openrouter.ai/api/v1"
+    assert model and "/" in model
+
+
+@pytest.mark.unit
+def test_factory_routes_openrouter_through_openai_compatible(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LOREGRAPH_LLM_PROVIDER", "openrouter")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-test")
+    s = Settings()  # type: ignore[call-arg]
+    client = make_llm_client(s)
+    assert isinstance(client, OpenAICompatibleLLMClient)
+    assert client.provider == "openrouter"
+    assert "/" in client.model
 
 
 @pytest.mark.unit

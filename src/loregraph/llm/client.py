@@ -18,8 +18,8 @@ Backends
 * `OpenAICompatibleLLMClient` — `openai` SDK with a configurable
   `base_url`. Covers OpenAI, DeepSeek, Moonshot (Kimi), Zhipu (GLM),
   Alibaba Qwen (DashScope), Groq, xAI (Grok), Google Gemini's
-  OpenAI-compatible endpoint, Together, Fireworks, Ollama, vLLM, and
-  anything else exposing the OpenAI chat-completions shape. Some of
+  OpenAI-compatible endpoint, Together, Fireworks, OpenRouter, Ollama,
+  vLLM, and anything else exposing the OpenAI chat-completions shape. Some of
   those providers do their own automatic prompt caching server-side
   (OpenAI ≥ Aug 2024, DeepSeek) — when they expose
   `usage.prompt_tokens_details.cached_tokens` we surface it.
@@ -68,6 +68,7 @@ PROVIDER_PRESETS: dict[str, tuple[str | None, str | None]] = {
         "accounts/fireworks/models/llama-v3p3-70b-instruct",
     ),
     "mistral": ("https://api.mistral.ai/v1", "mistral-large-latest"),
+    "openrouter": ("https://openrouter.ai/api/v1", "anthropic/claude-sonnet-4.5"),
     "ollama": ("http://localhost:11434/v1", "llama3.2"),
     "vllm": ("http://localhost:8000/v1", ""),
     "openai_compatible": (None, None),
@@ -93,6 +94,7 @@ _API_KEY_ENV_ALIASES: dict[str, tuple[str, ...]] = {
     "together": ("TOGETHER_API_KEY",),
     "fireworks": ("FIREWORKS_API_KEY",),
     "mistral": ("MISTRAL_API_KEY",),
+    "openrouter": ("OPENROUTER_API_KEY",),
     "ollama": (),
     "vllm": (),
     "openai_compatible": (),
