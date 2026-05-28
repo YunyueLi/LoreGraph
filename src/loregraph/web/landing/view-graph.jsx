@@ -12,15 +12,18 @@
 // Drag updates the dragged node's anchor in real-time — release leaves the
 // new layout. Reset Layout button restores all anchors to the curated seed.
 const SIM = {
-  ANCHOR_K:     0.085,    // dominant — keeps each node near its assigned position
-  CHARGE:       1100,     // pairwise repulsion (always on)
-  MIN_DIST2:    2700,     // ≈52px minimum centre-to-centre, prevents overlap
-  CHARGE_RANGE2: 22500,   // only compute charge if pairs are within 150px
-  LINK_K:       0.012,    // very weak: edges just whisper, anchor decides
-  LINK_DIST:    140,
-  DAMPING:      0.6,
-  MAX_SPEED:    20,
+  ANCHOR_K:     0.16,     // strong: each node snaps back to its assigned region
+  CHARGE:       1400,     // pairwise repulsion (always on, range-gated)
+  MIN_DIST2:    2700,     // ≈52px minimum centre-to-centre — no overlap
+  CHARGE_RANGE2: 18000,   // only compute charge if pairs are within ~135px
+  DAMPING:      0.62,
+  MAX_SPEED:    22,
+  REST_EPS:     0.06,     // position delta below this is considered "no change"
 };
+// NOTE: edge springs intentionally disabled. They were pulling cross-region
+// edges so hard that Elizabeth drifted toward Pemberley + Rosings + London
+// + Regiment all at once, destabilising the layout. Anchors handle position;
+// edges are now purely visual connectors.
 
 function deepClonePos(pos) {
   const out = {};
@@ -45,16 +48,16 @@ function stepSimulation(prev, vels, edges, anchors, alpha, draggedId) {
     vels[id].vy += dy * SIM.ANCHOR_K;
   }
 
-  // 2) charge — pairwise repulsion (1/r²). NOT scaled by alpha: this force
-  // must stay active so two anchors dragged close to each other still
-  // visually separate. Only kicks in below CHARGE_RANGE2.
+  // 2) charge — pairwise repulsion (1/r²), range-gated to ~135px so far
+  //    pairs cost nothing.  Always on (not alpha-scaled) so two anchors
+  //    dragged close still visually separate.
   for (let i = 0; i < ids.length; i++) {
     const a = next[ids[i]];
     for (let j = i + 1; j < ids.length; j++) {
       const b = next[ids[j]];
       let dx = b.x - a.x, dy = b.y - a.y;
       let d2 = dx*dx + dy*dy;
-      if (d2 > SIM.CHARGE_RANGE2) continue;  // far apart, ignore (cheap)
+      if (d2 > SIM.CHARGE_RANGE2) continue;
       if (d2 < SIM.MIN_DIST2) {
         if (d2 < 1) { dx = (Math.random() - 0.5); dy = (Math.random() - 0.5); d2 = dx*dx + dy*dy + 1; }
         d2 = SIM.MIN_DIST2;
@@ -67,19 +70,8 @@ function stepSimulation(prev, vels, edges, anchors, alpha, draggedId) {
     }
   }
 
-  // 3) springs on edges — very weak nudge, anchor force dominates
-  for (const edge of edges) {
-    const a = next[edge.src], b = next[edge.dst];
-    if (!a || !b) continue;
-    const dx = b.x - a.x, dy = b.y - a.y;
-    const d = Math.sqrt(dx*dx + dy*dy) || 0.01;
-    const f = (d - SIM.LINK_DIST) * SIM.LINK_K * alpha;
-    const fx = (dx / d) * f, fy = (dy / d) * f;
-    if (vels[edge.src]) { vels[edge.src].vx += fx; vels[edge.src].vy += fy; }
-    if (vels[edge.dst]) { vels[edge.dst].vx -= fx; vels[edge.dst].vy -= fy; }
-  }
-
-  // 4) integrate (skip dragged node — pinned to cursor)
+  // 3) integrate (skip dragged node — pinned to cursor)
+  let anyMoved = false;
   for (const id of ids) {
     if (id === draggedId) { vels[id].vx = 0; vels[id].vy = 0; continue; }
     const v = vels[id];
@@ -87,10 +79,27 @@ function stepSimulation(prev, vels, edges, anchors, alpha, draggedId) {
     v.vy *= 1 - SIM.DAMPING;
     const sp = Math.hypot(v.vx, v.vy);
     if (sp > SIM.MAX_SPEED) { v.vx = v.vx / sp * SIM.MAX_SPEED; v.vy = v.vy / sp * SIM.MAX_SPEED; }
+    const ox = next[id].x, oy = next[id].y;
     next[id].x += v.vx;
     next[id].y += v.vy;
+    if (Math.abs(next[id].x - prev[id].x) > SIM.REST_EPS || Math.abs(next[id].y - prev[id].y) > SIM.REST_EPS) {
+      anyMoved = true;
+    } else {
+      // snap to anchor when virtually stable — eliminates rest jitter
+      const a = anchors[id];
+      if (a) {
+        const adx = a.x - next[id].x, ady = a.y - next[id].y;
+        if (Math.abs(adx) < 0.5 && Math.abs(ady) < 0.5) {
+          next[id].x = a.x; next[id].y = a.y;
+          v.vx = 0; v.vy = 0;
+        }
+      }
+    }
   }
 
+  // Reference-stable return when nothing meaningful changed (and no drag) —
+  // React skips re-render, eliminating the per-frame edge jitter.
+  if (!anyMoved && !draggedId) return prev;
   return next;
 }
 
@@ -549,23 +558,70 @@ function edgePath(a, b, rA, rB, parallelIdx, parallelCount) {
 function SocialOverlay({ regions, entities, locale, selectedEntityId, setSelectedEntityId }) {
   return (
     <g className="social-overlay">
-      {regions.map((r, i) => {
+      {/* shared gradient defs — one per region for the soft-pool effect */}
+      <defs>
+        {regions.map(r => {
+          const isActive = r.members.includes(selectedEntityId);
+          return (
+            <radialGradient key={r.id} id={`reg-grad-${r.id}`} cx="50%" cy="50%" r="65%">
+              <stop offset="0%"  stopColor="rgba(184,149,74,1)" stopOpacity={isActive ? 0.20 : 0.10} />
+              <stop offset="60%" stopColor="rgba(184,149,74,1)" stopOpacity={isActive ? 0.06 : 0.03} />
+              <stop offset="100%" stopColor="rgba(184,149,74,1)" stopOpacity="0" />
+            </radialGradient>
+          );
+        })}
+      </defs>
+
+      {regions.map((r) => {
         const isActive = r.members.includes(selectedEntityId);
         const title = (typeof r.title === "string") ? r.title : (r.title[locale] || r.title.en);
         return (
           <g key={r.id}
              style={{cursor: r.entity ? "pointer" : "default"}}
              onClick={() => r.entity && setSelectedEntityId(r.entity)}>
+            {/* Layer 1: soft radial pool — pool of light marking the territory */}
             <ellipse cx={r.cx} cy={r.cy} rx={r.rx} ry={r.ry}
-              fill={isActive ? "rgba(184,149,74,0.10)" : "rgba(184,149,74,0.05)"}
-              stroke={isActive ? "rgba(184,149,74,0.45)" : "rgba(184,149,74,0.22)"}
-              strokeWidth="1" strokeDasharray="4 6"
+              fill={`url(#reg-grad-${r.id})`}
               style={{transition: "all 0.3s"}} />
-            <text x={r.cx} y={r.cy - r.ry + 18} textAnchor="middle"
-              fontFamily="Spectral, serif" fontStyle="italic"
-              fontSize="14" fill="#8a6e36" opacity={isActive ? 1 : 0.7}
-              letterSpacing="0.04em">
-              {title}
+            {/* Layer 2: faint outer halo when active — subtle aura of focus */}
+            {isActive && (
+              <ellipse cx={r.cx} cy={r.cy} rx={r.rx + 6} ry={r.ry + 6}
+                fill="none"
+                stroke="rgba(184,149,74,0.18)" strokeWidth="0.8" />
+            )}
+            {/* Layer 3: dashed boundary */}
+            <ellipse cx={r.cx} cy={r.cy} rx={r.rx} ry={r.ry}
+              fill="none"
+              stroke={isActive ? "rgba(184,149,74,0.6)" : "rgba(184,149,74,0.28)"}
+              strokeWidth={isActive ? 1.2 : 0.9} strokeDasharray="4 6"
+              style={{transition: "all 0.3s"}} />
+            {/* Layer 4: title with flanking ornament */}
+            <g transform={`translate(${r.cx} ${r.cy - r.ry + 20})`}>
+              <line x1={-Math.min(64, r.rx * 0.5)} y1="0" x2={-22} y2="0"
+                stroke={isActive ? "rgba(138,110,54,0.55)" : "rgba(138,110,54,0.3)"} strokeWidth="0.7"
+                style={{transition: "all 0.3s"}} />
+              <line x1={22} y1="0" x2={Math.min(64, r.rx * 0.5)} y2="0"
+                stroke={isActive ? "rgba(138,110,54,0.55)" : "rgba(138,110,54,0.3)"} strokeWidth="0.7"
+                style={{transition: "all 0.3s"}} />
+              <circle cx="0" cy="0" r="1.4"
+                fill={isActive ? "var(--gold)" : "rgba(138,110,54,0.5)"}
+                style={{transition: "fill 0.3s"}} />
+              <text textAnchor="middle" dy="-7"
+                fontFamily="Spectral, serif" fontStyle="italic" fontWeight={isActive ? 500 : 400}
+                fontSize="14" fill="#8a6e36" opacity={isActive ? 1 : 0.72}
+                letterSpacing="0.08em"
+                style={{transition: "all 0.3s"}}>
+                {title}
+              </text>
+            </g>
+            {/* Layer 5: member-count badge bottom-right */}
+            <text x={r.cx + r.rx - 12} y={r.cy + r.ry - 8}
+              textAnchor="end"
+              fontFamily="JetBrains Mono, monospace" fontSize="9"
+              fill="rgba(138,110,54,0.55)" opacity={isActive ? 0.9 : 0.5}
+              letterSpacing="0.22em"
+              style={{transition: "opacity 0.3s"}}>
+              {String(r.members.length).padStart(2, "0")}
             </text>
           </g>
         );
@@ -646,15 +702,20 @@ function GraphCanvas({ visibleEntities, visibleEdges, positions, setLivePosition
     const start = positions[entityId] || { x: 0, y: 0 };
     const offsetX = worldX - start.x;
     const offsetY = worldY - start.y;
-    draggedRef.current = entityId;
-    reignite(0.6);
     let moved = false;
+    // Do NOT reignite immediately — a plain click should not wake the sim.
+    // We only wake it once the pointer actually moves past the click threshold.
     const onMove = (ev) => {
+      if (!moved && (Math.abs(ev.clientX - e.clientX) + Math.abs(ev.clientY - e.clientY) <= 3)) return;
+      if (!moved) {
+        moved = true;
+        draggedRef.current = entityId;   // pin only when truly dragging
+        reignite(0.5);
+      }
       const r = svgRef.current.getBoundingClientRect();
       const tt2 = transformRef.current;
       const wx = (ev.clientX - r.left - tt2.x) / tt2.k - offsetX;
       const wy = (ev.clientY - r.top  - tt2.y) / tt2.k - offsetY;
-      if (!moved && (Math.abs(ev.clientX - e.clientX) + Math.abs(ev.clientY - e.clientY) > 3)) moved = true;
       // Move both the live position AND the anchor — release leaves the
       // new layout, the dragged node's home becomes wherever it was dropped.
       if (anchorsRef.current[entityId]) {
@@ -663,18 +724,17 @@ function GraphCanvas({ visibleEntities, visibleEdges, positions, setLivePosition
       }
       setLivePositions(prev => ({ ...prev, [entityId]: { x: wx, y: wy } }));
       setTick(n => n + 1);
-      reignite(0.4);
+      reignite(0.3);
     };
     const onUp = () => {
       document.removeEventListener("pointermove", onMove);
       document.removeEventListener("pointerup", onUp);
       draggedRef.current = null;
       if (!moved) {
-        // treat as click — select
         setSelectedEntityId(entityId);
         setSelectedEdgeId(null);
+        // pure click: do NOT reignite — the layout is already settled
       }
-      reignite(0.5);
     };
     document.addEventListener("pointermove", onMove, { passive: false });
     document.addEventListener("pointerup", onUp);
