@@ -122,6 +122,7 @@ function BookCard({ book, active, onClick, ctx, coverStyle }) {
   const { tt, locale } = ctx;
   const title = window.bookTitle(book, locale);
   const author = window.bookAuthor(book, locale);
+  const typeLabel = tt("work.type." + (book.type || "novel"));
   const fmt = (n) => (n == null ? "—" : Number(n).toLocaleString());
 
   return (
@@ -131,6 +132,9 @@ function BookCard({ book, active, onClick, ctx, coverStyle }) {
       </div>
 
       <div className="lib-card-info">
+        <div style={{fontFamily:"'JetBrains Mono', monospace", fontSize: 9.5, letterSpacing:".22em", color:"var(--gold-deep)", textTransform:"uppercase", marginBottom: 6, opacity: .85}}>
+          {typeLabel}
+        </div>
         <div className="lib-card-title">{title}</div>
         <div className="lib-card-meta">{author} · {book.year}</div>
       </div>
