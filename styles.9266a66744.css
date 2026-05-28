@@ -1051,14 +1051,14 @@ a { color: inherit; }
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 48px 28px;
 }
-.lib-cover-toggle {
+.lib-view-toggle {
   display: inline-flex;
   border: 1px solid rgba(184,149,74,0.22);
   border-radius: 999px;
   padding: 2px;
   background: rgba(184,149,74,0.04);
 }
-.lib-cover-toggle button {
+.lib-view-toggle button {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 6px 12px;
   font-family: 'Spectral', serif;
@@ -1072,21 +1072,134 @@ a { color: inherit; }
   transition: all 0.18s;
   letter-spacing: 0.005em;
 }
-.lib-cover-toggle button:hover { color: var(--paper-text); }
-.lib-cover-toggle button.active {
+.lib-view-toggle button:hover { color: var(--paper-text); }
+.lib-view-toggle button.active {
   background: var(--ink);
   color: #fbf7ea;
 }
-.lib-cover-toggle button svg {
+.lib-view-toggle button svg {
   width: 13px; height: 13px;
   opacity: 0.7;
 }
-.lib-cover-toggle button.active svg { opacity: 1; }
+.lib-view-toggle button.active svg { opacity: 1; }
 @media (max-width: 720px) {
-  .lib-cover-toggle button span { display: none; }
-  .lib-cover-toggle button { padding: 7px 10px; }
+  .lib-view-toggle button span { display: none; }
+  .lib-view-toggle button { padding: 7px 10px; }
 }
 @media (max-width: 720px) { .lib-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 32px 18px; } }
+
+/* =================== BOOKSHELF VIEW =================== */
+/* A continuous shelf of spines: flex-wrap fills the page, fixed spine height
+   keeps rows aligned, and a repeating-linear-gradient draws a slim two-tone
+   shelf rail beneath each row (row pitch = 240px spine + 16px gap = 256px). */
+.lib-shelf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  padding: 0;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 240px,
+      rgba(184,149,74,0.32) 240px,
+      rgba(184,149,74,0.32) 241px,
+      rgba(40,28,14,0.45) 241px,
+      rgba(40,28,14,0.45) 243px,
+      transparent 243px,
+      transparent 256px
+    );
+}
+.lib-spine {
+  position: relative;
+  height: 240px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0 14px;
+  border-radius: 2px 2px 0 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow:
+    inset -1.2px 0 0 rgba(0,0,0,0.32),
+    inset 1px 0 0 rgba(255,255,255,0.06),
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    0 2px 5px -2px rgba(0,0,0,0.35);
+  transition: transform 0.22s cubic-bezier(0.4,0,0.2,1), box-shadow 0.22s;
+}
+.lib-spine:hover {
+  transform: translateY(-12px);
+  z-index: 3;
+  box-shadow:
+    inset -1.2px 0 0 rgba(0,0,0,0.32),
+    inset 1px 0 0 rgba(255,255,255,0.06),
+    0 14px 28px -8px rgba(0,0,0,0.5);
+}
+.lib-spine.active {
+  transform: translateY(-6px);
+  outline: 1px solid rgba(209,172,94,0.6);
+  outline-offset: -1px;
+}
+.lib-spine-cap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+  flex-shrink: 0;
+}
+.lib-spine-cap.bot { gap: 4px; }
+.lib-spine-rule {
+  width: 64%;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.55;
+}
+.lib-spine-title {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-family: 'Spectral', serif;
+  font-style: italic;
+  font-size: 13px;
+  letter-spacing: 0.015em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-height: 170px;
+  padding: 4px 0;
+  flex: 0 1 auto;
+  line-height: 1.05;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.4);
+}
+.lib-spine-year {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8.5px;
+  letter-spacing: 0.18em;
+  opacity: 0.65;
+  flex-shrink: 0;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.4);
+  padding-top: 2px;
+}
+@media (max-width: 720px) {
+  .lib-shelf {
+    background:
+      repeating-linear-gradient(
+        to bottom,
+        transparent 0,
+        transparent 200px,
+        rgba(184,149,74,0.32) 200px,
+        rgba(184,149,74,0.32) 201px,
+        rgba(40,28,14,0.45) 201px,
+        rgba(40,28,14,0.45) 203px,
+        transparent 203px,
+        transparent 216px
+      );
+  }
+  .lib-spine { height: 200px; margin-bottom: 16px; }
+  .lib-spine-title { font-size: 11.5px; max-height: 138px; }
+}
 .lib-card {
   background: transparent;
   padding: 0;
