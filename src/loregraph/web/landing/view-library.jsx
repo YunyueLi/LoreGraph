@@ -9,7 +9,7 @@ function ViewLibrary({ ctx }) {
   React.useEffect(() => { localStorage.setItem("lg_cover_style", coverStyle); }, [coverStyle]);
 
   const books = data.books;
-  const filtered = filter === "all" ? books : books.filter(b => b.status === filter);
+  const filtered = filter === "all" ? books : books.filter(b => (b.type || "novel") === filter);
 
   // global stats
   const totals = books.reduce((acc, b) => ({
@@ -60,19 +60,22 @@ function ViewLibrary({ ctx }) {
       </div>
 
       <div className="lib-filters">
-        {[
-          {k:"all",      l: tt("lib.filter.all")},
-          {k:"verified", l: tt("lib.filter.verified")},
-          {k:"running",  l: tt("lib.filter.running")},
-          {k:"ingested", l: tt("lib.filter.ingested")},
-          {k:"failed",   l: tt("lib.filter.failed")},
-        ].map(f => (
-          <button
-            key={f.k}
-            className={"lib-filter " + (filter === f.k ? "active" : "")}
-            onClick={() => setFilter(f.k)}
-          >{f.l} <span style={{opacity:.5, marginLeft:6}}>{f.k === "all" ? books.length : books.filter(b => b.status === f.k).length}</span></button>
-        ))}
+        <div className="gv-pill-bar" style={{position:"static", transform:"none", top:"auto", left:"auto"}}>
+          {[
+            {k:"all",        l: tt("lib.filter.all")},
+            {k:"novel",      l: tt("work.type.novel")},
+            {k:"play",       l: tt("work.type.play")},
+            {k:"musical",    l: tt("work.type.musical")},
+            {k:"opera",      l: tt("work.type.opera")},
+            {k:"screenplay", l: tt("work.type.screenplay")},
+          ].map(f => (
+            <button
+              key={f.k}
+              className={"gv-pill-btn gv-pill-mode " + (filter === f.k ? "active" : "")}
+              onClick={() => setFilter(f.k)}
+            >{f.l}</button>
+          ))}
+        </div>
         <div style={{flex:1}} />
         <div className="lib-cover-toggle">
           <button
