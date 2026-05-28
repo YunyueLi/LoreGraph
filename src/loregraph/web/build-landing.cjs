@@ -52,7 +52,7 @@ const htmlDoc = (cssName, bundleName) => `<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="description" content="LoreGraph — knowledge graphs from closed-world fiction, with evidence on every edge." />
 <title>LoreGraph</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%231a1714'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%23b8954a' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='3.5' fill='%23d1ac5e'/%3E%3C/svg%3E" />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%231a1714'/%3E%3Cline x1='10' y1='11' x2='22' y2='21' stroke='%23d1ac5e' stroke-width='2.4' stroke-linecap='round'/%3E%3Ccircle cx='10' cy='11' r='4.5' fill='%231a1714' stroke='%23d1ac5e' stroke-width='2'/%3E%3Ccircle cx='22' cy='21' r='3.5' fill='%23d1ac5e'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="${FONTS}" rel="stylesheet">
