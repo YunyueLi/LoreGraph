@@ -1,10 +1,101 @@
 // LoreGraph — Graph view
 // Three view modes: SOCIAL (people in places), THEMES (concepts), CHRONICLE (events on a timeline).
 
+// ====== Force-directed simulation ======
+// Lightweight bespoke physics, tuned for 20–40 nodes. Three forces:
+//   - SPRINGS on edges (target length 165, gentle k)
+//   - CHARGE between every pair of nodes (Coulomb-ish, repulsive)
+//   - GRAVITY (social mode only): each node is softly pulled to its region centre
+// Velocities decay every frame (DAMPING). Alpha cools toward 0 so the system
+// settles; drag / book-switch reignites it.
+const SIM = {
+  LINK_DIST: 165,
+  LINK_K:    0.045,
+  CHARGE:    2600,
+  MIN_DIST2: 400,
+  GRAVITY:   0.022,
+  DAMPING:   0.55,
+  MAX_SPEED: 32,
+};
+
+function deepClonePos(pos) {
+  const out = {};
+  for (const id in pos) out[id] = { x: pos[id].x, y: pos[id].y };
+  return out;
+}
+
+function stepSimulation(prev, vels, edges, regions, alpha, draggedId) {
+  const ids = Object.keys(prev);
+  const next = {};
+  for (const id of ids) next[id] = { x: prev[id].x, y: prev[id].y };
+
+  // ensure velocity slots
+  for (const id of ids) if (!vels[id]) vels[id] = { vx: 0, vy: 0 };
+
+  // 1) charge — pairwise repulsion (1/r²)
+  for (let i = 0; i < ids.length; i++) {
+    const a = next[ids[i]];
+    for (let j = i + 1; j < ids.length; j++) {
+      const b = next[ids[j]];
+      let dx = b.x - a.x, dy = b.y - a.y;
+      let d2 = dx*dx + dy*dy;
+      if (d2 < SIM.MIN_DIST2) {
+        // jitter & clamp
+        if (d2 < 1) { dx = (Math.random() - 0.5); dy = (Math.random() - 0.5); d2 = dx*dx + dy*dy + 1; }
+        d2 = SIM.MIN_DIST2;
+      }
+      const f = SIM.CHARGE * alpha / d2;
+      const d = Math.sqrt(d2);
+      const fx = (dx / d) * f, fy = (dy / d) * f;
+      vels[ids[i]].vx -= fx; vels[ids[i]].vy -= fy;
+      vels[ids[j]].vx += fx; vels[ids[j]].vy += fy;
+    }
+  }
+
+  // 2) springs — each edge pulls its endpoints toward LINK_DIST
+  for (const edge of edges) {
+    const a = next[edge.src], b = next[edge.dst];
+    if (!a || !b) continue;
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const d = Math.sqrt(dx*dx + dy*dy) || 0.01;
+    const f = (d - SIM.LINK_DIST) * SIM.LINK_K * alpha;
+    const fx = (dx / d) * f, fy = (dy / d) * f;
+    if (vels[edge.src]) { vels[edge.src].vx += fx; vels[edge.src].vy += fy; }
+    if (vels[edge.dst]) { vels[edge.dst].vx -= fx; vels[edge.dst].vy -= fy; }
+  }
+
+  // 3) region gravity (social mode)
+  if (regions) {
+    for (const r of regions) {
+      for (const memberId of r.members) {
+        if (!next[memberId] || !vels[memberId]) continue;
+        const dx = r.cx - next[memberId].x;
+        const dy = r.cy - next[memberId].y;
+        vels[memberId].vx += dx * SIM.GRAVITY * alpha;
+        vels[memberId].vy += dy * SIM.GRAVITY * alpha;
+      }
+    }
+  }
+
+  // 4) integrate (skip dragged node — it's pinned to the cursor)
+  for (const id of ids) {
+    if (id === draggedId) { vels[id].vx = 0; vels[id].vy = 0; continue; }
+    const v = vels[id];
+    v.vx *= 1 - SIM.DAMPING;
+    v.vy *= 1 - SIM.DAMPING;
+    const sp = Math.hypot(v.vx, v.vy);
+    if (sp > SIM.MAX_SPEED) { v.vx = v.vx / sp * SIM.MAX_SPEED; v.vy = v.vy / sp * SIM.MAX_SPEED; }
+    next[id].x += v.vx;
+    next[id].y += v.vy;
+  }
+
+  return next;
+}
+
 function ViewGraph({ ctx }) {
   const { tt, data, entities, edges, locale, selectedEntityId, setSelectedEntityId, activeBook,
           graphViewMode, setGraphViewMode, graphLeftHidden, setGraphLeftHidden, graphRightHidden, setGraphRightHidden } = ctx;
-  const { useState, useMemo, useEffect, useRef } = React;
+  const { useState, useMemo, useEffect, useRef, useCallback } = React;
   const gvRef = useRef(null);
 
   const viewMode = graphViewMode;
@@ -202,11 +293,11 @@ function ViewGraph({ ctx }) {
 
   // CHRONICLE layout removed — timeline now lives in its own view.
 
-  const positions = viewMode === "social" ? SOCIAL_POS : THEMES_POS;
+  const seedPositions = viewMode === "social" ? SOCIAL_POS : THEMES_POS;
 
   const visibleEntities = useMemo(() => {
     return entities.filter(e => {
-      if (!positions[e.id]) return false;
+      if (!seedPositions[e.id]) return false;
       if (viewMode === "social" && (e.type === "concept" || e.type === "event")) return false;
       if (viewMode === "themes" && (e.type === "object" || e.type === "event"))  return false;
       return true;
@@ -215,7 +306,7 @@ function ViewGraph({ ctx }) {
 
   const visibleEdges = useMemo(() => edges.filter(e => {
     if (!edgeFilter[e.rel]) return false;
-    if (!positions[e.src] || !positions[e.dst]) return false;
+    if (!seedPositions[e.src] || !seedPositions[e.dst]) return false;
     if (activeChapter) {
       const sA = entities.find(en => en.id === e.src);
       const dA = entities.find(en => en.id === e.dst);
@@ -235,8 +326,47 @@ function ViewGraph({ ctx }) {
     SYMBOLIZES: edges.filter(e => e.rel === "SYMBOLIZES").length,
   };
 
+  // ====== Live positions — physics-driven, seeded from the curated layout ======
+  // Each entity has a steady-state position from SOCIAL_POS / THEMES_POS. We
+  // then run a slow force simulation on top: edges act as soft springs, nodes
+  // weakly repel each other, and region centres (social mode) gently pull
+  // their members back. The seed already gives a good layout, so the sim's
+  // job is just to make the graph feel alive — drag a node, see neighbours
+  // shift; release, the cloud relaxes back into balance.
+  const [livePositions, setLivePositions] = useState(() => deepClonePos(seedPositions));
+  const velRef = useRef({});           // id -> {vx, vy}
+  const draggedRef = useRef(null);     // currently-dragged node id
+  const alphaRef = useRef(1.0);        // simulation "temperature", decays toward 0
+  const reignite = useCallback((to = 0.7) => { alphaRef.current = Math.max(alphaRef.current, to); }, []);
+
+  // Reset to seed when book or view-mode changes.
+  useEffect(() => {
+    setLivePositions(deepClonePos(seedPositions));
+    velRef.current = {};
+    draggedRef.current = null;
+    reignite(1.0);
+  }, [bookId, viewMode]);
+
+  // Single rAF loop, alpha-cooled. Cheap when idle.
+  useEffect(() => {
+    let raf = 0;
+    const tick = () => {
+      raf = requestAnimationFrame(tick);
+      if (alphaRef.current < 0.005 && !draggedRef.current) return;
+      setLivePositions(prev => stepSimulation(prev, velRef.current, visibleEdges, viewMode === "social" ? SOCIAL_REGIONS : null, alphaRef.current, draggedRef.current));
+      alphaRef.current *= 0.985;
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [visibleEdges, viewMode, bookId]);
+
   const selected = entities.find(e => e.id === selectedEntityId) || entities[0];
   const toggleEdge = (r) => setEdgeFilter(f => ({...f, [r]: !f[r]}));
+  const resetLayout = () => {
+    setLivePositions(deepClonePos(seedPositions));
+    velRef.current = {};
+    reignite(1.0);
+  };
 
   const overlays = viewMode === "social"
     ? <SocialOverlay regions={SOCIAL_REGIONS} entities={entities} locale={locale}
@@ -294,7 +424,11 @@ function ViewGraph({ ctx }) {
       <GraphCanvas
         visibleEntities={visibleEntities}
         visibleEdges={visibleEdges}
-        positions={positions}
+        positions={livePositions}
+        setLivePositions={setLivePositions}
+        draggedRef={draggedRef}
+        reignite={reignite}
+        resetLayout={resetLayout}
         entities={entities}
         selectedEntityId={selectedEntityId}
         setSelectedEntityId={setSelectedEntityId}
@@ -461,13 +595,60 @@ function ChronicleOverlay({ chToX, axisY }) {
 }
 
 // =========================== Graph canvas ===========================
-function GraphCanvas({ visibleEntities, visibleEdges, positions, entities, selectedEntityId, setSelectedEntityId, selectedEdgeId, setSelectedEdgeId, locale, tt, selected, fullscreen, toggleFullscreen, viewMode, overlays }) {
+function GraphCanvas({ visibleEntities, visibleEdges, positions, setLivePositions, draggedRef, reignite, resetLayout, entities, selectedEntityId, setSelectedEntityId, selectedEdgeId, setSelectedEdgeId, locale, tt, selected, fullscreen, toggleFullscreen, viewMode, overlays }) {
   const { useState, useRef, useEffect } = React;
   const svgRef = useRef(null);
   const [transform, setTransform] = useState({ x: 0, y: 0, k: 1 });
+  const transformRef = useRef(transform);
+  useEffect(() => { transformRef.current = transform; }, [transform]);
   const [isPanning, setIsPanning] = useState(false);
   const dragRef = useRef(null);
   const [hoveredEdgeId, setHoveredEdgeId] = useState(null);
+  // small ticker so dragging a node forces a re-render of selected edges
+  const [, setTick] = useState(0);
+
+  // Node drag: pointerdown on a node captures its id and offset (in world
+  // coords). Subsequent pointermoves on the document update the node's
+  // position directly via setLivePositions and reignite the simulation so
+  // neighbours respond.
+  const onNodePointerDown = (entityId) => (e) => {
+    if (e.button !== 0) return;
+    e.stopPropagation();
+    e.preventDefault();
+    const rect = svgRef.current.getBoundingClientRect();
+    const t = transformRef.current;
+    const worldX = (e.clientX - rect.left - t.x) / t.k;
+    const worldY = (e.clientY - rect.top  - t.y) / t.k;
+    const start = positions[entityId] || { x: 0, y: 0 };
+    const offsetX = worldX - start.x;
+    const offsetY = worldY - start.y;
+    draggedRef.current = entityId;
+    reignite(0.6);
+    let moved = false;
+    const onMove = (ev) => {
+      const r = svgRef.current.getBoundingClientRect();
+      const tt2 = transformRef.current;
+      const wx = (ev.clientX - r.left - tt2.x) / tt2.k - offsetX;
+      const wy = (ev.clientY - r.top  - tt2.y) / tt2.k - offsetY;
+      if (!moved && (Math.abs(ev.clientX - e.clientX) + Math.abs(ev.clientY - e.clientY) > 3)) moved = true;
+      setLivePositions(prev => ({ ...prev, [entityId]: { x: wx, y: wy } }));
+      setTick(n => n + 1);
+      reignite(0.4);
+    };
+    const onUp = () => {
+      document.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerup", onUp);
+      draggedRef.current = null;
+      if (!moved) {
+        // treat as click — select
+        setSelectedEntityId(entityId);
+        setSelectedEdgeId(null);
+      }
+      reignite(0.5);
+    };
+    document.addEventListener("pointermove", onMove, { passive: false });
+    document.addEventListener("pointerup", onUp);
+  };
 
   const WORLD_W = 960;
   const WORLD_H = 840;
@@ -676,10 +857,12 @@ function GraphCanvas({ visibleEntities, visibleEdges, positions, entities, selec
           {/* Nodes */}
           {visibleEntities.map(entity => {
             const p = positions[entity.id];
+            if (!p) return null;
             const sel = entity.id === selectedEntityId;
             const isMute = selectedEntityId && selectedEntityId !== entity.id && !visibleEdges.some(e => (e.src === selectedEntityId && e.dst === entity.id) || (e.dst === selectedEntityId && e.src === entity.id));
             const loc = window.entityLocale(entity.id, locale);
             const name = loc?.name || entity.name;
+            const isDragging = draggedRef.current === entity.id;
             return (
               <GraphNode
                 key={entity.id}
@@ -688,7 +871,8 @@ function GraphCanvas({ visibleEntities, visibleEdges, positions, entities, selec
                 x={p.x} y={p.y}
                 sel={sel}
                 mute={isMute}
-                onClick={(e) => { e.stopPropagation(); setSelectedEntityId(entity.id); setSelectedEdgeId(null); }}
+                dragging={isDragging}
+                onPointerDown={onNodePointerDown(entity.id)}
               />
             );
           })}
@@ -699,6 +883,8 @@ function GraphCanvas({ visibleEntities, visibleEdges, positions, entities, selec
         <button title={tt("gv.zoomIn")} onClick={() => zoomBy(1.3)}>＋</button>
         <button title={tt("gv.zoomOut")} onClick={() => zoomBy(1/1.3)}>−</button>
         <button title={tt("gv.fit")} onClick={fitToContainer}>◳</button>
+        <button title={locale === "en" ? "Reset layout" : locale === "zh-CN" ? "重置布局" : locale === "zh-TW" ? "重置布局" : locale === "ja" ? "レイアウトリセット" : locale === "ko" ? "레이아웃 초기화" : locale === "fr" ? "Réinitialiser" : locale === "es" ? "Reiniciar" : "Zurücksetzen"}
+          onClick={resetLayout}>↻</button>
         <button title={fullscreen ? tt("gv.fullscreenOff") : tt("gv.fullscreenOn")}
           onClick={toggleFullscreen}
           style={{color: fullscreen ? "var(--gold)" : undefined}}>
@@ -713,29 +899,29 @@ function GraphCanvas({ visibleEntities, visibleEdges, positions, entities, selec
       </div>
 
       <div className="gv-canvas-hint">
-        <span>{locale === "en" ? "Scroll to zoom · drag to pan · hover edges for labels" :
-               locale === "zh-CN" ? "滚轮缩放 · 拖拽平移 · 悬停边可见标签" :
-               locale === "zh-TW" ? "滾輪縮放 · 拖曳平移 · 懸停邊可見標籤" :
-               locale === "ja" ? "スクロール拡縮 · ドラッグ移動 · エッジホバーでラベル" :
-               locale === "ko" ? "스크롤 확대 · 드래그 이동 · 엣지 호버 시 라벨" :
-               locale === "fr" ? "Molette pour zoomer · glisser · survol pour étiquette" :
-               locale === "es" ? "Rueda zoom · arrastrar · pasa el ratón para etiqueta" :
-               "Scrollen zoomt · ziehen · Beschriftung beim Überfahren"}</span>
+        <span>{locale === "en" ? "Drag nodes · scroll to zoom · drag canvas to pan" :
+               locale === "zh-CN" ? "拖拽节点 · 滚轮缩放 · 拖动画布平移" :
+               locale === "zh-TW" ? "拖曳節點 · 滾輪縮放 · 拖動畫布平移" :
+               locale === "ja" ? "ノードをドラッグ · スクロールで拡縮 · 画布をドラッグで移動" :
+               locale === "ko" ? "노드 드래그 · 스크롤 확대 · 캔버스 드래그 이동" :
+               locale === "fr" ? "Glisser les nœuds · molette zoom · glisser pour déplacer" :
+               locale === "es" ? "Arrastra nodos · rueda zoom · arrastra para mover" :
+               "Knoten ziehen · scrollen zoomt · Canvas ziehen verschiebt"}</span>
       </div>
     </div>
   );
 }
 
 // ============== Node ==============
-function GraphNode({ entity, name, x, y, sel, mute, onClick }) {
+function GraphNode({ entity, name, x, y, sel, mute, dragging, onPointerDown }) {
   const { useState } = React;
   const [hover, setHover] = useState(false);
   const baseR = nodeRadius(entity);
-  const r = baseR * (sel ? 1.06 : hover ? 1.04 : 1);
+  const r = baseR * (dragging ? 1.1 : sel ? 1.06 : hover ? 1.04 : 1);
   const opacity = mute ? 0.35 : 1;
-  const stroke = sel ? "#b8954a" : (hover ? "#8a6e36" : "#a08758");
-  const strokeWidth = sel ? 2.4 : 1.2;
-  const fill = sel ? "#fbf3dc" : "#fbf7ea";
+  const stroke = (sel || dragging) ? "#b8954a" : (hover ? "#8a6e36" : "#a08758");
+  const strokeWidth = (sel || dragging) ? 2.4 : 1.2;
+  const fill = (sel || dragging) ? "#fbf3dc" : "#fbf7ea";
 
   const phase = ((entity.id.charCodeAt(0) + entity.id.charCodeAt(entity.id.length-1)) % 8) / 8;
 
@@ -766,12 +952,12 @@ function GraphNode({ entity, name, x, y, sel, mute, onClick }) {
 
   return (
     <g data-node
-       style={{cursor:"pointer", opacity, transition:"opacity 0.2s"}}
-       onClick={onClick}
+       style={{cursor: dragging ? "grabbing" : "grab", opacity, transition:"opacity 0.2s"}}
+       onPointerDown={onPointerDown}
        onMouseEnter={() => setHover(true)}
        onMouseLeave={() => setHover(false)}>
       <g style={{
-        animation: `${["lg-drift-a","lg-drift-b","lg-drift-c"][Math.floor(phase * 3)]} ${6 + phase * 4}s ease-in-out ${phase * 3}s infinite`,
+        animation: dragging ? "none" : `${["lg-drift-a","lg-drift-b","lg-drift-c"][Math.floor(phase * 3)]} ${6 + phase * 4}s ease-in-out ${phase * 3}s infinite`,
       }}>
         {halo}
         {shape}
