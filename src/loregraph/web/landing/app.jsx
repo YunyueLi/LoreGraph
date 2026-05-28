@@ -519,7 +519,9 @@ function BookshelfSwitcher({ ctx }) {
 
   return (
     <div className="bs-switcher-overlay" onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
-      <div className="bs-switcher-strip" onClick={(e) => e.stopPropagation()}>
+      <div className="bs-switcher-sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="bs-switcher-handle" />
+        <div className="bs-switcher-label">{triggerLabel} · {sorted.length}</div>
         <div className="bs-switcher-spines">
           {sorted.map((b) => {
             const p = BS_PALETTE[b.coverTone] || BS_PALETTE.ink;
@@ -538,6 +540,7 @@ function BookshelfSwitcher({ ctx }) {
             );
           })}
         </div>
+        <div className="bs-switcher-shelf-rail" />
       </div>
     </div>
   );
