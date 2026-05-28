@@ -23,22 +23,31 @@ function ViewReader({ ctx }) {
   }, [activeBook && activeBook.id]);
   const currentChunk = chunks.find(c => c.id === selectedChunkId) || firstFull || chunks[0];
 
-  // Chapters list — derived from the scoped chunks. Prefer the full-chapter
-  // chunk's `chapterName` over a paragraph chunk's when both exist.
+  // Chapters list — derived from scoped chunks. P&P has no chapter titles in
+  // the original (Austen just numbered them), so we always render a localized
+  // "Chapter N" label rather than inventing scene-based names. Any future book
+  // that does have real titles can carry them on its chunks as `chapterName`
+  // and the existing override will kick in.
   const chapters = useMemo(() => {
     const byNum = new Map();
     for (const c of chunks) {
       const existing = byNum.get(c.chapter);
       if (!existing) {
-        byNum.set(c.chapter, { n: c.chapter, name: c.chapterName || `Chapter ${c.chapter}`, entities: 0, hasFull: !!c.full });
-      } else if (c.full && !existing.hasFull) {
-        if (c.chapterName) existing.name = c.chapterName;
-        existing.hasFull = true;
+        byNum.set(c.chapter, {
+          n: c.chapter,
+          name: c.chapterName || tt("rd.chapter", {n: c.chapter}),
+          hasTitle: !!c.chapterName,
+          entities: 0,
+          hasFull: !!c.full,
+        });
+      } else {
+        if (c.chapterName && !existing.hasTitle) { existing.name = c.chapterName; existing.hasTitle = true; }
+        if (c.full) existing.hasFull = true;
       }
     }
     for (const c of chunks) byNum.get(c.chapter).entities += (c.mentions || 0);
     return [...byNum.values()].sort((a, b) => a.n - b.n);
-  }, [activeBook && activeBook.id]);
+  }, [activeBook && activeBook.id, locale]);
 
   const currentChapter = (currentChunk && chapters.find(c => c.n === currentChunk.chapter)) || chapters[0];
 
@@ -103,9 +112,9 @@ function ViewReader({ ctx }) {
       {/* PROSE */}
       <div className="rd-text">
         <div className="rd-text-head">
-          <div className="ch-meta">{tt("rd.chapter", {n: currentChunk.chapter})} · ATOM {currentChunk.id}</div>
-          <h1><em>{currentChapter.name}</em></h1>
-          <div className="author">Pride and Prejudice · Jane Austen</div>
+          <div className="ch-meta">ATOM {currentChunk.id}</div>
+          <h1><em>{currentChapter.hasTitle ? currentChapter.name : tt("rd.chapter", {n: currentChunk.chapter})}</em></h1>
+          <div className="author">{window.bookTitle(activeBook, locale)} · {window.bookAuthor(activeBook, locale)}</div>
         </div>
 
         <div className="rd-prose">
