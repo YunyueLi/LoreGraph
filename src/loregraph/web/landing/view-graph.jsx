@@ -32,6 +32,12 @@ function deepClonePos(pos) {
 }
 
 function stepSimulation(prev, vels, edges, anchors, alpha, draggedId) {
+  // Freeze the sim entirely during drag — the dragged node's position is
+  // owned by the pointer handler (one setState per pointermove), and every
+  // other node is already at its anchor.  Letting the sim co-write per frame
+  // produces wasted re-renders and visible jitter on edges.
+  if (draggedId) return prev;
+
   const ids = Object.keys(prev);
   const next = {};
   for (const id of ids) next[id] = { x: prev[id].x, y: prev[id].y };
@@ -684,8 +690,6 @@ function GraphCanvas({ visibleEntities, visibleEdges, positions, setLivePosition
   const [isPanning, setIsPanning] = useState(false);
   const dragRef = useRef(null);
   const [hoveredEdgeId, setHoveredEdgeId] = useState(null);
-  // small ticker so dragging a node forces a re-render of selected edges
-  const [, setTick] = useState(0);
 
   // Node drag: pointerdown on a node captures its id and offset (in world
   // coords). Subsequent pointermoves on the document update the node's
@@ -703,28 +707,40 @@ function GraphCanvas({ visibleEntities, visibleEdges, positions, setLivePosition
     const offsetX = worldX - start.x;
     const offsetY = worldY - start.y;
     let moved = false;
-    // Do NOT reignite immediately — a plain click should not wake the sim.
-    // We only wake it once the pointer actually moves past the click threshold.
-    const onMove = (ev) => {
+    // Throttle pointermove to rAF. Pointer events fire at 120Hz+ on modern
+    // hardware; setLivePositions on every one of them produces uneven
+    // render cadence vs the 60Hz display, which looks like high-frequency
+    // jitter on the edges. Coalesce all moves within a single frame into
+    // one state update, scheduled by rAF — exactly one commit per repaint.
+    let pendingEv = null;
+    let rafScheduled = false;
+    const flush = () => {
+      rafScheduled = false;
+      const ev = pendingEv;
+      if (!ev) return;
+      pendingEv = null;
       if (!moved && (Math.abs(ev.clientX - e.clientX) + Math.abs(ev.clientY - e.clientY) <= 3)) return;
       if (!moved) {
         moved = true;
-        draggedRef.current = entityId;   // pin only when truly dragging
-        reignite(0.5);
+        draggedRef.current = entityId;
+        reignite(0.4);
       }
       const r = svgRef.current.getBoundingClientRect();
       const tt2 = transformRef.current;
       const wx = (ev.clientX - r.left - tt2.x) / tt2.k - offsetX;
       const wy = (ev.clientY - r.top  - tt2.y) / tt2.k - offsetY;
-      // Move both the live position AND the anchor — release leaves the
-      // new layout, the dragged node's home becomes wherever it was dropped.
+      // Move both live position AND anchor — release leaves the new layout.
       if (anchorsRef.current[entityId]) {
         anchorsRef.current[entityId].x = wx;
         anchorsRef.current[entityId].y = wy;
       }
       setLivePositions(prev => ({ ...prev, [entityId]: { x: wx, y: wy } }));
-      setTick(n => n + 1);
-      reignite(0.3);
+    };
+    const onMove = (ev) => {
+      pendingEv = ev;
+      if (rafScheduled) return;
+      rafScheduled = true;
+      requestAnimationFrame(flush);
     };
     const onUp = () => {
       document.removeEventListener("pointermove", onMove);
@@ -733,7 +749,10 @@ function GraphCanvas({ visibleEntities, visibleEdges, positions, setLivePosition
       if (!moved) {
         setSelectedEntityId(entityId);
         setSelectedEdgeId(null);
-        // pure click: do NOT reignite — the layout is already settled
+        // pure click: no reignite — the layout is already settled
+      } else {
+        // tiny relaxation pulse so charge resolves any new overlap
+        reignite(0.25);
       }
     };
     document.addEventListener("pointermove", onMove, { passive: false });
