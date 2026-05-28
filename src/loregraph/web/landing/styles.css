@@ -5539,62 +5539,67 @@ a { color: inherit; }
 /* bottom dock for ribbon */
 .tl2-ribbon-dock {
   border-top: 1px solid rgba(184,149,74,0.25);
-  background: rgba(245,239,226,0.5);
-  padding: 22px 40px 26px;
-  max-height: 50vh;
+  background: rgba(245,239,226,0.55);
+  padding: 14px 32px 16px;
+  max-height: 32vh;
   overflow: auto;
   display: grid;
   grid-template-rows: auto 1fr;
-  gap: 16px;
+  gap: 12px;
 }
 .tl2-ribbon-dock-head {
   display: grid;
   grid-template-columns: auto 1fr auto;
-  gap: 24px;
-  align-items: start;
-  padding-bottom: 14px;
+  gap: 20px;
+  align-items: center;
+  padding-bottom: 10px;
   border-bottom: 1px solid rgba(184,149,74,0.18);
 }
 .tl2-ribbon-dock-roman {
   font-family: 'Spectral', serif;
   font-style: italic;
   font-weight: 300;
-  font-size: clamp(38px, calc(320px / var(--roman-chars, 5)), 64px);
+  font-size: clamp(32px, calc(220px / var(--roman-chars, 5)), 48px);
   line-height: 0.9;
   color: var(--phase-color);
   white-space: nowrap;
 }
-.tl2-ribbon-dock-meta { max-width: 720px; }
+.tl2-ribbon-dock-meta { max-width: 720px; min-width: 0; }
 .tl2-ribbon-dock-phase {
-  display: inline-flex; align-items: center; gap: 8px;
+  display: inline-flex; align-items: center; gap: 6px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px; letter-spacing: 0.26em; text-transform: uppercase;
+  font-size: 9px; letter-spacing: 0.24em; text-transform: uppercase;
   color: var(--phase-color);
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 .tl2-ribbon-dock-phase .dot {
-  width: 5px; height: 5px; border-radius: 50%; background: var(--phase-color);
+  width: 4px; height: 4px; border-radius: 50%; background: var(--phase-color);
 }
 .tl2-ribbon-dock-meta h2 {
   font-family: 'Spectral', serif;
   font-weight: 300;
-  font-size: 28px;
-  line-height: 1.1;
+  font-size: 19px;
+  line-height: 1.15;
   color: var(--paper-text);
-  margin: 0 0 8px;
+  margin: 0 0 3px;
 }
 .tl2-ribbon-dock-meta h2 em { font-style: italic; }
 .tl2-ribbon-dock-meta p {
   font-family: 'Spectral', serif;
-  font-size: 14.5px;
-  line-height: 1.55;
+  font-size: 12.5px;
+  line-height: 1.45;
   color: var(--paper-text-mute);
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
-.tl2-ribbon-dock-pp { align-self: start; }
+.tl2-ribbon-dock-pp { align-self: center; }
 .tl2-ribbon-dock-body {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 10px;
 }
 @media (max-width: 800px) {
   .tl2-ribbon-dock-head { grid-template-columns: 1fr; }

@@ -707,7 +707,7 @@ function RibbonMode({ ctx, tt, data, entities, locale, visibleEvents, selectedEv
   const CH_WIDTH = 36 * zoom;
   const AXIS_PAD = 80;
   const totalWidth = AXIS_PAD * 2 + 61 * CH_WIDTH;
-  const LANE_H = 110;
+  const LANE_H = 68;
   const chToX = (ch) => AXIS_PAD + (ch - 1) * CH_WIDTH;
   const cur = visibleEvents.find(e => e.id === selectedEventId) || visibleEvents[0];
   const curPhase = cur && TL_PHASES.find(p => p.id === cur.phase);
@@ -841,7 +841,7 @@ function RibbonMode({ ctx, tt, data, entities, locale, visibleEvents, selectedEv
           </div>
           <div className="tl2-ribbon-dock-body">
             {curEvidence.map(e => (
-              <EvidenceBlock key={e.id} edge={e} data={data} locale={locale} tt={tt} />
+              <EvidenceBlock key={e.id} edge={e} data={data} locale={locale} tt={tt} dense />
             ))}
           </div>
         </div>
