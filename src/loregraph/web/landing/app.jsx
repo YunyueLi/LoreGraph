@@ -521,24 +521,28 @@ function BookshelfSwitcher({ ctx }) {
     <div className="bs-switcher-overlay" onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
       <div className="bs-switcher-strip" onClick={(e) => e.stopPropagation()}>
         <div className="bs-switcher-label">{triggerLabel}</div>
-        <div className="bs-switcher-spines">
-          {sorted.map((b) => {
-            const p = BS_PALETTE[b.coverTone] || BS_PALETTE.ink;
-            const w = Math.round(Math.max(20, Math.min(40, 20 + Math.sqrt((b.tokens || 20000) / 30000) * 6)));
-            const title = window.bookTitle(b, locale);
-            const author = window.bookAuthor(b, locale);
-            const isActive = activeBook && b.id === activeBook.id;
-            return (
-              <div key={b.id}
-                className={"bs-switcher-spine " + (isActive ? "active" : "")}
-                style={{ width: `${w}px`, background: p.bg, color: p.fg }}
-                title={`${title} — ${author}` + (b.year ? ` (${b.year})` : "")}
-                onClick={() => { setActiveBookId(b.id); setOpen(false); }}>
-                <div className="bs-switcher-spine-title">{title}</div>
-              </div>
-            );
-          })}
+        <div className="bs-switcher-bay">
+          <div className="bs-switcher-spines">
+            {sorted.map((b) => {
+              const p = BS_PALETTE[b.coverTone] || BS_PALETTE.ink;
+              const w = Math.round(Math.max(20, Math.min(40, 20 + Math.sqrt((b.tokens || 20000) / 30000) * 6)));
+              const title = window.bookTitle(b, locale);
+              const author = window.bookAuthor(b, locale);
+              const isActive = activeBook && b.id === activeBook.id;
+              return (
+                <div key={b.id}
+                  className={"bs-switcher-spine " + (isActive ? "active" : "")}
+                  style={{ width: `${w}px`, background: p.bg, color: p.fg }}
+                  title={`${title} — ${author}` + (b.year ? ` (${b.year})` : "")}
+                  onClick={() => { setActiveBookId(b.id); setOpen(false); }}>
+                  <div className="bs-switcher-spine-title">{title}</div>
+                </div>
+              );
+            })}
+          </div>
         </div>
+        <div className="bs-switcher-plank" />
+        <div className="bs-switcher-cavity" />
         <button className="bs-switcher-close" onClick={() => setOpen(false)} title="close" aria-label="close">
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6">
             <line x1="4" y1="4" x2="12" y2="12" />
