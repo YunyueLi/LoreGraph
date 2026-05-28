@@ -858,10 +858,39 @@ window.LG_ARCHETYPE_ALIAS = {
   priest: "clergyman",
 };
 
-window.getAvatar = function(archetypeOrId, fallbackType) {
+// Per-type rotating pools used when an entity has no explicit archetype
+// mapping. Pulled by hashing the entity id so two unmapped entities don't
+// land on the same fallback — this is how every new book added later
+// still gets visually distinct icons without needing per-character work.
+window.LG_FALLBACK_POOLS = {
+  agent: [
+    "lady_young","lady_gentle","lady_plain","lady_fashion","lady_bookish","lady_shy",
+    "matron_anxious","matron_kind","matron_imperious",
+    "gentleman_proud","gentleman_friendly","gentleman_scholar","gentleman_merchant","gentleman_elder","gentleman_dandy",
+    "clergyman","officer_dashing","officer_steady",
+    "monk","detective","doctor","narrator","ghost","villain","sailor","pirate","royal","worker","child",
+  ],
+  object: ["manor","house","cottage","estate","castle","ship","letter","book","scroll","key","chain","ring","weapon","garden","coach","door"],
+  event:  ["meeting","wedding","proposal","carriage_wheel","footsteps","pointing","battle","death"],
+  concept:["pride","prejudice","love","marriage","class","reputation","madness","knowledge","power","time","nature"],
+};
+
+window.getAvatar = function(archetypeOrId, fallbackType, entityId) {
   const key = window.LG_ARCHETYPE_ALIAS[archetypeOrId] || archetypeOrId;
   const fn = window.LG_ARCHETYPES[key];
   if (fn) return fn();
+  // Deterministic hash-based fallback so unmapped entities of the same
+  // type don't collapse to a single icon.
+  if (entityId && fallbackType) {
+    const pool = window.LG_FALLBACK_POOLS[fallbackType];
+    if (pool && pool.length) {
+      let h = 0;
+      for (let i = 0; i < entityId.length; i++) h = (h * 31 + entityId.charCodeAt(i)) | 0;
+      const arch = pool[Math.abs(h) % pool.length];
+      const f = window.LG_ARCHETYPES[arch];
+      if (f) return f();
+    }
+  }
   const fb = {
     agent:   "lady_young",
     object:  "letter",
@@ -886,10 +915,63 @@ window.LG_ENTITY_ARCHETYPE = {
   v05: "footsteps", v06: "pointing", v07: "wedding", v08: "proposal",
   c01: "pride", c02: "prejudice", c03: "marriage",
   c04: "class", c05: "reputation", c06: "chain",
+
+  // ───── One Hundred Years of Solitude ─────
+  // Buendía family — six generations
+  sa01: "gentleman_elder",      // José Arcadio Buendía — founding patriarch, alchemy obsession
+  sa02: "matron_imperious",     // Úrsula Iguarán — 120-year matriarch
+  sa03: "sailor",               // José Arcadio (son) — wandered the world at sea
+  sa04: "officer_dashing",      // Colonel Aureliano Buendía — 32 uprisings
+  sa05: "lady_plain",           // Amaranta — bitter, lifelong spinster
+  sa06: "lady_shy",             // Rebeca — orphan with the bag of bones
+  sa07: "villain",              // Arcadio — tyrant of Macondo
+  sa08: "officer_steady",       // Aureliano José — Colonel's son
+  sa09: "matron_kind",          // Santa Sofía de la Piedad — silent caretaker
+  sa10: "worker",               // José Arcadio Segundo — labor activist
+  sa11: "gentleman_dandy",      // Aureliano Segundo — hedonist, fortune of breeding livestock
+  sa12: "lady_fashion",         // Fernanda del Carpio — high-bred outsider
+  sa13: "lady_young",           // Meme — modern youth
+  sa14: "clergyman",            // José Arcadio (seminarian)
+  sa15: "lady_gentle",          // Remedios the Beauty — ethereal
+  sa16: "gentleman_scholar",    // Aureliano Babilonia — solitary reader of the parchments
+  sa17: "lady_silly",           // Amaranta Úrsula — joyful, modern
+  sa18: "child",                // Aureliano (the last) — pig-tailed baby
+  // Outsiders to the Buendía household
+  sa19: "narrator",             // Melquíades — gypsy chronicler
+  sa20: "matron_anxious",       // Pilar Ternera — fortune-teller
+  sa21: "gentleman_friendly",   // Pietro Crespi — Italian musician
+  sa22: "lady_bookish",         // Petra Cotes — mistress whose love makes livestock breed
+  sa23: "detective",            // Mauricio Babilonia — mechanic followed by yellow butterflies
+  sa24: "gentleman_merchant",   // Mr. Brown / Banana Company
+
+  // Macondo objects
+  so01: "estate",               // Macondo itself
+  so02: "cottage",              // Melquíades's room
+  so03: "garden",               // the chestnut tree
+  so04: "scroll",               // the parchments
+  so05: "coach",                // the railway
+  so06: "ring",                 // the yellow butterflies (delicate symbolic object)
+
+  // Macondo events
+  sv01: "meeting",              // founding of Macondo
+  sv02: "death",                // the insomnia plague
+  sv03: "battle",               // the 32 uprisings
+  sv04: "carriage_wheel",       // banana company arrives
+  sv05: "pointing",             // banana workers' massacre (the gesture of denial)
+  sv06: "footsteps",            // the four-year rain (time passing)
+  sv07: "wedding",              // Remedios the Beauty's ascension
+  sv08: "key",                  // deciphering the parchments — the moment of unlocking
+
+  // Macondo concepts
+  sc01: "madness",              // solitude / soledad
+  sc02: "time",                 // circular time
+  sc03: "knowledge",            // memory & forgetting
+  sc04: "nature",               // magic realism
+  sc05: "reputation",           // the cursed bloodline
 };
 
 window.avatarFor = function(entity) {
   if (!entity) return null;
   const archetype = entity.archetype || window.LG_ENTITY_ARCHETYPE[entity.id];
-  return window.getAvatar(archetype, entity.type);
+  return window.getAvatar(archetype, entity.type, entity.id);
 };

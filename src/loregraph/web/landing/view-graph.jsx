@@ -233,27 +233,30 @@ function ViewGraph({ ctx }) {
       o05: { x: 500, y: 360 },
     },
     soledad: {
-      // Gen I (founders)
-      sa01: { x: 170, y: 165 }, sa02: { x: 270, y: 195 },
-      // Gen II
-      sa03: { x: 420, y: 145 }, sa04: { x: 490, y: 190 }, sa05: { x: 570, y: 150 }, sa06: { x: 620, y: 200 },
-      // Gen III
-      sa07: { x: 770, y: 210 }, sa08: { x: 830, y: 250 }, sa09: { x: 890, y: 220 },
-      // Gen IV (twins + Remedios the Beauty)
-      sa10: { x: 175, y: 445 }, sa11: { x: 245, y: 470 }, sa12: { x: 315, y: 445 }, sa15: { x: 245, y: 510 },
-      // Gen V
-      sa13: { x: 490, y: 460 }, sa14: { x: 570, y: 480 },
-      // Gen VI/VII
-      sa16: { x: 780, y: 490 }, sa17: { x: 840, y: 520 }, sa18: { x: 880, y: 565 },
-      // Outsiders to the household
-      sa19: { x: 240, y: 745 }, // Melquíades — leftmost
-      sa20: { x: 370, y: 770 }, // Pilar
-      sa21: { x: 470, y: 745 }, // Pietro Crespi
-      sa22: { x: 570, y: 775 }, // Petra Cotes
-      sa23: { x: 670, y: 750 }, // Mauricio Babilonia
-      sa24: { x: 770, y: 770 }, // Mr. Brown / Banana Company
-      // Central anchor: the parchments — the structural pivot of the book
-      so04: { x: 500, y: 330 },
+      // Gen I — founders (region cx=220 cy=180, rx=170 ry=110)
+      sa01: { x: 150, y: 160 }, sa02: { x: 290, y: 200 },
+      // Gen II (region cx=520 cy=170, rx=200 ry=110) — 4 in a diamond
+      sa03: { x: 390, y: 140 }, sa04: { x: 490, y: 210 },
+      sa05: { x: 580, y: 140 }, sa06: { x: 650, y: 200 },
+      // Gen III (region cx=820 cy=230, rx=170 ry=120) — 3 in a triangle
+      sa07: { x: 720, y: 200 }, sa08: { x: 830, y: 280 }, sa09: { x: 920, y: 195 },
+      // Gen IV — twins + Fernanda + Remedios the Beauty (region cx=240 cy=470, rx=200 ry=130)
+      // 2×2 grid with ample horizontal+vertical separation, no more pile-up
+      sa10: { x: 135, y: 425 }, sa12: { x: 345, y: 425 },
+      sa11: { x: 135, y: 525 }, sa15: { x: 345, y: 525 },
+      // Gen V (region cx=530 cy=470, rx=160 ry=110)
+      sa13: { x: 470, y: 440 }, sa14: { x: 590, y: 500 },
+      // Gen VI/VII (region cx=830 cy=510, rx=170 ry=140) — diagonal spread
+      sa16: { x: 720, y: 450 }, sa17: { x: 830, y: 525 }, sa18: { x: 925, y: 595 },
+      // Outsiders to the household — wide row (region cx=510 cy=760, rx=320 ry=100)
+      sa19: { x: 220, y: 745 }, // Melquíades
+      sa20: { x: 340, y: 775 }, // Pilar
+      sa21: { x: 460, y: 745 }, // Pietro Crespi
+      sa22: { x: 580, y: 775 }, // Petra Cotes
+      sa23: { x: 700, y: 745 }, // Mauricio Babilonia
+      sa24: { x: 820, y: 775 }, // Mr. Brown / Banana Company
+      // Central anchor: the parchments — structural pivot of the book
+      so04: { x: 510, y: 340 },
     },
   };
 
