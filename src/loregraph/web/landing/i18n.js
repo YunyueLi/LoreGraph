@@ -93,6 +93,8 @@ window.LG_I18N = {
   "work.type.musical":    { "en": "musical",    "zh-CN": "音乐剧",  "zh-TW": "音樂劇",  "ja": "ミュージカル","ko": "뮤지컬",    "fr": "comédie musicale","es": "musical",  "de": "Musical" },
   "work.type.opera":      { "en": "opera",      "zh-CN": "歌剧",    "zh-TW": "歌劇",    "ja": "オペラ",     "ko": "오페라",    "fr": "opéra",       "es": "ópera",       "de": "Oper" },
   "work.type.screenplay": { "en": "screenplay", "zh-CN": "电影剧本","zh-TW": "電影劇本","ja": "脚本",       "ko": "각본",      "fr": "scénario",    "es": "guion",       "de": "Drehbuch" },
+  "lib.view.grid":        { "en": "Grid",       "zh-CN": "网格",    "zh-TW": "網格",    "ja": "グリッド",   "ko": "그리드",    "fr": "Grille",      "es": "Cuadrícula",  "de": "Raster" },
+  "lib.view.shelf":       { "en": "Bookshelf",  "zh-CN": "书架",    "zh-TW": "書架",    "ja": "本棚",       "ko": "책장",      "fr": "Étagère",     "es": "Estantería",  "de": "Bücherregal" },
   "lib.card.match":    { "en": "match",    "zh-CN": "匹配率",  "zh-TW": "匹配率",  "ja": "一致率",   "ko": "일치율",   "fr": "corresp.",  "es": "coincid.", "de": "Treffer" },
   "lib.card.cost":     { "en": "cost",     "zh-CN": "成本",    "zh-TW": "成本",    "ja": "コスト",   "ko": "비용",     "fr": "coût",      "es": "coste",    "de": "Kosten" },
   "lib.card.lastRun":  { "en": "Last run", "zh-CN": "上次运行","zh-TW": "上次執行","ja": "前回実行", "ko": "마지막 실행","fr": "Dern. exéc.","es": "Última ejec.","de": "Letzter Lauf" },
