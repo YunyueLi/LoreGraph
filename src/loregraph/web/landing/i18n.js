@@ -136,7 +136,7 @@ window.LG_I18N = {
 
   // ===== Reader =====
   "rd.toc":            { "en": "TABLE OF CONTENTS", "zh-CN": "目录", "zh-TW": "目錄", "ja": "目次", "ko": "목차", "fr": "TABLE DES MATIÈRES", "es": "ÍNDICE", "de": "INHALT" },
-  "rd.chapter":        { "en": "Chapter",  "zh-CN": "第 {n} 章", "zh-TW": "第 {n} 章", "ja": "第 {n} 章", "ko": "{n}장", "fr": "Chapitre {n}", "es": "Capítulo {n}", "de": "Kapitel {n}" },
+  "rd.chapter":        { "en": "Chapter {n}",  "zh-CN": "第 {n} 章", "zh-TW": "第 {n} 章", "ja": "第 {n} 章", "ko": "{n}장", "fr": "Chapitre {n}", "es": "Capítulo {n}", "de": "Kapitel {n}" },
   "rd.chapter.short":  { "en": "ch",   "zh-CN": "章",   "zh-TW": "章",   "ja": "章",   "ko": "장",   "fr": "ch",  "es": "cap", "de": "K" },
   "rd.thisChunk":      { "en": "THIS CHUNK", "zh-CN": "本切片", "zh-TW": "本切片", "ja": "このチャンク", "ko": "현재 청크", "fr": "CE FRAGMENT", "es": "ESTE FRAGMENTO", "de": "DIESER ABSCHNITT" },
   "rd.chunkEntities":  { "en": "Entities found here", "zh-CN": "本切片中的实体", "zh-TW": "本切片中的實體", "ja": "このチャンクの実体", "ko": "이 청크의 엔티티", "fr": "Entités ici", "es": "Entidades aquí", "de": "Hier gefundene Entitäten" },
