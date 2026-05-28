@@ -521,7 +521,19 @@ function BookshelfSwitcher({ ctx }) {
     <div className="bs-switcher-overlay" onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
       <div className="bs-switcher-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="bs-switcher-handle" />
-        <div className="bs-switcher-label">{triggerLabel} · {sorted.length}</div>
+        {activeBook && (() => {
+          const title  = window.bookTitle(activeBook, locale);
+          const author = window.bookAuthor(activeBook, locale);
+          const yr     = activeBook.year ? (activeBook.year > 0 ? activeBook.year : `${-activeBook.year} BC`) : null;
+          const meta   = [author, yr].filter(Boolean).join("  ·  ");
+          return (
+            <div className="bs-switcher-active">
+              <div className="bs-switcher-active-eyebrow">{triggerLabel} · {sorted.length}</div>
+              <div className="bs-switcher-active-title"><em>{title}</em></div>
+              <div className="bs-switcher-active-meta">{meta}</div>
+            </div>
+          );
+        })()}
         <div className="bs-switcher-spines">
           {sorted.map((b) => {
             const p = BS_PALETTE[b.coverTone] || BS_PALETTE.ink;
