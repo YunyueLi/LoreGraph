@@ -95,7 +95,7 @@ DEEPSEEK_API_KEY=sk-...
 # OpenRouter（一个 key 接入 100+ 模型）
 LOREGRAPH_LLM_PROVIDER=openrouter
 OPENROUTER_API_KEY=sk-or-v1-...
-LOREGRAPH_LLM_MODEL=anthropic/claude-sonnet-4.5   # 任意 OpenRouter model id
+LOREGRAPH_LLM_MODEL=anthropic/claude-opus-4.7     # 任意 OpenRouter model id
 
 # 本地 Ollama，免 key
 LOREGRAPH_LLM_PROVIDER=ollama

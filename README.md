@@ -95,7 +95,7 @@ DEEPSEEK_API_KEY=sk-...
 # OpenRouter (gateway to 100+ models)
 LOREGRAPH_LLM_PROVIDER=openrouter
 OPENROUTER_API_KEY=sk-or-v1-...
-LOREGRAPH_LLM_MODEL=anthropic/claude-sonnet-4.5   # any OpenRouter model id
+LOREGRAPH_LLM_MODEL=anthropic/claude-opus-4.7     # any OpenRouter model id
 
 # Local Ollama, no key
 LOREGRAPH_LLM_PROVIDER=ollama
