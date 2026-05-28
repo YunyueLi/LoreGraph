@@ -371,12 +371,13 @@ function FolioSpread({ ev, idx, total, data, entities, locale, tt, setSelectedEn
   // Pivot quote can be event-defined override (e.g. v01) or pivot edge's evidence
   const pivotQuote = ev.pivotQuote || pivot?.evidence;
   const otherEdges = evidenceEdges.filter(e => e.id !== pivot?.id);
+  const roman = toRoman(ev.chapter);
 
   // GLUCOSE rows tied to participants — "what changes after"
   const glucose = data.glucose.filter(g => participants.includes(g.entity)).slice(0, 3);
 
   return (
-    <article className="tl2-folio-spread" data-event-id={ev.id} style={{"--phase-color": phase.color}}>
+    <article className="tl2-folio-spread" data-event-id={ev.id} style={{"--phase-color": phase.color, "--roman-chars": roman.length}}>
       {/* phase strap at top of spread */}
       <div className="tl2-folio-strap">
         <span className="tl2-folio-strap-roman">{phase.roman}</span>
@@ -391,7 +392,7 @@ function FolioSpread({ ev, idx, total, data, entities, locale, tt, setSelectedEn
         {/* LEFT GUTTER — chapter as huge roman + page label */}
         <div className="tl2-folio-gutter">
           <div className="tl2-folio-gutter-eyebrow">CHAPTER</div>
-          <div className="tl2-folio-gutter-roman">{toRoman(ev.chapter)}</div>
+          <div className="tl2-folio-gutter-roman">{roman}</div>
           <div className="tl2-folio-gutter-arabic">ch. {ev.chapter}</div>
           {pivot && (
             <div className="tl2-folio-gutter-cite">
@@ -553,11 +554,16 @@ function StageMode({ ctx, tt, data, entities, locale, visibleEvents, setSelected
               <div className="tl2-stage-phase-sub">{tlPhaseLabel(phase, locale, "sub")}</div>
             </div>
           </div>
-          <div className="tl2-stage-sigil">
-            <div className="tl2-stage-sigil-eyebrow">CHAPTER</div>
-            <div className="tl2-stage-sigil-roman">{toRoman(cur.chapter)}</div>
-            <div className="tl2-stage-sigil-arabic">ch. {cur.chapter}</div>
-          </div>
+          {(() => {
+            const stageRoman = toRoman(cur.chapter);
+            return (
+              <div className="tl2-stage-sigil" style={{"--roman-chars": stageRoman.length}}>
+                <div className="tl2-stage-sigil-eyebrow">CHAPTER</div>
+                <div className="tl2-stage-sigil-roman">{stageRoman}</div>
+                <div className="tl2-stage-sigil-arabic">ch. {cur.chapter}</div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* the quote — centerpiece */}
@@ -814,10 +820,12 @@ function RibbonMode({ ctx, tt, data, entities, locale, visibleEvents, selectedEv
       </div>
 
       {/* bottom dock — event detail */}
-      {cur && (
-        <div className="tl2-ribbon-dock" style={{"--phase-color": curPhase.color}}>
+      {cur && (() => {
+        const dockRoman = toRoman(cur.chapter);
+        return (
+        <div className="tl2-ribbon-dock" style={{"--phase-color": curPhase.color, "--roman-chars": dockRoman.length}}>
           <div className="tl2-ribbon-dock-head">
-            <div className="tl2-ribbon-dock-roman">{toRoman(cur.chapter)}</div>
+            <div className="tl2-ribbon-dock-roman">{dockRoman}</div>
             <div className="tl2-ribbon-dock-meta">
               <div className="tl2-ribbon-dock-phase">
                 <span className="dot" /> {tlPhaseLabel(curPhase, locale)} · ch {cur.chapter}
@@ -837,7 +845,8 @@ function RibbonMode({ ctx, tt, data, entities, locale, visibleEvents, selectedEv
             ))}
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

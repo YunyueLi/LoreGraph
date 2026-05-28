@@ -4810,16 +4810,16 @@ a { color: inherit; }
 
 .tl2-folio-grid {
   display: grid;
-  grid-template-columns: 200px 1fr;
-  gap: 48px 64px;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 48px 56px;
   align-items: start;
 }
 @media (max-width: 1080px) {
-  .tl2-folio-grid { grid-template-columns: 160px 1fr; gap: 36px 40px; }
+  .tl2-folio-grid { grid-template-columns: 170px minmax(0, 1fr); gap: 36px 36px; }
   .tl2-folio-spread { padding: 0 40px 80px; }
 }
 @media (max-width: 720px) {
-  .tl2-folio-grid { grid-template-columns: 1fr; gap: 28px; }
+  .tl2-folio-grid { grid-template-columns: minmax(0, 1fr); gap: 28px; }
   .tl2-folio-spread { padding: 0 28px 64px; }
 }
 
@@ -4828,6 +4828,8 @@ a { color: inherit; }
   align-self: start;
   padding-right: 8px;
   border-right: 1px solid rgba(184,149,74,0.2);
+  overflow: hidden;
+  min-width: 0;
 }
 .tl2-folio-gutter-eyebrow {
   font-family: 'JetBrains Mono', monospace;
@@ -4837,15 +4839,23 @@ a { color: inherit; }
   text-transform: uppercase;
   margin-bottom: 12px;
 }
+/* Roman scales by character count so XXXIV (5ch), XXXVIII (7ch) etc. always
+   fit within the 200px gutter without colliding with the title column.
+   Formula: each italic-serif Roman glyph ≈ 0.5× font-size wide, so for a
+   ~180px usable gutter width: font-size ≈ 360px / chars. Clamped to a
+   readable range so short Romans (III, IV) don't blow up past the gutter
+   either. */
 .tl2-folio-gutter-roman {
   font-family: 'Spectral', serif;
   font-style: italic;
   font-weight: 300;
-  font-size: 96px;
+  font-size: clamp(40px, calc(320px / var(--roman-chars, 5)), 84px);
   line-height: 0.9;
   color: var(--phase-color);
   letter-spacing: -0.01em;
   margin-bottom: 6px;
+  white-space: nowrap;
+  max-width: 100%;
 }
 .tl2-folio-gutter-arabic {
   font-family: 'JetBrains Mono', monospace;
@@ -4870,16 +4880,18 @@ a { color: inherit; }
 .tl2-folio-head {
   padding-top: 4px;
   max-width: 720px;
+  min-width: 0;
 }
 .tl2-folio-title {
   font-family: 'Spectral', serif;
   font-weight: 300;
-  font-size: 48px;
+  font-size: clamp(32px, calc(28px + 1.6vw), 48px);
   line-height: 1.05;
   letter-spacing: -0.012em;
   color: var(--paper-text);
   margin: 0 0 18px;
   text-wrap: balance;
+  overflow-wrap: break-word;
 }
 .tl2-folio-title em { font-style: italic; }
 .tl2-folio-gloss {
@@ -5176,10 +5188,11 @@ a { color: inherit; }
   font-family: 'Spectral', serif;
   font-style: italic;
   font-weight: 300;
-  font-size: 52px;
+  font-size: clamp(34px, calc(260px / var(--roman-chars, 5)), 56px);
   line-height: 1;
   color: var(--phase-color);
   letter-spacing: -0.01em;
+  white-space: nowrap;
 }
 .tl2-stage-sigil-arabic {
   font-family: 'JetBrains Mono', monospace;
@@ -5546,9 +5559,10 @@ a { color: inherit; }
   font-family: 'Spectral', serif;
   font-style: italic;
   font-weight: 300;
-  font-size: 64px;
+  font-size: clamp(38px, calc(320px / var(--roman-chars, 5)), 64px);
   line-height: 0.9;
   color: var(--phase-color);
+  white-space: nowrap;
 }
 .tl2-ribbon-dock-meta { max-width: 720px; }
 .tl2-ribbon-dock-phase {
