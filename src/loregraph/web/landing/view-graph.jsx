@@ -598,16 +598,24 @@ function edgePath(a, b, rA, rB, parallelIdx, parallelCount, curveSign = 1) {
 
 // =========================== Overlays (mode backgrounds) ===========================
 function SocialOverlay({ regions, entities, locale, selectedEntityId, setSelectedEntityId }) {
+  // Is *any* region in focus right now? When so, dim the others to push the
+  // active region forward as a clear spotlight.
+  const anyActive = regions.some(r =>
+    r.members.includes(selectedEntityId) || r.entity === selectedEntityId
+  );
   return (
     <g className="social-overlay">
-      {/* shared gradient defs — one per region for the soft-pool effect */}
+      {/* shared gradient defs — one per region for the soft-pool effect.
+          When a region is active its pool brightens dramatically; when
+          something else is active the pool dims past background. */}
       <defs>
         {regions.map(r => {
-          const isActive = r.members.includes(selectedEntityId);
+          const isActive = r.members.includes(selectedEntityId) || r.entity === selectedEntityId;
+          const dim = anyActive && !isActive;
           return (
             <radialGradient key={r.id} id={`reg-grad-${r.id}`} cx="50%" cy="50%" r="65%">
-              <stop offset="0%"  stopColor="rgba(184,149,74,1)" stopOpacity={isActive ? 0.20 : 0.10} />
-              <stop offset="60%" stopColor="rgba(184,149,74,1)" stopOpacity={isActive ? 0.06 : 0.03} />
+              <stop offset="0%"  stopColor="rgba(184,149,74,1)" stopOpacity={isActive ? 0.34 : (dim ? 0.04 : 0.10)} />
+              <stop offset="55%" stopColor="rgba(184,149,74,1)" stopOpacity={isActive ? 0.14 : (dim ? 0.015 : 0.03)} />
               <stop offset="100%" stopColor="rgba(184,149,74,1)" stopOpacity="0" />
             </radialGradient>
           );
@@ -615,56 +623,81 @@ function SocialOverlay({ regions, entities, locale, selectedEntityId, setSelecte
       </defs>
 
       {regions.map((r) => {
-        const isActive = r.members.includes(selectedEntityId);
+        const isActive = r.members.includes(selectedEntityId) || r.entity === selectedEntityId;
+        const dim = anyActive && !isActive;
         const title = (typeof r.title === "string") ? r.title : (r.title[locale] || r.title.en);
         return (
           <g key={r.id}
-             style={{cursor: r.entity ? "pointer" : "default"}}
+             style={{cursor: r.entity ? "pointer" : "default", transition: "opacity 0.4s", opacity: dim ? 0.42 : 1}}
              onClick={() => r.entity && setSelectedEntityId(r.entity)}>
-            {/* Layer 1: soft radial pool — pool of light marking the territory */}
+            {/* Layer 1: soft radial pool */}
             <ellipse cx={r.cx} cy={r.cy} rx={r.rx} ry={r.ry}
               fill={`url(#reg-grad-${r.id})`}
               style={{transition: "all 0.3s"}} />
-            {/* Layer 2: faint outer halo when active — subtle aura of focus */}
-            {isActive && (
-              <ellipse cx={r.cx} cy={r.cy} rx={r.rx + 6} ry={r.ry + 6}
-                fill="none"
-                stroke="rgba(184,149,74,0.18)" strokeWidth="0.8" />
-            )}
+            {/* Layer 2: pulsing outer halo when active — breathing spotlight */}
+            {isActive && (<>
+              <ellipse cx={r.cx} cy={r.cy} rx={r.rx + 4} ry={r.ry + 4}
+                fill="none" stroke="rgba(184,149,74,0.45)" strokeWidth="1">
+                <animate attributeName="rx" values={`${r.rx + 4};${r.rx + 14};${r.rx + 4}`} dur="3.2s" repeatCount="indefinite" />
+                <animate attributeName="ry" values={`${r.ry + 4};${r.ry + 14};${r.ry + 4}`} dur="3.2s" repeatCount="indefinite" />
+                <animate attributeName="stroke-opacity" values="0.5;0.1;0.5" dur="3.2s" repeatCount="indefinite" />
+              </ellipse>
+              <ellipse cx={r.cx} cy={r.cy} rx={r.rx + 2} ry={r.ry + 2}
+                fill="none" stroke="rgba(184,149,74,0.30)" strokeWidth="0.6" />
+            </>)}
             {/* Layer 3: dashed boundary */}
             <ellipse cx={r.cx} cy={r.cy} rx={r.rx} ry={r.ry}
               fill="none"
-              stroke={isActive ? "rgba(184,149,74,0.6)" : "rgba(184,149,74,0.28)"}
-              strokeWidth={isActive ? 1.2 : 0.9} strokeDasharray="4 6"
+              stroke={isActive ? "rgba(184,149,74,0.75)" : "rgba(184,149,74,0.28)"}
+              strokeWidth={isActive ? 1.4 : 0.9}
+              strokeDasharray={isActive ? "6 4" : "4 6"}
               style={{transition: "all 0.3s"}} />
-            {/* Layer 4: title with flanking ornament */}
-            <g transform={`translate(${r.cx} ${r.cy - r.ry + 20})`}>
-              <line x1={-Math.min(64, r.rx * 0.5)} y1="0" x2={-22} y2="0"
-                stroke={isActive ? "rgba(138,110,54,0.55)" : "rgba(138,110,54,0.3)"} strokeWidth="0.7"
+            {/* Layer 4: title — flanking gold rules + center dot + serif italic */}
+            <g transform={`translate(${r.cx} ${r.cy - r.ry + 22})`}>
+              <line x1={-Math.min(72, r.rx * 0.52)} y1="0" x2={isActive ? -26 : -22} y2="0"
+                stroke={isActive ? "var(--gold)" : "rgba(138,110,54,0.3)"} strokeWidth={isActive ? 0.9 : 0.7}
                 style={{transition: "all 0.3s"}} />
-              <line x1={22} y1="0" x2={Math.min(64, r.rx * 0.5)} y2="0"
-                stroke={isActive ? "rgba(138,110,54,0.55)" : "rgba(138,110,54,0.3)"} strokeWidth="0.7"
+              <line x1={isActive ? 26 : 22} y1="0" x2={Math.min(72, r.rx * 0.52)} y2="0"
+                stroke={isActive ? "var(--gold)" : "rgba(138,110,54,0.3)"} strokeWidth={isActive ? 0.9 : 0.7}
                 style={{transition: "all 0.3s"}} />
-              <circle cx="0" cy="0" r="1.4"
+              {isActive && (
+                <circle cx="0" cy="0" r="2.6" fill="none" stroke="var(--gold)" strokeWidth="0.8">
+                  <animate attributeName="r" values="2.6;3.6;2.6" dur="2.6s" repeatCount="indefinite" />
+                </circle>
+              )}
+              <circle cx="0" cy="0" r={isActive ? 1.8 : 1.4}
                 fill={isActive ? "var(--gold)" : "rgba(138,110,54,0.5)"}
-                style={{transition: "fill 0.3s"}} />
-              <text textAnchor="middle" dy="-7"
+                style={{transition: "all 0.3s"}} />
+              <text textAnchor="middle" dy={isActive ? "-9" : "-7"}
                 fontFamily="Spectral, serif" fontStyle="italic" fontWeight={isActive ? 500 : 400}
-                fontSize="14" fill="#8a6e36" opacity={isActive ? 1 : 0.72}
-                letterSpacing="0.08em"
+                fontSize={isActive ? 16 : 14}
+                fill={isActive ? "#5a4828" : "#8a6e36"}
+                opacity={isActive ? 1 : 0.72}
+                letterSpacing={isActive ? "0.1em" : "0.08em"}
                 style={{transition: "all 0.3s"}}>
                 {title}
               </text>
+              {/* Subtle subtitle when active: shows member count in words */}
+              {isActive && (
+                <text textAnchor="middle" dy="9"
+                  fontFamily="JetBrains Mono, monospace" fontSize="9"
+                  fill="var(--gold-deep)" letterSpacing="0.32em"
+                  opacity="0.85">
+                  {String(r.members.length).padStart(2, "0")} {locale === "en" ? "MEMBERS" : locale === "zh-CN" ? "成员" : locale === "zh-TW" ? "成員" : locale === "ja" ? "メンバー" : locale === "ko" ? "구성원" : locale === "fr" ? "MEMBRES" : locale === "es" ? "MIEMBROS" : "MITGLIEDER"}
+                </text>
+              )}
             </g>
-            {/* Layer 5: member-count badge bottom-right */}
-            <text x={r.cx + r.rx - 12} y={r.cy + r.ry - 8}
-              textAnchor="end"
-              fontFamily="JetBrains Mono, monospace" fontSize="9"
-              fill="rgba(138,110,54,0.55)" opacity={isActive ? 0.9 : 0.5}
-              letterSpacing="0.22em"
-              style={{transition: "opacity 0.3s"}}>
-              {String(r.members.length).padStart(2, "0")}
-            </text>
+            {/* Layer 5: member-count badge bottom-right (hidden when active — info moved to title block) */}
+            {!isActive && (
+              <text x={r.cx + r.rx - 12} y={r.cy + r.ry - 8}
+                textAnchor="end"
+                fontFamily="JetBrains Mono, monospace" fontSize="9"
+                fill="rgba(138,110,54,0.55)" opacity={0.5}
+                letterSpacing="0.22em"
+                style={{transition: "opacity 0.3s"}}>
+                {String(r.members.length).padStart(2, "0")}
+              </text>
+            )}
           </g>
         );
       })}
