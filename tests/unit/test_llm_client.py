@@ -28,12 +28,15 @@ from loregraph.llm.client import (
 
 
 @pytest.fixture(autouse=True)
-def _clear_llm_env(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+def _clear_llm_env(monkeypatch: pytest.MonkeyPatch, tmp_path) -> Iterator[None]:  # type: ignore[no-untyped-def]
     """Wipe every LLM-related env var so each test starts from a clean slate.
 
     pydantic-settings reads from `os.environ` at instance construction;
-    leaving stale vars across tests would silently couple them.
+    leaving stale vars across tests would silently couple them. We also
+    chdir to a tmp path so a project-root `.env` (if a dev created one
+    for live testing) cannot leak provider/model overrides into tests.
     """
+    monkeypatch.chdir(tmp_path)
     for var in [
         "LOREGRAPH_LLM_PROVIDER",
         "LOREGRAPH_LLM_API_KEY",
