@@ -68,7 +68,7 @@ PROVIDER_PRESETS: dict[str, tuple[str | None, str | None]] = {
         "accounts/fireworks/models/llama-v3p3-70b-instruct",
     ),
     "mistral": ("https://api.mistral.ai/v1", "mistral-large-latest"),
-    "openrouter": ("https://openrouter.ai/api/v1", "anthropic/claude-sonnet-4.5"),
+    "openrouter": ("https://openrouter.ai/api/v1", "anthropic/claude-opus-4.7"),
     "ollama": ("http://localhost:11434/v1", "llama3.2"),
     "vllm": ("http://localhost:8000/v1", ""),
     "openai_compatible": (None, None),
