@@ -5127,7 +5127,9 @@ a { color: inherit; }
   position: relative;
   display: flex; flex-direction: column;
   align-items: center;
-  padding: 20px 100px 24px;
+  /* extra bottom padding reserves a safe zone for the floating
+     evidence trigger so it never overlaps the cast row */
+  padding: 20px 100px 76px;
   max-width: 1280px;
   margin: 0 auto;
   width: 100%;
@@ -5467,6 +5469,8 @@ a { color: inherit; }
 .tl2-ribbon-wrap {
   overflow-x: auto;
   overflow-y: hidden;
+  /* leave a safe zone at the bottom for the floating evidence trigger */
+  padding-bottom: 60px;
 }
 .tl2-ribbon-track { position: relative; padding: 20px 0; }
 .tl2-ribbon-band {
