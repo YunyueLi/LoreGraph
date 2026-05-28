@@ -2,7 +2,7 @@
 // Three view modes: SOCIAL (people in places), THEMES (concepts), CHRONICLE (events on a timeline).
 
 function ViewGraph({ ctx }) {
-  const { tt, data, entities, edges, locale, selectedEntityId, setSelectedEntityId,
+  const { tt, data, entities, edges, locale, selectedEntityId, setSelectedEntityId, activeBook,
           graphViewMode, setGraphViewMode, graphLeftHidden, setGraphLeftHidden, graphRightHidden, setGraphRightHidden } = ctx;
   const { useState, useMemo, useEffect } = React;
 
@@ -65,57 +65,122 @@ function ViewGraph({ ctx }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [fullscreen]);
 
-  // ============== Layouts per mode ==============
-  // SOCIAL: agents grouped under their primary location (location = soft region behind).
-  const SOCIAL_REGIONS = [
-    { id: "longbourn",  title: { en: "Longbourn", "zh-CN": "朗博恩", "zh-TW": "朗博恩", ja: "ロングボーン", ko: "롱본", fr: "Longbourn", es: "Longbourn", de: "Longbourn" }, entity: "o02", cx: 200, cy: 380, rx: 170, ry: 230, members: ["e01","e03","e05","e06","e07","e08","e09"] },
-    { id: "netherfield",title: { en: "Netherfield Park", "zh-CN": "尼日斐花园", "zh-TW": "尼日斐花園", ja: "ネザーフィールド", ko: "네더필드", fr: "Netherfield Park", es: "Netherfield Park", de: "Netherfield Park" }, entity: "o03", cx: 460, cy: 100, rx: 160, ry: 90, members: ["e04","e14"] },
-    { id: "pemberley",  title: { en: "Pemberley", "zh-CN": "潘伯里庄园", "zh-TW": "潘伯里莊園", ja: "ペンバリー", ko: "펜벌리", fr: "Pemberley", es: "Pemberley", de: "Pemberley" }, entity: "o01", cx: 780, cy: 140, rx: 150, ry: 110, members: ["e02","e15"] },
-    { id: "rosings",    title: { en: "Rosings & Hunsford", "zh-CN": "罗辛斯与亨斯福德", "zh-TW": "羅辛斯與亨斯福德", ja: "ロージングスとハンスフォード", ko: "로징스와 헌스포드", fr: "Rosings & Hunsford", es: "Rosings y Hunsford", de: "Rosings & Hunsford" }, entity: "o04", cx: 720, cy: 540, rx: 190, ry: 160, members: ["e11","e12","e13","e18"] },
-    { id: "london",     title: { en: "London (Gardiners)", "zh-CN": "伦敦（嘉丁纳家）", "zh-TW": "倫敦（嘉丁納家）", ja: "ロンドン（ガーディナー家）", ko: "런던 (가디너 가)", fr: "Londres (Gardiner)", es: "Londres (Gardiner)", de: "London (Gardiner)" }, entity: null, cx: 250, cy: 720, rx: 160, ry: 90, members: ["e16","e17"] },
-    { id: "regiment",   title: { en: "The ——shire Militia", "zh-CN": "——郡民兵团", "zh-TW": "——郡民兵團", ja: "——シャー民兵団", ko: "——셔 민병대", fr: "Milice du ——shire", es: "Milicia de ——shire", de: "——shire-Miliz" }, entity: null, cx: 530, cy: 730, rx: 130, ry: 80, members: ["e10"] },
-  ];
-  const SOCIAL_POS = {
-    // Longbourn cluster
-    e01: { x: 250, y: 360 }, // Elizabeth — center
-    e03: { x: 160, y: 290 }, e05: { x:  80, y: 380 }, e06: { x:  90, y: 470 },
-    e07: { x: 290, y: 460 }, e08: { x: 200, y: 480 }, e09: { x: 320, y: 290 },
-    // Netherfield
-    e04: { x: 410, y: 100 }, e14: { x: 510, y: 100 },
-    // Pemberley
-    e02: { x: 750, y: 150 }, e15: { x: 830, y: 110 },
-    // Rosings
-    e12: { x: 720, y: 510 }, e18: { x: 800, y: 580 }, e11: { x: 640, y: 560 }, e13: { x: 700, y: 620 },
-    // London
-    e16: { x: 200, y: 730 }, e17: { x: 290, y: 715 },
-    // Roaming
-    e10: { x: 530, y: 730 },
-    // central Letter object
-    o05: { x: 500, y: 360 },
+  // ============== Layouts per book × mode ==============
+  // SOCIAL: agents grouped under their primary location (P&P) or generation
+  // (百年孤独). Regions are soft ellipses; positions sit each entity within one.
+  const SOCIAL_REGIONS_BY_BOOK = {
+    pap: [
+      { id: "longbourn",  title: { en: "Longbourn", "zh-CN": "朗博恩", "zh-TW": "朗博恩", ja: "ロングボーン", ko: "롱본", fr: "Longbourn", es: "Longbourn", de: "Longbourn" }, entity: "o02", cx: 200, cy: 380, rx: 170, ry: 230, members: ["e01","e03","e05","e06","e07","e08","e09"] },
+      { id: "netherfield",title: { en: "Netherfield Park", "zh-CN": "尼日斐花园", "zh-TW": "尼日斐花園", ja: "ネザーフィールド", ko: "네더필드", fr: "Netherfield Park", es: "Netherfield Park", de: "Netherfield Park" }, entity: "o03", cx: 460, cy: 100, rx: 160, ry: 90, members: ["e04","e14"] },
+      { id: "pemberley",  title: { en: "Pemberley", "zh-CN": "潘伯里庄园", "zh-TW": "潘伯里莊園", ja: "ペンバリー", ko: "펜벌리", fr: "Pemberley", es: "Pemberley", de: "Pemberley" }, entity: "o01", cx: 780, cy: 140, rx: 150, ry: 110, members: ["e02","e15"] },
+      { id: "rosings",    title: { en: "Rosings & Hunsford", "zh-CN": "罗辛斯与亨斯福德", "zh-TW": "羅辛斯與亨斯福德", ja: "ロージングスとハンスフォード", ko: "로징스와 헌스포드", fr: "Rosings & Hunsford", es: "Rosings y Hunsford", de: "Rosings & Hunsford" }, entity: "o04", cx: 720, cy: 540, rx: 190, ry: 160, members: ["e11","e12","e13","e18"] },
+      { id: "london",     title: { en: "London (Gardiners)", "zh-CN": "伦敦（嘉丁纳家）", "zh-TW": "倫敦（嘉丁納家）", ja: "ロンドン（ガーディナー家）", ko: "런던 (가디너 가)", fr: "Londres (Gardiner)", es: "Londres (Gardiner)", de: "London (Gardiner)" }, entity: null, cx: 250, cy: 720, rx: 160, ry: 90, members: ["e16","e17"] },
+      { id: "regiment",   title: { en: "The ——shire Militia", "zh-CN": "——郡民兵团", "zh-TW": "——郡民兵團", ja: "——シャー民兵団", ko: "——셔 민병대", fr: "Milice du ——shire", es: "Milicia de ——shire", de: "——shire-Miliz" }, entity: null, cx: 530, cy: 730, rx: 130, ry: 80, members: ["e10"] },
+    ],
+    soledad: [
+      { id: "gen1",   title: { en: "Generation I — Founders",  "zh-CN": "第一代 · 创建者", "zh-TW": "第一代 · 創建者", ja: "第一世代 — 創設者", ko: "1세대 · 창건자", fr: "Génération I — Fondateurs", es: "Generación I — Fundadores", de: "Generation I — Gründer" }, entity: null, cx: 220, cy: 180, rx: 170, ry: 110, members: ["sa01","sa02"] },
+      { id: "gen2",   title: { en: "Generation II",            "zh-CN": "第二代",          "zh-TW": "第二代",          ja: "第二世代",            ko: "2세대",          fr: "Génération II",            es: "Generación II",            de: "Generation II" },            entity: null, cx: 520, cy: 170, rx: 200, ry: 110, members: ["sa03","sa04","sa05","sa06"] },
+      { id: "gen3",   title: { en: "Generation III",           "zh-CN": "第三代",          "zh-TW": "第三代",          ja: "第三世代",            ko: "3세代",          fr: "Génération III",           es: "Generación III",           de: "Generation III" },           entity: null, cx: 820, cy: 230, rx: 170, ry: 120, members: ["sa07","sa08","sa09"] },
+      { id: "gen4",   title: { en: "Generation IV — twins",    "zh-CN": "第四代 · 双胞胎",  "zh-TW": "第四代 · 雙胞胎",  ja: "第四世代 — 双子",     ko: "4세대 · 쌍둥이", fr: "Génération IV — jumeaux",  es: "Generación IV — gemelos",  de: "Generation IV — Zwillinge" }, entity: null, cx: 240, cy: 470, rx: 200, ry: 130, members: ["sa10","sa11","sa12","sa15"] },
+      { id: "gen5",   title: { en: "Generation V",             "zh-CN": "第五代",          "zh-TW": "第五代",          ja: "第五世代",            ko: "5세대",          fr: "Génération V",             es: "Generación V",             de: "Generation V" },             entity: null, cx: 530, cy: 470, rx: 160, ry: 110, members: ["sa13","sa14"] },
+      { id: "gen67",  title: { en: "Generations VI & VII",     "zh-CN": "第六/七代",       "zh-TW": "第六/七代",       ja: "第六・七世代",        ko: "6 / 7세대",       fr: "Générations VI & VII",     es: "Generaciones VI y VII",     de: "Generationen VI & VII" },     entity: null, cx: 830, cy: 510, rx: 170, ry: 140, members: ["sa16","sa17","sa18"] },
+      { id: "outsiders", title: { en: "Outsiders to Macondo",  "zh-CN": "外来者 · 马孔多以外", "zh-TW": "外來者 · 馬孔多以外", ja: "マコンドの外来者",      ko: "마콘도의 외부인",   fr: "Étrangers à Macondo",      es: "Forasteros de Macondo",     de: "Auswärtige Macondos" },      entity: null, cx: 510, cy: 760, rx: 320, ry: 100, members: ["sa19","sa20","sa21","sa22","sa23","sa24"] },
+    ],
+  };
+  const SOCIAL_POS_BY_BOOK = {
+    pap: {
+      // Longbourn cluster
+      e01: { x: 250, y: 360 }, // Elizabeth — center
+      e03: { x: 160, y: 290 }, e05: { x:  80, y: 380 }, e06: { x:  90, y: 470 },
+      e07: { x: 290, y: 460 }, e08: { x: 200, y: 480 }, e09: { x: 320, y: 290 },
+      // Netherfield
+      e04: { x: 410, y: 100 }, e14: { x: 510, y: 100 },
+      // Pemberley
+      e02: { x: 750, y: 150 }, e15: { x: 830, y: 110 },
+      // Rosings
+      e12: { x: 720, y: 510 }, e18: { x: 800, y: 580 }, e11: { x: 640, y: 560 }, e13: { x: 700, y: 620 },
+      // London
+      e16: { x: 200, y: 730 }, e17: { x: 290, y: 715 },
+      // Roaming
+      e10: { x: 530, y: 730 },
+      // central Letter object
+      o05: { x: 500, y: 360 },
+    },
+    soledad: {
+      // Gen I (founders)
+      sa01: { x: 170, y: 165 }, sa02: { x: 270, y: 195 },
+      // Gen II
+      sa03: { x: 420, y: 145 }, sa04: { x: 490, y: 190 }, sa05: { x: 570, y: 150 }, sa06: { x: 620, y: 200 },
+      // Gen III
+      sa07: { x: 770, y: 210 }, sa08: { x: 830, y: 250 }, sa09: { x: 890, y: 220 },
+      // Gen IV (twins + Remedios the Beauty)
+      sa10: { x: 175, y: 445 }, sa11: { x: 245, y: 470 }, sa12: { x: 315, y: 445 }, sa15: { x: 245, y: 510 },
+      // Gen V
+      sa13: { x: 490, y: 460 }, sa14: { x: 570, y: 480 },
+      // Gen VI/VII
+      sa16: { x: 780, y: 490 }, sa17: { x: 840, y: 520 }, sa18: { x: 880, y: 565 },
+      // Outsiders to the household
+      sa19: { x: 240, y: 745 }, // Melquíades — leftmost
+      sa20: { x: 370, y: 770 }, // Pilar
+      sa21: { x: 470, y: 745 }, // Pietro Crespi
+      sa22: { x: 570, y: 775 }, // Petra Cotes
+      sa23: { x: 670, y: 750 }, // Mauricio Babilonia
+      sa24: { x: 770, y: 770 }, // Mr. Brown / Banana Company
+      // Central anchor: the parchments — the structural pivot of the book
+      so04: { x: 500, y: 330 },
+    },
   };
 
   // THEMES: concepts laid out radially; agents that embody them gather around.
-  const THEMES_POS = {
-    // Concepts at cardinal positions
-    c01: { x: 200, y: 420 }, // pride — left
-    c02: { x: 760, y: 420 }, // prejudice — right
-    c03: { x: 480, y: 130 }, // marriage — top
-    c04: { x: 240, y: 700 }, // class — bottom-left
-    c05: { x: 720, y: 700 }, // reputation — bottom-right
-    c06: { x: 480, y: 700 }, // entail — bottom-center
-    // Agents radiate outward from center toward themes they embody.
-    e02: { x: 280, y: 320 }, // Darcy → pride
-    e01: { x: 660, y: 320 }, // Elizabeth → prejudice
-    e03: { x: 410, y: 230 }, // Jane → marriage
-    e04: { x: 550, y: 230 }, // Bingley → marriage
-    e13: { x: 380, y: 320 }, // Charlotte → marriage(pragmatic)/class
-    e11: { x: 320, y: 600 }, // Collins → entail/class
-    e12: { x: 600, y: 580 }, // Lady Catherine → class
-    e07: { x: 670, y: 600 }, // Lydia → reputation
-    e10: { x: 540, y: 600 }, // Wickham → reputation
-    e06: { x: 470, y: 470 }, // Mrs Bennet → marriage(forcing)
-    e05: { x: 220, y: 540 }, // Mr Bennet → class(detached)
+  const THEMES_POS_BY_BOOK = {
+    pap: {
+      // Concepts at cardinal positions
+      c01: { x: 200, y: 420 }, // pride — left
+      c02: { x: 760, y: 420 }, // prejudice — right
+      c03: { x: 480, y: 130 }, // marriage — top
+      c04: { x: 240, y: 700 }, // class — bottom-left
+      c05: { x: 720, y: 700 }, // reputation — bottom-right
+      c06: { x: 480, y: 700 }, // entail — bottom-center
+      // Agents radiate outward from center toward themes they embody.
+      e02: { x: 280, y: 320 }, // Darcy → pride
+      e01: { x: 660, y: 320 }, // Elizabeth → prejudice
+      e03: { x: 410, y: 230 }, // Jane → marriage
+      e04: { x: 550, y: 230 }, // Bingley → marriage
+      e13: { x: 380, y: 320 }, // Charlotte → marriage(pragmatic)/class
+      e11: { x: 320, y: 600 }, // Collins → entail/class
+      e12: { x: 600, y: 580 }, // Lady Catherine → class
+      e07: { x: 670, y: 600 }, // Lydia → reputation
+      e10: { x: 540, y: 600 }, // Wickham → reputation
+      e06: { x: 470, y: 470 }, // Mrs Bennet → marriage(forcing)
+      e05: { x: 220, y: 540 }, // Mr Bennet → class(detached)
+    },
+    soledad: {
+      // Concepts at cardinal positions
+      sc01: { x: 480, y: 130 }, // solitude — top
+      sc02: { x: 200, y: 420 }, // circular time — left
+      sc03: { x: 480, y: 700 }, // memory & forgetting — bottom
+      sc04: { x: 760, y: 420 }, // magic realism — right
+      sc05: { x: 480, y: 420 }, // cursed bloodline — center
+      // Founders
+      sa01: { x: 340, y: 260 }, // founder → solitude / curse / magic realism
+      sa02: { x: 480, y: 230 }, // Úrsula → curse / memory / circular time
+      // Action / repression archetypes
+      sa04: { x: 620, y: 280 }, // Colonel → solitude
+      sa05: { x: 340, y: 510 }, // Amaranta → solitude
+      // The witness & the writer
+      sa10: { x: 600, y: 540 }, // José Arcadio Segundo → memory/forgetting
+      sa19: { x: 580, y: 350 }, // Melquíades → cursed bloodline (he wrote it)
+      // Final reader
+      sa16: { x: 480, y: 580 }, // Aureliano Babilonia → memory + curse
+      // The last child
+      sa18: { x: 390, y: 620 }, // pig-tailed child → cursed bloodline
+    },
   };
+
+  const bookId = (activeBook && activeBook.id) || "pap";
+  const SOCIAL_REGIONS = SOCIAL_REGIONS_BY_BOOK[bookId] || SOCIAL_REGIONS_BY_BOOK.pap;
+  const SOCIAL_POS = SOCIAL_POS_BY_BOOK[bookId] || SOCIAL_POS_BY_BOOK.pap;
+  const THEMES_POS = THEMES_POS_BY_BOOK[bookId] || THEMES_POS_BY_BOOK.pap;
 
   // CHRONICLE layout removed — timeline now lives in its own view.
 
@@ -128,7 +193,7 @@ function ViewGraph({ ctx }) {
       if (viewMode === "themes" && (e.type === "object" || e.type === "event"))  return false;
       return true;
     });
-  }, [viewMode]);
+  }, [viewMode, bookId]);
 
   const visibleEdges = useMemo(() => edges.filter(e => {
     if (!edgeFilter[e.rel]) return false;
@@ -141,7 +206,7 @@ function ViewGraph({ ctx }) {
       if (!sIn && !dIn) return false;
     }
     return true;
-  }), [edgeFilter, positions, activeChapter, viewMode]);
+  }), [edgeFilter, activeChapter, viewMode, bookId]);
 
   const edgeCounts = {
     STRUCTURAL: edges.filter(e => e.rel === "STRUCTURAL").length,
@@ -713,7 +778,7 @@ function GraphNode({ entity, name, x, y, sel, mute, onClick }) {
 
 // ============== Side panel ==============
 function PanelEntity({ entity, ctx, selectedEdgeId, setSelectedEdgeId }) {
-  const { tt, data, locale, entities, edges, gotoEntity } = ctx;
+  const { tt, data, locale, entities, edges, gotoEntity, glucose: bookGlucose } = ctx;
   const { useState } = React;
   const [tab, setTab] = useState("outgoing");
 
@@ -726,7 +791,7 @@ function PanelEntity({ entity, ctx, selectedEdgeId, setSelectedEdgeId }) {
 
   const out = edges.filter(e => e.src === entity.id);
   const inc = edges.filter(e => e.dst === entity.id);
-  const glucose = data.glucose.filter(g => g.entity === entity.id);
+  const glucose = bookGlucose.filter(g => g.entity === entity.id);
   const mentionCount = entity.mentions;
 
   const tabs = [

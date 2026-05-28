@@ -96,7 +96,11 @@ function tlGetPivot(ev, allEdges, evidenceEdges) {
 /* =================== TOP-LEVEL =================== */
 
 function ViewTimeline({ ctx }) {
-  const { tt, data, entities, locale, selectedEntityId, setSelectedEntityId, tlMode } = ctx;
+  const { tt, data: _rawData, entities, edges, locale, selectedEntityId, setSelectedEntityId, tlMode, chunks: bookChunks, glucose: bookGlucose } = ctx;
+  // Shadow `data` with per-book-scoped chunks/edges/glucose so every internal
+  // `data.X` reference and every subcomponent receiving `data={data}` reads
+  // the active book's records (not the global pool that mixes all books).
+  const data = { ..._rawData, chunks: bookChunks, edges, glucose: bookGlucose };
   const mode = tlMode || "folio";
   const [selectedEventId, setSelectedEventId] = useState("v03");
   const [phaseFilter, setPhaseFilter] = useState(null);

@@ -2,11 +2,11 @@
 // Left: conversation history · Right: chat with evidence-anchored answers.
 
 function ViewAsk({ ctx }) {
-  const { tt, data, locale, selectedConvId, setSelectedConvId, setActiveView, setSelectedEntityId, entities, gotoEntity } = ctx;
+  const { tt, data, locale, selectedConvId, setSelectedConvId, setActiveView, setSelectedEntityId, entities, gotoEntity, conversations } = ctx;
   const { useState } = React;
   const [draft, setDraft] = useState("");
 
-  const conv = data.conversations[selectedConvId] || data.conversations[0];
+  const conv = conversations[selectedConvId] || conversations[0];
 
   // suggested follow-ups
   const suggested = [
@@ -34,7 +34,7 @@ function ViewAsk({ ctx }) {
       <aside className="av-history">
         <h3>{tt("ask.history")}</h3>
         <button className="av-new">{tt("ask.new")}</button>
-        {data.conversations.map((c, i) => (
+        {conversations.map((c, i) => (
           <div key={i}
                className={"av-hist-item " + (selectedConvId === i ? "active" : "")}
                onClick={() => setSelectedConvId(i)}>

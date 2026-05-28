@@ -143,6 +143,8 @@ window.LG_COVER_IMAGES = {
   nanook:     "https://upload.wikimedia.org/wikipedia/commons/3/33/Nanook_of_the_north.jpg",
   phancar:    "https://upload.wikimedia.org/wikipedia/en/5/56/The_Phantom_Carriage_%281921%29_poster.jpg",
   phantfilm:  "https://upload.wikimedia.org/wikipedia/commons/5/53/Phantom_of_the_opera_1925_poster.jpg",
+  // 百年孤独: García Márquez 1967 仍在版权期,使用 Aracataca(马尔克斯出生地、马孔多的原型) 的公版照片作为题材化封面。
+  soledad:    "https://upload.wikimedia.org/wikipedia/commons/7/79/Aracataca%27s_church_where_Garcia_Marquez_was_baptized.JPG",
 };
 
 window.LG_COVERS = {
