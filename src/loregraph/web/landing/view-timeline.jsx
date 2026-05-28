@@ -704,6 +704,14 @@ function RibbonMode({ ctx, tt, data, entities, locale, visibleEvents, selectedEv
   const wrapRef = useRef(null);
   const [zoom, setZoom] = useState(1);
   const [scrollPct, setScrollPct] = useState({left: 0, width: 1});
+  const [dockOpen, setDockOpen] = useState(() => localStorage.getItem("lg_tl_ribbon_dock") === "1");
+  useEffect(() => { localStorage.setItem("lg_tl_ribbon_dock", dockOpen ? "1" : "0"); }, [dockOpen]);
+  useEffect(() => {
+    if (!dockOpen) return;
+    const onKey = (e) => { if (e.key === "Escape") setDockOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [dockOpen]);
   const CH_WIDTH = 36 * zoom;
   const AXIS_PAD = 80;
   const totalWidth = AXIS_PAD * 2 + 61 * CH_WIDTH;
@@ -819,32 +827,58 @@ function RibbonMode({ ctx, tt, data, entities, locale, visibleEvents, selectedEv
         }} />
       </div>
 
-      {/* bottom dock — event detail */}
-      {cur && (() => {
+      {/* small bottom trigger — pops the event detail up as a drawer */}
+      {cur && !dockOpen && (() => {
+        const trgRoman = toRoman(cur.chapter);
+        return (
+          <button className="tl2-ribbon-dock-trigger"
+            style={{"--phase-color": curPhase.color}}
+            onClick={() => setDockOpen(true)}
+            title={locale === "en" ? "Show event detail" : "查看事件详情"}>
+            <span className="tl2-ribbon-dock-trigger-dot" />
+            <span className="tl2-ribbon-dock-trigger-roman">{trgRoman}</span>
+            <span className="tl2-ribbon-dock-trigger-title"><em>{curName}</em></span>
+            <span className="tl2-ribbon-dock-trigger-chev">
+              <svg viewBox="0 0 12 12" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M 3 7.5 L 6 4.5 L 9 7.5" />
+              </svg>
+            </span>
+          </button>
+        );
+      })()}
+
+      {/* drawer — bottom sheet pattern, scoped to the ribbon area */}
+      {cur && dockOpen && (() => {
         const dockRoman = toRoman(cur.chapter);
         return (
-        <div className="tl2-ribbon-dock" style={{"--phase-color": curPhase.color, "--roman-chars": dockRoman.length}}>
-          <div className="tl2-ribbon-dock-head">
-            <div className="tl2-ribbon-dock-roman">{dockRoman}</div>
-            <div className="tl2-ribbon-dock-meta">
-              <div className="tl2-ribbon-dock-phase">
-                <span className="dot" /> {tlPhaseLabel(curPhase, locale)} · ch {cur.chapter}
+          <div className="tl2-ribbon-dock-overlay"
+            onClick={(e) => { if (e.target === e.currentTarget) setDockOpen(false); }}>
+            <div className="tl2-ribbon-dock-sheet"
+              style={{"--phase-color": curPhase.color, "--roman-chars": dockRoman.length}}
+              onClick={(e) => e.stopPropagation()}>
+              <div className="tl2-ribbon-dock-handle" onClick={() => setDockOpen(false)} />
+              <div className="tl2-ribbon-dock-head">
+                <div className="tl2-ribbon-dock-roman">{dockRoman}</div>
+                <div className="tl2-ribbon-dock-meta">
+                  <div className="tl2-ribbon-dock-phase">
+                    <span className="dot" /> {tlPhaseLabel(curPhase, locale)} · ch {cur.chapter}
+                  </div>
+                  <h2><em>{curName}</em></h2>
+                  <p>{curGloss}</p>
+                </div>
+                {curParticipants.length > 0 && (
+                  <div className="tl2-ribbon-dock-pp">
+                    <ParticipantsRow ids={curParticipants} entities={entities} locale={locale} onPick={setSelectedEntityId} />
+                  </div>
+                )}
               </div>
-              <h2><em>{curName}</em></h2>
-              <p>{curGloss}</p>
+              <div className="tl2-ribbon-dock-body">
+                {curEvidence.map(e => (
+                  <EvidenceBlock key={e.id} edge={e} data={data} locale={locale} tt={tt} dense />
+                ))}
+              </div>
             </div>
-            {curParticipants.length > 0 && (
-              <div className="tl2-ribbon-dock-pp">
-                <ParticipantsRow ids={curParticipants} entities={entities} locale={locale} onPick={setSelectedEntityId} />
-              </div>
-            )}
           </div>
-          <div className="tl2-ribbon-dock-body">
-            {curEvidence.map(e => (
-              <EvidenceBlock key={e.id} edge={e} data={data} locale={locale} tt={tt} dense />
-            ))}
-          </div>
-        </div>
         );
       })()}
     </div>
