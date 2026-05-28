@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 
+from dotenv import load_dotenv
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -130,5 +131,9 @@ def get_settings() -> Settings:
     """Return the process-wide Settings, instantiated lazily."""
     global _settings
     if _settings is None:
+        # pydantic-settings reads .env only into declared fields; the
+        # provider-specific *_API_KEY vars are looked up via os.getenv
+        # in resolved_api_key(), so we also push .env into os.environ.
+        load_dotenv(override=False)
         _settings = Settings()  # type: ignore[call-arg]  # pydantic-settings reads env
     return _settings
