@@ -540,7 +540,7 @@ function applyEdgeGeometry(ed, positions, edgeElsMap) {
   if (!a || !b) return;
   const g = edgeElsMap.get(ed.id);
   if (!g) return;
-  const { d, midX, midY, angle } = edgePath(a, b, ed.rA, ed.rB, ed.parallelIdx, ed.parallelCount);
+  const { d, midX, midY, angle } = edgePath(a, b, ed.rA, ed.rB, ed.parallelIdx, ed.parallelCount, ed.curveSign);
   let labelAngle = angle;
   if (labelAngle > 90) labelAngle -= 180;
   if (labelAngle < -90) labelAngle += 180;
@@ -566,7 +566,7 @@ function syncDomFromRef(positions, nodeEls, edgeEls, edgeRenderData) {
   }
 }
 
-function edgePath(a, b, rA, rB, parallelIdx, parallelCount) {
+function edgePath(a, b, rA, rB, parallelIdx, parallelCount, curveSign = 1) {
   const dx = b.x - a.x, dy = b.y - a.y;
   const len = Math.sqrt(dx*dx + dy*dy);
   if (len < 1) return { d: `M ${a.x} ${a.y} L ${b.x} ${b.y}`, midX: a.x, midY: a.y, angle: 0 };
@@ -576,8 +576,10 @@ function edgePath(a, b, rA, rB, parallelIdx, parallelCount) {
   const nx = -uy, ny = ux;
   let offset;
   if (parallelCount <= 1) {
-    const sign = ((a.x + b.y) | 0) % 2 === 0 ? 1 : -1;
-    offset = sign * Math.min(12, len * 0.04);
+    // Curve sign is precomputed per-edge from a stable hash of its endpoints.
+    // The old formula derived it from (a.x + b.y) | 0, which flipped every
+    // pixel during a drag — that was the source of the edge wriggle.
+    offset = curveSign * Math.min(12, len * 0.04);
   } else {
     const center = (parallelCount - 1) / 2;
     offset = (parallelIdx - center) * 28;
@@ -763,12 +765,19 @@ function GraphCanvas({ visibleEntities, visibleEdges, positions, setLivePosition
       pairIdx[k] = idx + 1;
       const srcE = entities.find(en => en.id === edge.src);
       const dstE = entities.find(en => en.id === edge.dst);
+      // Stable curve direction per edge — derived from the edge id so it
+      // never changes during a drag. (The original formula used current
+      // positions, which flipped every pixel and made edges wriggle.)
+      let h = 0;
+      for (let i = 0; i < edge.id.length; i++) h = (h * 31 + edge.id.charCodeAt(i)) | 0;
+      const curveSign = (h & 1) === 0 ? 1 : -1;
       return {
         id: edge.id, src: edge.src, dst: edge.dst,
         rA: srcE ? nodeRadius(srcE) : 22,
         rB: dstE ? nodeRadius(dstE) : 22,
         parallelIdx: idx,
         parallelCount: pairCount[k],
+        curveSign,
       };
     });
   })();
