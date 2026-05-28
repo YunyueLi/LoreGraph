@@ -1381,7 +1381,9 @@ a { color: inherit; }
   grid-template-columns: var(--gv-left, 260px) minmax(400px, 1fr) var(--gv-right, 380px);
   height: 100%;
   position: relative;
-  transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  /* During an active drag, JS sets --gv-transition: none so the columns
+     follow the pointer 1:1. Otherwise the smooth collapse/expand applies. */
+  transition: var(--gv-transition, grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1));
 }
 .gv.gv-left-hidden  { --gv-left: 0px !important; }
 .gv.gv-right-hidden { --gv-right: 0px !important; }
