@@ -532,6 +532,40 @@ function nodeRadius(entity) {
   return entity.mentions > 100 ? 36 : entity.mentions > 40 ? 28 : 22;
 }
 
+// Write a single edge's geometry (paths' d attribute + label transform)
+// directly to the DOM. Called from the drag fast-path and from
+// useLayoutEffect after every render. Reads positions from the live ref.
+function applyEdgeGeometry(ed, positions, edgeElsMap) {
+  const a = positions[ed.src], b = positions[ed.dst];
+  if (!a || !b) return;
+  const g = edgeElsMap.get(ed.id);
+  if (!g) return;
+  const { d, midX, midY, angle } = edgePath(a, b, ed.rA, ed.rB, ed.parallelIdx, ed.parallelCount);
+  let labelAngle = angle;
+  if (labelAngle > 90) labelAngle -= 180;
+  if (labelAngle < -90) labelAngle += 180;
+  // Every <path> in this edge group shares the same d (glow / body / double /
+  // flow are styled differently but follow the same curve).
+  const paths = g.getElementsByTagName("path");
+  for (let i = 0; i < paths.length; i++) paths[i].setAttribute("d", d);
+  const label = g.querySelector("[data-label]");
+  if (label) label.setAttribute("transform", `translate(${midX} ${midY}) rotate(${labelAngle})`);
+}
+
+// After any React render, push every position from the ref into the DOM.
+// Cheap (a setAttribute per node + per edge group) and guarantees the
+// rendered SVG is always in sync with the ref, even if React's JSX has
+// stale "x"/"y" because state lagged behind a drag.
+function syncDomFromRef(positions, nodeEls, edgeEls, edgeRenderData) {
+  for (const [id, el] of nodeEls) {
+    const p = positions[id];
+    if (el && p) el.setAttribute("transform", `translate(${p.x} ${p.y})`);
+  }
+  for (const ed of edgeRenderData) {
+    applyEdgeGeometry(ed, positions, edgeEls);
+  }
+}
+
 function edgePath(a, b, rA, rB, parallelIdx, parallelCount) {
   const dx = b.x - a.x, dy = b.y - a.y;
   const len = Math.sqrt(dx*dx + dy*dy);
@@ -682,7 +716,7 @@ function ChronicleOverlay({ chToX, axisY }) {
 
 // =========================== Graph canvas ===========================
 function GraphCanvas({ visibleEntities, visibleEdges, positions, setLivePositions, anchorsRef, draggedRef, reignite, resetLayout, entities, selectedEntityId, setSelectedEntityId, selectedEdgeId, setSelectedEdgeId, locale, tt, selected, fullscreen, toggleFullscreen, viewMode, overlays }) {
-  const { useState, useRef, useEffect } = React;
+  const { useState, useRef, useEffect, useLayoutEffect, useCallback } = React;
   const svgRef = useRef(null);
   const [transform, setTransform] = useState({ x: 0, y: 0, k: 1 });
   const transformRef = useRef(transform);
@@ -691,10 +725,63 @@ function GraphCanvas({ visibleEntities, visibleEdges, positions, setLivePosition
   const dragRef = useRef(null);
   const [hoveredEdgeId, setHoveredEdgeId] = useState(null);
 
-  // Node drag: pointerdown on a node captures its id and offset (in world
-  // coords). Subsequent pointermoves on the document update the node's
-  // position directly via setLivePositions and reignite the simulation so
-  // neighbours respond.
+  // ====== DOM-direct rendering of positions ======
+  // The key insight from looking at how other smooth force-directed graphs
+  // are built (eg. MiroFish): never go through React state for the per-frame
+  // position updates. React's reconciliation, even with memo, is too coarse
+  // for 60Hz drag-induced re-renders of 25 nodes + 80 edges.
+  //
+  // Instead: positions live in a ref (positionsRef). React state still drives
+  // *structure* (which nodes/edges exist) and *visual styling* (selection,
+  // hover, mute), but position attributes are written directly to the DOM
+  // by useLayoutEffect after render, and by the drag handler during drag.
+  // No React re-render is scheduled by a position change. Drag is silky.
+  const positionsRef = useRef(positions);
+  // Sync ref from state when state changes — but never during a drag, or we'd
+  // clobber the cursor-tracking position with the stale state value.
+  useLayoutEffect(() => {
+    if (!draggedRef.current) positionsRef.current = positions;
+  }, [positions]);
+
+  // Stable Maps from id → DOM element.
+  const nodeElsRef = useRef(new Map());
+  const edgeElsRef = useRef(new Map());
+
+  // edge geometry as a closure so the drag fast-path and the layout sync
+  // both use the same formula. Returns null if either endpoint is missing.
+  const edgeRenderData = useRef([]);
+  // Maintain a quick lookup from edge id → { rA, rB, parallelIdx, parallelCount, label }
+  // computed once per React render, used by useLayoutEffect and drag.
+  edgeRenderData.current = (() => {
+    const pairKey = (a, b) => a < b ? `${a}_${b}` : `${b}_${a}`;
+    const pairCount = {};
+    visibleEdges.forEach(e => { const k = pairKey(e.src, e.dst); pairCount[k] = (pairCount[k] || 0) + 1; });
+    const pairIdx = {};
+    return visibleEdges.map(edge => {
+      const k = pairKey(edge.src, edge.dst);
+      const idx = pairIdx[k] || 0;
+      pairIdx[k] = idx + 1;
+      const srcE = entities.find(en => en.id === edge.src);
+      const dstE = entities.find(en => en.id === edge.dst);
+      return {
+        id: edge.id, src: edge.src, dst: edge.dst,
+        rA: srcE ? nodeRadius(srcE) : 22,
+        rB: dstE ? nodeRadius(dstE) : 22,
+        parallelIdx: idx,
+        parallelCount: pairCount[k],
+      };
+    });
+  })();
+
+  // Re-apply all DOM positions from the ref after every render. Runs
+  // synchronously before paint, so the user never sees a stale frame.
+  // For non-drag renders (selection / hover changes) this just rewrites
+  // the same values — the SVG repaint is identical.
+  useLayoutEffect(() => {
+    syncDomFromRef(positionsRef.current, nodeElsRef.current, edgeElsRef.current, edgeRenderData.current);
+  });
+
+  // Node drag: bypass React entirely until release.
   const onNodePointerDown = (entityId) => (e) => {
     if (e.button !== 0) return;
     e.stopPropagation();
@@ -703,15 +790,12 @@ function GraphCanvas({ visibleEntities, visibleEdges, positions, setLivePosition
     const t = transformRef.current;
     const worldX = (e.clientX - rect.left - t.x) / t.k;
     const worldY = (e.clientY - rect.top  - t.y) / t.k;
-    const start = positions[entityId] || { x: 0, y: 0 };
+    const start = positionsRef.current[entityId] || { x: 0, y: 0 };
     const offsetX = worldX - start.x;
     const offsetY = worldY - start.y;
     let moved = false;
-    // Throttle pointermove to rAF. Pointer events fire at 120Hz+ on modern
-    // hardware; setLivePositions on every one of them produces uneven
-    // render cadence vs the 60Hz display, which looks like high-frequency
-    // jitter on the edges. Coalesce all moves within a single frame into
-    // one state update, scheduled by rAF — exactly one commit per repaint.
+
+    // rAF-coalesced flush: at most one DOM update per display frame.
     let pendingEv = null;
     let rafScheduled = false;
     const flush = () => {
@@ -723,18 +807,25 @@ function GraphCanvas({ visibleEntities, visibleEdges, positions, setLivePosition
       if (!moved) {
         moved = true;
         draggedRef.current = entityId;
-        reignite(0.4);
+        reignite(0.3);
       }
       const r = svgRef.current.getBoundingClientRect();
       const tt2 = transformRef.current;
       const wx = (ev.clientX - r.left - tt2.x) / tt2.k - offsetX;
       const wy = (ev.clientY - r.top  - tt2.y) / tt2.k - offsetY;
-      // Move both live position AND anchor — release leaves the new layout.
+      // 1) mutate ref + anchor (NOT React state — no re-render)
+      positionsRef.current[entityId] = { x: wx, y: wy };
       if (anchorsRef.current[entityId]) {
         anchorsRef.current[entityId].x = wx;
         anchorsRef.current[entityId].y = wy;
       }
-      setLivePositions(prev => ({ ...prev, [entityId]: { x: wx, y: wy } }));
+      // 2) DOM-direct: move the dragged node's <g> and recompute edges touching it
+      const nodeEl = nodeElsRef.current.get(entityId);
+      if (nodeEl) nodeEl.setAttribute("transform", `translate(${wx} ${wy})`);
+      for (const ed of edgeRenderData.current) {
+        if (ed.src !== entityId && ed.dst !== entityId) continue;
+        applyEdgeGeometry(ed, positionsRef.current, edgeElsRef.current);
+      }
     };
     const onMove = (ev) => {
       pendingEv = ev;
@@ -747,12 +838,14 @@ function GraphCanvas({ visibleEntities, visibleEdges, positions, setLivePosition
       document.removeEventListener("pointerup", onUp);
       draggedRef.current = null;
       if (!moved) {
+        // pure click: select the entity
         setSelectedEntityId(entityId);
         setSelectedEdgeId(null);
-        // pure click: no reignite — the layout is already settled
       } else {
-        // tiny relaxation pulse so charge resolves any new overlap
-        reignite(0.25);
+        // drag end: commit positions to React state so the sim and other
+        // components see the new layout. DOM already matches; no flash.
+        setLivePositions({ ...positionsRef.current });
+        reignite(0.2);
       }
     };
     document.addEventListener("pointermove", onMove, { passive: false });
@@ -888,14 +981,10 @@ function GraphCanvas({ visibleEntities, visibleEdges, positions, setLivePosition
           {/* mode-specific background overlays */}
           {overlays}
 
-          {/* Edges */}
+          {/* Edges — paths have no d in JSX; useLayoutEffect / drag handler
+              write d directly to the DOM each frame for jitter-free updates. */}
           {edgeRender.map(({edge, parallelIdx, parallelCount}) => {
-            const a = positions[edge.src], b = positions[edge.dst];
-            if (!a || !b) return null;
-            const srcE = entities.find(e => e.id === edge.src);
-            const dstE = entities.find(e => e.id === edge.dst);
-            const rA = srcE ? nodeRadius(srcE) : 22;
-            const rB = dstE ? nodeRadius(dstE) : 22;
+            if (!positions[edge.src] || !positions[edge.dst]) return null;
             const touchesSelected = selectedEntityId && (edge.src === selectedEntityId || edge.dst === selectedEntityId);
             const isSel = edge.id === selectedEdgeId || touchesSelected;
             const isHovered = hoveredEdgeId === edge.id;
@@ -906,28 +995,23 @@ function GraphCanvas({ visibleEntities, visibleEdges, positions, setLivePosition
             const hasArrow = EDGE_HAS_ARROW[edge.rel];
             const isDouble = edge.rel === "SYMBOLIZES";
             const isStructural = edge.rel === "STRUCTURAL";
-
-            const { d, midX, midY, angle } = edgePath(a, b, rA, rB, parallelIdx, parallelCount);
-
-            // Label visibility: only on hover / selection. Never auto-shown.
             const showLabel = isSel || isHovered;
-            // Rotate label so it follows edge direction, but stay upright (flip if upside-down).
-            let labelAngle = angle;
-            if (labelAngle > 90) labelAngle -= 180;
-            if (labelAngle < -90) labelAngle += 180;
+            const label = window.t("rel."+edge.rel);
 
             return (
               <g key={edge.id}
+                ref={el => { if (el) edgeElsRef.current.set(edge.id, el); else edgeElsRef.current.delete(edge.id); }}
                 onMouseEnter={() => setHoveredEdgeId(edge.id)}
                 onMouseLeave={() => setHoveredEdgeId(null)}
                 onClick={(e) => { e.stopPropagation(); setSelectedEdgeId(edge.id); }}
                 style={{cursor:"pointer"}}>
-                <path d={d} fill="none" stroke="transparent" strokeWidth="14" />
+                {/* invisible thick hit-area */}
+                <path fill="none" stroke="transparent" strokeWidth="14" />
                 {isStructural && !isMute && (
-                  <path d={d} fill="none" stroke={color}
+                  <path fill="none" stroke={color}
                     strokeWidth={isSel ? 5 : 4} opacity="0.12" strokeLinecap="round" />
                 )}
-                <path d={d} fill="none" stroke={color}
+                <path fill="none" stroke={color}
                   strokeWidth={(isSel || isHovered) ? baseW + 1.0 : baseW}
                   strokeDasharray={(isSel || isHovered) ? null : dash}
                   strokeLinecap="round"
@@ -935,35 +1019,32 @@ function GraphCanvas({ visibleEntities, visibleEdges, positions, setLivePosition
                   markerEnd={hasArrow ? (isSel ? "url(#arr-sel)" : isMute ? "url(#arr-mute)" : `url(#arr-${edge.rel})`) : null}
                   style={{transition: "stroke-width 0.2s, opacity 0.2s"}} />
                 {isDouble && !isMute && (
-                  <path d={d} fill="none" stroke={color}
+                  <path fill="none" stroke={color}
                     strokeWidth="0.7" opacity={(isSel || isHovered) ? 0.9 : 0.55}
                     strokeDasharray="3 3"
                     style={{transform: "translate(0, 3px)"}} />
                 )}
                 {isSel && (
-                  <path d={d} fill="none" stroke={color}
+                  <path fill="none" stroke={color}
                     strokeWidth={baseW + 1.2} strokeDasharray="4 6" opacity="0.6"
                     style={{animation: "lg-edge-flow 1.4s linear infinite"}} />
                 )}
                 {showLabel && (
-                  <g transform={`translate(${midX} ${midY}) rotate(${labelAngle})`}>
-                    {(() => {
-                      const label = window.t("rel."+edge.rel);
-                      return (<>
-                        <rect x={-label.length * 3.6 - 4} y={-9} width={label.length * 7.2 + 8} height={15}
-                          fill="#fbf7ea" stroke={color} strokeWidth="0.6" opacity="0.96" rx="3" />
-                        <text textAnchor="middle" dy="3"
-                          fontFamily="Spectral, serif" fontStyle="italic" fontSize="10" fill={color}
-                          letterSpacing="0.04em">{label}</text>
-                      </>);
-                    })()}
+                  <g data-label>
+                    <rect x={-label.length * 3.6 - 4} y={-9} width={label.length * 7.2 + 8} height={15}
+                      fill="#fbf7ea" stroke={color} strokeWidth="0.6" opacity="0.96" rx="3" />
+                    <text textAnchor="middle" dy="3"
+                      fontFamily="Spectral, serif" fontStyle="italic" fontSize="10" fill={color}
+                      letterSpacing="0.04em">{label}</text>
                   </g>
                 )}
               </g>
             );
           })}
 
-          {/* Nodes */}
+          {/* Nodes — wrapping <g> per node carries the transform that
+              positions it. useLayoutEffect / drag handler write transform
+              directly via the ref Map; React never re-renders for position. */}
           {visibleEntities.map(entity => {
             const p = positions[entity.id];
             if (!p) return null;
@@ -977,11 +1058,11 @@ function GraphCanvas({ visibleEntities, visibleEdges, positions, setLivePosition
                 key={entity.id}
                 entity={entity}
                 name={name}
-                x={p.x} y={p.y}
                 sel={sel}
                 mute={isMute}
                 dragging={isDragging}
                 onPointerDown={onNodePointerDown(entity.id)}
+                nodeRef={el => { if (el) nodeElsRef.current.set(entity.id, el); else nodeElsRef.current.delete(entity.id); }}
               />
             );
           })}
@@ -1022,7 +1103,10 @@ function GraphCanvas({ visibleEntities, visibleEdges, positions, setLivePosition
 }
 
 // ============== Node ==============
-const GraphNode = React.memo(function GraphNode({ entity, name, x, y, sel, mute, dragging, onPointerDown }) {
+// All internal elements are positioned at (0, 0). The wrapping <g> carries
+// the transform — written via ref by useLayoutEffect / the drag handler.
+// JSX never includes x/y, so React re-renders don't disturb position.
+const GraphNode = React.memo(function GraphNode({ entity, name, sel, mute, dragging, onPointerDown, nodeRef }) {
   const { useState } = React;
   const [hover, setHover] = useState(false);
   const baseR = nodeRadius(entity);
@@ -1034,19 +1118,19 @@ const GraphNode = React.memo(function GraphNode({ entity, name, x, y, sel, mute,
 
   let shape;
   if (entity.type === "agent") {
-    shape = <circle cx={x} cy={y} r={r} fill={fill} stroke={stroke} strokeWidth={strokeWidth} />;
+    shape = <circle cx="0" cy="0" r={r} fill={fill} stroke={stroke} strokeWidth={strokeWidth} />;
   } else if (entity.type === "object") {
-    shape = <rect x={x-r} y={y-r} width={r*2} height={r*2} rx="3" fill={fill} stroke={stroke} strokeWidth={strokeWidth} />;
+    shape = <rect x={-r} y={-r} width={r*2} height={r*2} rx="3" fill={fill} stroke={stroke} strokeWidth={strokeWidth} />;
   } else if (entity.type === "event") {
-    shape = <rect x={-r} y={-r} width={r*2} height={r*2} rx="3" fill={fill} stroke={stroke} strokeWidth={strokeWidth} transform={`translate(${x} ${y}) rotate(45)`} />;
+    shape = <rect x={-r} y={-r} width={r*2} height={r*2} rx="3" fill={fill} stroke={stroke} strokeWidth={strokeWidth} transform="rotate(45)" />;
   } else if (entity.type === "concept") {
     const w = r*1.05, h = r*1.2;
-    const pts = [`${x},${y-h}`,`${x+w*0.95},${y-h/2}`,`${x+w*0.95},${y+h/2}`,`${x},${y+h}`,`${x-w*0.95},${y+h/2}`,`${x-w*0.95},${y-h/2}`].join(" ");
+    const pts = [`0,${-h}`,`${w*0.95},${-h/2}`,`${w*0.95},${h/2}`,`0,${h}`,`${-w*0.95},${h/2}`,`${-w*0.95},${-h/2}`].join(" ");
     shape = <polygon points={pts} fill={fill} stroke={stroke} strokeWidth={strokeWidth} />;
   }
 
   const halo = sel && (
-    <circle cx={x} cy={y} r={r + 14} fill="none" stroke="#b8954a" strokeWidth="0.6" opacity="0.4">
+    <circle cx="0" cy="0" r={r + 14} fill="none" stroke="#b8954a" strokeWidth="0.6" opacity="0.4">
       <animate attributeName="r" values={`${r+10};${r+18};${r+10}`} dur="2.6s" repeatCount="indefinite" />
       <animate attributeName="opacity" values="0.5;0.15;0.5" dur="2.6s" repeatCount="indefinite" />
     </circle>
@@ -1055,44 +1139,42 @@ const GraphNode = React.memo(function GraphNode({ entity, name, x, y, sel, mute,
   const avatar = window.avatarFor(entity);
   const avatarScale = r / 24;
   const shortName = name.length > 18 ? name.slice(0, 18) + "…" : name;
-  const labelY = y + baseR + 18;
+  const labelY = baseR + 18;
 
   return (
     <g data-node
+       data-id={entity.id}
+       ref={nodeRef}
        style={{cursor: dragging ? "grabbing" : "grab", opacity, transition:"opacity 0.2s"}}
        onPointerDown={onPointerDown}
        onMouseEnter={() => setHover(true)}
        onMouseLeave={() => setHover(false)}>
-      {/* drift animation removed — was a ±3px CSS keyframe wobble per node;
-          during a drag the user's eye reads the surrounding wobble as jitter */}
       {halo}
       {shape}
-      <g transform={`translate(${x} ${y}) scale(${avatarScale})`}>
+      <g transform={`scale(${avatarScale})`}>
         {avatar}
       </g>
-      <text x={x} y={labelY} textAnchor="middle"
+      <text x="0" y={labelY} textAnchor="middle"
         fontFamily="Spectral, serif" fontSize={baseR > 28 ? 14 : 12.5}
         fill={sel ? "#8a6e36" : "#1a1a1a"}
         fontStyle={entity.type === "concept" ? "italic" : "normal"}
         fontWeight={sel ? 500 : 400}
         style={{transition:"fill 0.2s"}}>{shortName}</text>
       {(sel || hover) && (
-        <text x={x} y={labelY + 13} textAnchor="middle"
+        <text x="0" y={labelY + 13} textAnchor="middle"
           fontFamily="JetBrains Mono, monospace" fontSize="8.5" fill="#8a6e36"
           letterSpacing="1.4" opacity="0.8">{entity.mentions} mentions</text>
       )}
     </g>
   );
 }, (prev, next) =>
-  // skip re-render if nothing visible changed for this node
-  prev.x === next.x &&
-  prev.y === next.y &&
   prev.sel === next.sel &&
   prev.mute === next.mute &&
   prev.dragging === next.dragging &&
   prev.name === next.name &&
-  prev.entity === next.entity &&
-  prev.onPointerDown === next.onPointerDown
+  prev.entity === next.entity
+  // onPointerDown and nodeRef are intentionally not compared:
+  // their identities change every render but their behaviour is stable.
 );
 
 // ============== Side panel ==============
