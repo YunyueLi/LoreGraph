@@ -1022,7 +1022,7 @@ function GraphCanvas({ visibleEntities, visibleEdges, positions, setLivePosition
 }
 
 // ============== Node ==============
-function GraphNode({ entity, name, x, y, sel, mute, dragging, onPointerDown }) {
+const GraphNode = React.memo(function GraphNode({ entity, name, x, y, sel, mute, dragging, onPointerDown }) {
   const { useState } = React;
   const [hover, setHover] = useState(false);
   const baseR = nodeRadius(entity);
@@ -1031,8 +1031,6 @@ function GraphNode({ entity, name, x, y, sel, mute, dragging, onPointerDown }) {
   const stroke = (sel || dragging) ? "#b8954a" : (hover ? "#8a6e36" : "#a08758");
   const strokeWidth = (sel || dragging) ? 2.4 : 1.2;
   const fill = (sel || dragging) ? "#fbf3dc" : "#fbf7ea";
-
-  const phase = ((entity.id.charCodeAt(0) + entity.id.charCodeAt(entity.id.length-1)) % 8) / 8;
 
   let shape;
   if (entity.type === "agent") {
@@ -1065,14 +1063,12 @@ function GraphNode({ entity, name, x, y, sel, mute, dragging, onPointerDown }) {
        onPointerDown={onPointerDown}
        onMouseEnter={() => setHover(true)}
        onMouseLeave={() => setHover(false)}>
-      <g style={{
-        animation: dragging ? "none" : `${["lg-drift-a","lg-drift-b","lg-drift-c"][Math.floor(phase * 3)]} ${6 + phase * 4}s ease-in-out ${phase * 3}s infinite`,
-      }}>
-        {halo}
-        {shape}
-        <g transform={`translate(${x} ${y}) scale(${avatarScale})`}>
-          {avatar}
-        </g>
+      {/* drift animation removed — was a ±3px CSS keyframe wobble per node;
+          during a drag the user's eye reads the surrounding wobble as jitter */}
+      {halo}
+      {shape}
+      <g transform={`translate(${x} ${y}) scale(${avatarScale})`}>
+        {avatar}
       </g>
       <text x={x} y={labelY} textAnchor="middle"
         fontFamily="Spectral, serif" fontSize={baseR > 28 ? 14 : 12.5}
@@ -1087,7 +1083,17 @@ function GraphNode({ entity, name, x, y, sel, mute, dragging, onPointerDown }) {
       )}
     </g>
   );
-}
+}, (prev, next) =>
+  // skip re-render if nothing visible changed for this node
+  prev.x === next.x &&
+  prev.y === next.y &&
+  prev.sel === next.sel &&
+  prev.mute === next.mute &&
+  prev.dragging === next.dragging &&
+  prev.name === next.name &&
+  prev.entity === next.entity &&
+  prev.onPointerDown === next.onPointerDown
+);
 
 // ============== Side panel ==============
 function PanelEntity({ entity, ctx, selectedEdgeId, setSelectedEdgeId }) {
