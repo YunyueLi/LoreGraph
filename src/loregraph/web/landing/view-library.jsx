@@ -127,6 +127,18 @@ function BookCard({ book, active, onClick, ctx, coverStyle }) {
   const author = window.bookAuthor(book, locale);
   const typeLabel = tt("work.type." + (book.type || "novel"));
   const fmt = (n) => (n == null ? "—" : Number(n).toLocaleString());
+  // Localized BC year for ancient works (Greek tragedies etc.).
+  const fmtYear = (y) => {
+    if (y >= 0) return y;
+    const abs = -y;
+    if (locale === "zh-CN" || locale === "zh-TW") return `公元前 ${abs}`;
+    if (locale === "ja") return `紀元前 ${abs}`;
+    if (locale === "ko") return `기원전 ${abs}`;
+    if (locale === "fr") return `${abs} av. J.-C.`;
+    if (locale === "es") return `${abs} a. C.`;
+    if (locale === "de") return `${abs} v. Chr.`;
+    return `${abs} BC`;
+  };
 
   return (
     <div className={"lib-card " + (active ? "active" : "")} onClick={onClick}>
@@ -139,7 +151,7 @@ function BookCard({ book, active, onClick, ctx, coverStyle }) {
           {typeLabel}
         </div>
         <div className="lib-card-title">{title}</div>
-        <div className="lib-card-meta">{author} · {book.year}</div>
+        <div className="lib-card-meta">{author} · {fmtYear(book.year)}</div>
       </div>
 
       <div className="lib-card-stats">
