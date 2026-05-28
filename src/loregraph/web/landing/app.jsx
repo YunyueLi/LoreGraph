@@ -163,23 +163,15 @@ function Sidebar({ ctx, collapsed, setCollapsed, goToSettings }) {
       title={collapsed ? tt("sb.expand") : undefined}>
       <div className="sb-brand">
         <div className="sb-mark" aria-label="LoreGraph">
-          <svg viewBox="0 0 36 36" fill="none">
-            <path d="M 2 9 L 2 2 L 9 2" stroke="#b8954a" strokeWidth="1" strokeLinecap="round" />
-            <path d="M 34 9 L 34 2 L 27 2" stroke="#b8954a" strokeWidth="1" strokeLinecap="round" />
-            <path d="M 2 27 L 2 34 L 9 34" stroke="#b8954a" strokeWidth="1" strokeLinecap="round" />
-            <path d="M 34 27 L 34 34 L 27 34" stroke="#b8954a" strokeWidth="1" strokeLinecap="round" />
-            <line x1="13" y1="10" x2="13" y2="25" stroke="#d1ac5e" strokeWidth="2.2" strokeLinecap="round" />
-            <line x1="13" y1="25" x2="24" y2="25" stroke="#d1ac5e" strokeWidth="2.2" strokeLinecap="round" />
-            <circle cx="13" cy="10" r="2.3" fill="#1a1714" stroke="#d1ac5e" strokeWidth="1.4" />
-            <circle cx="24" cy="25" r="2.3" fill="#1a1714" stroke="#d1ac5e" strokeWidth="1.4" />
-            <circle cx="24" cy="14" r="1.5" fill="#b8954a" />
-            <line x1="14" y1="11" x2="23" y2="14" stroke="#b8954a" strokeWidth="0.6" opacity="0.55" />
+          <svg viewBox="0 0 28 28" fill="none">
+            <line x1="8" y1="9" x2="20" y2="19" stroke="#b8954a" strokeWidth="1.4" strokeLinecap="round" />
+            <circle cx="8"  cy="9"  r="3.4" fill="#1a1714" stroke="#d1ac5e" strokeWidth="1.6" />
+            <circle cx="20" cy="19" r="2.6" fill="#d1ac5e" />
           </svg>
         </div>
         {!collapsed && (<>
           <div className="sb-name">
             <span className="sb-wordmark">LoreGraph</span>
-            <small>{tt("brand.version")}</small>
           </div>
           <button className="sb-toggle"
             onClick={(e) => { e.stopPropagation(); setCollapsed(true); }}
