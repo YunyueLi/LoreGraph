@@ -41,6 +41,17 @@ MAX_PASS_NUM_V0_1 = 8
 _LLM_CONCURRENCY = 10
 
 
+def _is_fatal(exc: BaseException) -> bool:
+    """Auth/permission failures mean the key or account is bad. Retrying or
+    skipping just yields empty passes silently marked 'done' — so these must
+    abort the run loudly instead."""
+    name = type(exc).__name__
+    if "AuthenticationError" in name or "PermissionDenied" in name:
+        return True
+    code = getattr(exc, "status_code", None) or getattr(exc, "code", None)
+    return code in (401, 403)
+
+
 async def _gather_bounded(coros: list[Any], limit: int) -> list[Any]:
     """Run awaitables with a concurrency cap, preserving input order.
 
@@ -60,12 +71,28 @@ async def _gather_bounded(coros: list[Any], limit: int) -> list[Any]:
     results = await asyncio.gather(*(_run(c) for c in coros), return_exceptions=True)
     out: list[Any] = []
     failures = 0
+    fatal: BaseException | None = None
     for r in results:
-        if isinstance(r, Exception):
+        if isinstance(r, BaseException):
             failures += 1
+            if fatal is None and _is_fatal(r):
+                fatal = r
             log.warning("per-chunk task failed (skipped): %r", r)
         else:
             out.append(r)
+    # A dead key / bad account makes every call fail — never let that masquerade
+    # as a completed-but-empty pass. Abort so the pass is marked FAILED, resumable
+    # with --from N once the credentials are fixed.
+    if fatal is not None:
+        raise RuntimeError(
+            f"aborting: {failures}/{len(results)} tasks failed with a fatal auth/permission "
+            f"error — check the API key/account. First error: {fatal!r}"
+        ) from fatal
+    if results and failures / len(results) > 0.5:
+        raise RuntimeError(
+            f"aborting: {failures}/{len(results)} concurrent tasks failed (>50%) — refusing to "
+            f"mark this pass done with mostly-missing data"
+        )
     if failures:
         log.warning("%d/%d concurrent tasks failed and were skipped", failures, len(results))
     return out
