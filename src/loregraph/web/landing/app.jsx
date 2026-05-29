@@ -189,7 +189,7 @@ function Sidebar({ ctx, collapsed, setCollapsed, goToSettings }) {
         <NavItem id="graph"    icon={<I.graph />}    label={tt("nav.graph")}    count={counts.graph} />
         <NavItem id="reader"   icon={<I.read />}     label={tt("nav.reader")}   count={counts.reader} />
         <NavItem id="entities" icon={<I.entity />}   label={tt("nav.entities")} count={counts.entities} />
-        <NavItem id="timeline" icon={<I.timeline />} label={tt("nav.timeline")} count={8} />
+        <NavItem id="timeline" icon={<I.timeline />} label={tt("nav.timeline")} count={activeBook && activeBook.timelineEvents && activeBook.timelineEvents.length ? activeBook.timelineEvents.length : 8} />
       </div>
 
       <div className="sb-section">{tt("nav.section.analysis")}</div>

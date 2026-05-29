@@ -69,6 +69,83 @@ def _layout(entities: list[dict], degree: Counter, allowed: set[str], cap: int) 
     return _phyllotaxis([e["canonical_id"] for e in ranked])
 
 
+# Four narrative acts for the generic timeline (matches the view's phase shape).
+_PHASE_META = [
+    ("opening", "#5a6a3f", "I",
+     {"en": "Opening", "zh-CN": "开篇", "zh-TW": "開篇", "ja": "序", "ko": "도입",
+      "fr": "Ouverture", "es": "Apertura", "de": "Eröffnung"}),
+    ("rising", "#8a6e36", "II",
+     {"en": "Rising Action", "zh-CN": "发展", "zh-TW": "發展", "ja": "展開", "ko": "전개",
+      "fr": "Développement", "es": "Desarrollo", "de": "Steigerung"}),
+    ("crisis", "#a04a2a", "III",
+     {"en": "Crisis", "zh-CN": "高潮", "zh-TW": "高潮", "ja": "クライマックス", "ko": "위기",
+      "fr": "Crise", "es": "Crisis", "de": "Krise"}),
+    ("resolution", "#4a6a8a", "IV",
+     {"en": "Resolution", "zh-CN": "终章", "zh-TW": "終章", "ja": "終結", "ko": "결말",
+      "fr": "Résolution", "es": "Resolución", "de": "Auflösung"}),
+]
+_LANES = [-2, 1, -1, 2, 0, -1, 2, -2, 1, 0]
+
+
+def _atom_chapter(atom: str | None) -> int | None:
+    m = re.match(r"ch(\d+)_p\d+", atom or "")
+    return int(m.group(1)) if m else None
+
+
+def _timeline(entities: list[dict], edge_list: list[dict], degree: Counter, chapters: list[int]) -> dict:
+    chs = sorted(set(chapters))
+    if not chs:
+        return {"phases": [], "events": []}
+    size = max(1, math.ceil(len(chs) / 4))
+    phases, ranges = [], []
+    for i, (pid, color, roman, label) in enumerate(_PHASE_META):
+        sl = chs[i * size : (i + 1) * size]
+        if not sl:
+            continue
+        phases.append({"id": pid, "start": sl[0], "end": sl[-1], "color": color, "roman": roman,
+                       "label": label, "sub": {k: "" for k in label}})
+        ranges.append((pid, sl[0], sl[-1]))
+
+    def phase_for(ch: int) -> str:
+        for pid, a, b in ranges:
+            if a <= ch <= b:
+                return pid
+        return ranges[-1][0]
+
+    # Best (highest-confidence) edge touching each event, and per chapter, for pivot quotes.
+    touch: dict[str, dict] = {}
+    by_chapter: dict[int, dict] = {}
+    for ed in edge_list:
+        c = ed.get("conf") or 0
+        for end in (ed["src"], ed["dst"]):
+            if end and (end not in touch or c > (touch[end].get("conf") or 0)):
+                touch[end] = ed
+        ch = _atom_chapter(ed.get("chunk"))
+        if ch is not None and (ch not in by_chapter or c > (by_chapter[ch].get("conf") or 0)):
+            by_chapter[ch] = ed
+
+    event_ents = [e for e in entities if e["type"].lower() == "event" and e.get("chapters")]
+    ranked = sorted(
+        event_ents,
+        key=lambda e: (-degree[e["canonical_id"]], -e.get("mention_count", 0)),
+    )[:9]
+    ranked.sort(key=lambda e: min(e["chapters"]))
+
+    events = []
+    for k, e in enumerate(ranked):
+        ch = min(e["chapters"])
+        pivot = touch.get(e["canonical_id"]) or by_chapter.get(ch)
+        events.append({
+            "id": e["canonical_id"],
+            "chapter": ch,
+            "phase": phase_for(ch),
+            "lane": _LANES[k % len(_LANES)],
+            "pivotEdge": pivot["id"] if pivot else None,
+            "pivotQuote": None,
+        })
+    return {"phases": phases, "events": events}
+
+
 def convert(payload: dict) -> dict:
     meta = payload["metadata"]
     bid = meta["frontend_id"]
@@ -152,6 +229,8 @@ def convert(payload: dict) -> dict:
     ]
 
     tokens = sum(c["tokens"] for c in chunks)
+    all_chapters = sorted({c for e in raw_entities for c in (e.get("chapters") or [])})
+    tl = _timeline(raw_entities, edges, degree, all_chapters)
     book = {
         "id": bid,
         "title": meta["title"],
@@ -174,6 +253,8 @@ def convert(payload: dict) -> dict:
         "socialPos": _layout(raw_entities, degree, SOCIAL_TYPES, SOCIAL_MAX),
         "themesPos": _layout(raw_entities, degree, THEMES_TYPES, THEMES_MAX),
         "socialRegions": [],
+        "timelinePhases": tl["phases"],
+        "timelineEvents": tl["events"],
     }
 
     return {"book": book, "entities": entities, "edges": edges, "glucose": glucose, "chunks": chunks}
