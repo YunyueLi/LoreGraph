@@ -47,6 +47,12 @@ _LLM_CONCURRENCY = 10
 # load. The most-mentioned entities carry essentially all the real relations.
 _MAX_CHUNK_ENTITIES = 20
 
+# Cap how many entities Pass-8 writes notes for. A 100-chapter book has 15k+
+# entities (mostly one-off) and noting each is a slow per-entity LLM call. Only
+# the most-connected are ever displayed; kept above the frontend export cap so
+# every exported entity still has a note.
+_MAX_NOTE_ENTITIES = 800
+
 
 def _is_fatal(exc: BaseException) -> bool:
     """Auth/permission failures mean the key or account is bad. Retrying or
@@ -317,7 +323,9 @@ class Orchestrator:
 
     async def _run_pass_8_note(self) -> dict[str, Any]:
         synth = Pass8NoteSynth(self.ctx.llm)
-        stats = await synth.synthesise_all(session=self.ctx.session, book_id=self.ctx.book_id)
+        stats = await synth.synthesise_all(
+            session=self.ctx.session, book_id=self.ctx.book_id, max_entities=_MAX_NOTE_ENTITIES
+        )
         self.ctx.usage.merge_from(synth.usage)
         return {**stats, **synth.usage.to_dict()}
 
