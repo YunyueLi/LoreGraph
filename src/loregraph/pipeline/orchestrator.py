@@ -54,7 +54,21 @@ async def _gather_bounded(coros: list[Any], limit: int) -> list[Any]:
         async with sem:
             return await coro
 
-    return await asyncio.gather(*(_run(c) for c in coros))
+    # return_exceptions=True so one bad chunk (after the client's own retries)
+    # is skipped + logged, never killing a whole pass on an 85-book unattended
+    # run. Failures are surfaced in the log + count, not swallowed silently.
+    results = await asyncio.gather(*(_run(c) for c in coros), return_exceptions=True)
+    out: list[Any] = []
+    failures = 0
+    for r in results:
+        if isinstance(r, Exception):
+            failures += 1
+            log.warning("per-chunk task failed (skipped): %r", r)
+        else:
+            out.append(r)
+    if failures:
+        log.warning("%d/%d concurrent tasks failed and were skipped", failures, len(results))
+    return out
 
 
 class Orchestrator:
