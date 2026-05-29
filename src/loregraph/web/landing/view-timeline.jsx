@@ -704,50 +704,50 @@ function RibbonMode({ ctx, tt, data, entities, locale, visibleEvents, selectedEv
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [dockOpen]);
-  // Scale to the BOOK's real chapter span, not a hard-coded 61 (P&P): short
-  // books fill the viewport, long books scroll. Otherwise a 12-chapter book
-  // crams every event into the left ~15% and the cards collide.
-  const maxCh = Math.max(1, ...visibleEvents.map(e => e.chapter || 1), ..._activePhases.map(p => p.end || 1));
-  const AXIS_PAD = 130;  // >= half the 220px card so the first chapter's card doesn't clip off-screen
-  const CH_WIDTH = Math.max(40, Math.min(130, 1080 / maxCh)) * zoom;
-  const totalWidth = AXIS_PAD * 2 + maxCh * CH_WIDTH;
-  const LANE_H = 68;
-  const tickStep = maxCh <= 14 ? 2 : maxCh <= 40 ? 5 : 10;
-  const chToX = (ch) => AXIS_PAD + (ch - 1) * CH_WIDTH;
-  const CARD_W = 230;
-  const CARD_GAP = 16;
-  const ROW_H = 108;
-  const CARD_H = 86;
-  const AXIS_GAP = 28;
-  // Greedy two-sided packing: place each centered card in the nearest free row
-  // ABOVE or BELOW the axis (ties alternate sides), so cards never overlap and
-  // stagger on both sides — compact and balanced for any book.
-  const place = useMemo(() => {
-    const sorted = [...visibleEvents].sort(
+  // --- Layout (research: react-chrono / MUI "alternating" narrative pattern) ---
+  // Narrative timelines read best on an ORDINAL (sequential) scale, not a true
+  // chronological one: events are spaced EVENLY and alternate strictly above /
+  // below the axis. This removes the clustering + dead-gaps + multi-row chaos a
+  // chapter-scaled axis produced, and gives the clean, balanced rhythm we want.
+  const [wrapW, setWrapW] = useState(0);
+  const CARD_W = 180;
+  const AXIS_PAD = 100;     // half-card + margin → first/last card never clips
+  const MIN_STEP = 98;      // 2*MIN_STEP > CARD_W → same-side cards never touch; small enough that ~9 events fit a desktop width without scrolling
+  const MAX_STEP = 300;
+  const PAD_TOP = 34;       // phase-label strip above the top cards
+  const CARD_H = 84;
+  const CONN = 28;          // connector length — constant on both sides
+  const AXIS_Y = PAD_TOP + CARD_H + CONN;
+  const trackH = AXIS_Y + CONN + CARD_H + 30;
+
+  const sorted = useMemo(
+    () => [...visibleEvents].sort(
       (a, b) => (a.chapter - b.chapter) || String(a.id).localeCompare(String(b.id))
-    );
-    const up = [];
-    const down = [];
-    const out = {};
-    let tie = 0;
-    sorted.forEach(ev => {
-      const cx = AXIS_PAD + (ev.chapter - 1) * CH_WIDTH;
-      const left = cx - CARD_W / 2;
-      const free = (arr) => { let r = 0; while (r < arr.length && arr[r] > left - CARD_GAP) r++; return r; };
-      const ru = free(up);
-      const rd = free(down);
-      const side = rd < ru ? "down" : ru < rd ? "up" : (tie++ % 2 === 0 ? "down" : "up");
-      const r = side === "down" ? rd : ru;
-      (side === "down" ? down : up)[r] = cx + CARD_W / 2;
-      out[ev.id] = { side, row: r };
+    ),
+    [visibleEvents]
+  );
+  const n = sorted.length;
+  const usable = Math.max(wrapW || 0, 680);
+  const fitStep = n > 1 ? (usable - 2 * AXIS_PAD) / (n - 1) : MIN_STEP;
+  const baseStep = Math.max(MIN_STEP, Math.min(MAX_STEP, fitStep));
+  const STEP = Math.max(MIN_STEP, baseStep * zoom);
+  const contentW = 2 * AXIS_PAD + (n > 1 ? (n - 1) * STEP : 0);
+  const totalWidth = Math.max(usable, contentW);
+  const startX = n > 1 ? Math.max(AXIS_PAD, (totalWidth - (n - 1) * STEP) / 2) : totalWidth / 2;
+
+  const layout = useMemo(
+    () => sorted.map((ev, i) => ({ ev, i, x: startX + i * STEP, side: i % 2 === 0 ? "up" : "down" })),
+    [sorted, startX, STEP]
+  );
+  const phaseSpans = useMemo(() => {
+    const m = {};
+    layout.forEach(({ ev, x }) => {
+      if (!m[ev.phase]) m[ev.phase] = { min: x, max: x };
+      else { m[ev.phase].min = Math.min(m[ev.phase].min, x); m[ev.phase].max = Math.max(m[ev.phase].max, x); }
     });
-    return out;
-  }, [visibleEvents, CH_WIDTH]);
-  const _pv = Object.values(place);
-  const numUp = Math.max(0, ..._pv.filter(p => p.side === "up").map(p => p.row + 1));
-  const numDown = Math.max(0, ..._pv.filter(p => p.side === "down").map(p => p.row + 1));
-  const AXIS_Y = 24 + AXIS_GAP + CARD_H + numUp * ROW_H;
-  const trackH = AXIS_Y + AXIS_GAP + CARD_H + numDown * ROW_H + 24;
+    return m;
+  }, [layout]);
+
   const cur = visibleEvents.find(e => e.id === selectedEventId) || visibleEvents[0];
   const curPhase = cur && _activePhases.find(p => p.id === cur.phase);
   const curEntity = cur && entities.find(e => e.id === cur.id);
@@ -758,17 +758,18 @@ function RibbonMode({ ctx, tt, data, entities, locale, visibleEvents, selectedEv
   const curEvidence = cur ? tlGetEvidenceEdges(cur.id, data.edges, entities) : [];
 
   useEffect(() => {
-    if (cur && wrapRef.current) {
-      const x = chToX(cur.chapter);
-      wrapRef.current.scrollTo({ left: Math.max(0, x - wrapRef.current.clientWidth / 2), behavior: "smooth" });
+    const sel = layout.find(l => l.ev.id === selectedEventId);
+    if (sel && wrapRef.current) {
+      wrapRef.current.scrollTo({ left: Math.max(0, sel.x - wrapRef.current.clientWidth / 2), behavior: "smooth" });
     }
-  }, [zoom, selectedEventId]);
+  }, [zoom, selectedEventId, wrapW]);
 
-  // Update scroll indicator
+  // Measure wrap width (for fit-to-width spacing) + update scroll indicator
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
     const update = () => {
+      setWrapW(el.clientWidth);
       const total = el.scrollWidth;
       const view = el.clientWidth;
       if (total <= view) { setScrollPct({left: 0, width: 1}); return; }
@@ -795,56 +796,53 @@ function RibbonMode({ ctx, tt, data, entities, locale, visibleEvents, selectedEv
 
       <div className="tl2-ribbon-wrap" ref={wrapRef}>
         <div className="tl2-ribbon-track" style={{width: totalWidth, height: trackH}}>
+          {/* base axis line */}
+          <div className="tl2-ribbon-axisline" style={{top: AXIS_Y, left: 24, width: Math.max(0, totalWidth - 48)}} />
+          {/* phases — colored run on the axis + centered label above */}
           {_activePhases.map(p => {
-            const x1 = chToX(p.start), x2 = chToX(p.end);
+            const sp = phaseSpans[p.id];
+            if (!sp) return null;
+            const segL = Math.max(8, sp.min - STEP * 0.42);
+            const segR = Math.min(totalWidth - 8, sp.max + STEP * 0.42);
+            const mid = (sp.min + sp.max) / 2;
             return (
-              <div key={p.id} className="tl2-ribbon-band" style={{left: x1, width: x2-x1, "--phase-color": p.color}}>
-                <div className="tl2-ribbon-band-label">
+              <React.Fragment key={p.id}>
+                <div className="tl2-ribbon-seg" style={{top: AXIS_Y, left: segL, width: Math.max(0, segR - segL), "--phase-color": p.color}} />
+                <div className="tl2-ribbon-phaselbl" style={{left: mid, top: 6, "--phase-color": p.color}}>
                   <span className="roman">{p.roman}</span>
-                  <span>{tlPhaseLabel(p, locale)}</span>
+                  <span className="name">{tlPhaseLabel(p, locale)}</span>
                 </div>
-              </div>
+              </React.Fragment>
             );
           })}
-          {/* axis */}
-          <div className="tl2-ribbon-axis" style={{top: LANE_H * 2.5 + 30}}>
-            {Array.from({length: maxCh}, (_, i) => i+1).map(ch => (
-              <div key={ch} className={"tl2-ribbon-tick " + (ch % tickStep === 0 ? "major" : "")} style={{left: chToX(ch)}}>
-                {(ch === 1 || ch % tickStep === 0 || ch === maxCh) && <span className="tl2-ribbon-tick-lbl">ch{ch}</span>}
-              </div>
-            ))}
-          </div>
-          {/* events */}
-          {visibleEvents.map(ev => {
-            const x = chToX(ev.chapter);
-            const phase = _activePhases.find(p => p.id === ev.phase);
+          {/* events — evenly spaced, strictly alternating above / below the axis */}
+          {layout.map(({ ev, x, side }) => {
+            const phase = _activePhases.find(p => p.id === ev.phase) || {};
             const ent = entities.find(e => e.id === ev.id);
             const loc = window.entityLocale(ev.id, locale);
             const name = loc?.name || ent?.name;
             const isSel = selectedEventId === ev.id;
-            const pl = place[ev.id] || { side: "down", row: 0 };
-            const connH = AXIS_GAP + pl.row * ROW_H;
-            const y = pl.side === "down" ? AXIS_Y + connH : AXIS_Y - connH - CARD_H;
-            const connStyle = pl.side === "down"
-              ? { height: connH, bottom: "100%", top: "auto" }
-              : { height: connH, top: "100%", bottom: "auto" };
-            const dotStyle = pl.side === "down" ? { top: `-${connH}px` } : { top: `calc(100% + ${connH}px)` };
+            const connStyle = side === "up" ? { bottom: 0, height: CONN } : { top: 0, height: CONN };
+            const cardStyle = side === "up" ? { bottom: CONN } : { top: CONN };
             return (
               <div key={ev.id}
-                className={"tl2-ribbon-event " + (isSel ? "active" : "")}
-                style={{left: x, top: y, "--phase-color": phase.color}}
+                className={"tl2-ribbon-event tl2-ribbon-event-" + side + (isSel ? " active" : "")}
+                style={{left: x, top: AXIS_Y, "--phase-color": phase.color}}
                 onClick={() => setSelectedEventId(ev.id)}>
-                <svg className="tl2-ribbon-conn" style={connStyle}>
-                  <line x1="0.5" y1="0" x2="0.5" y2="100%" stroke={phase.color} strokeWidth="1" strokeDasharray="2 3" opacity="0.6" />
-                </svg>
-                <div className="tl2-ribbon-dot" style={dotStyle} />
-                <div className="tl2-ribbon-card">
-                  <div className="tl2-ribbon-card-ch">ch{ev.chapter}</div>
+                <span className="tl2-ribbon-conn" style={connStyle} />
+                <span className="tl2-ribbon-dot" />
+                <div className="tl2-ribbon-card" style={cardStyle}>
+                  <div className="tl2-ribbon-card-ch">CH {ev.chapter}</div>
                   <div className="tl2-ribbon-card-title"><em>{name}</em></div>
                 </div>
               </div>
             );
           })}
+          {!n && (
+            <div className="tl2-ribbon-empty" style={{top: AXIS_Y}}>
+              {locale === "en" ? "No events in this phase" : locale === "zh-CN" ? "本阶段暂无事件" : locale === "zh-TW" ? "本階段暫無事件" : locale === "ja" ? "この段階にイベントはありません" : locale === "ko" ? "이 단계에 이벤트가 없습니다" : locale === "fr" ? "Aucun événement dans cette phase" : locale === "es" ? "Sin eventos en esta fase" : "Keine Ereignisse in dieser Phase"}
+            </div>
+          )}
         </div>
       </div>
 
