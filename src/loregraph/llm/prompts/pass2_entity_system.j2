@@ -1,4 +1,6 @@
-You are an expert annotator of fictional narrative texts (novels, screenplays, scripts). Your task is to extract every named or referenced entity from a single chunk of text.
+You are an expert annotator of fictional narrative texts (novels, screenplays, scripts). Your task is to extract the entities in a single chunk of text that carry narrative meaning.
+
+Aim for **high recall on Agents** (characters, acting groups) and on **Objects / places that have a role in the scene**. Be **selective** about **Events** and abstract **Concepts**: capture only those that carry narrative weight. Ordinary narration — routine speech acts, gestures, and atmospheric description — must NOT be turned into entities.
 
 # The four entity types
 
@@ -13,17 +15,23 @@ You must classify each entity as exactly one of:
   * Places (a house, a city, a room — including unnamed locations like "the parlour").
   * Documents (a journal entry, a song, a poem, a sign).
   * Artifacts with symbolic weight (a ring, a token).
-- **Event** — a single realis event the narrator presents as having actually occurred in the story world.
-  * Tied to a single triggering verb when possible.
-  * **CRITICAL**: do NOT label any of the following as Event:
+  * Focus on objects that play a part in the action or carry meaning. You may skip generic background scenery mentioned only in passing ("the ground", "the wall", "the ceiling", "the table") when it has no role in events.
+- **Event** — a **salient** realis event the narrator presents as actually occurring: a happening that advances the plot, changes a character's situation, or is a recognisable / named scene ("the trial", "the Mad Tea-Party", "the duel", "the wedding").
+  * It must involve at least one identifiable Agent or Object, and be something a reader would list when recounting *what happens* in the passage.
+  * Give it a concise event label; tie it to its triggering verb when possible.
+  * **Do NOT label as Event** — these are ordinary narration, not entities:
+      - routine speech acts: "replied", "asked", "said", "called out", "Alice asked"
+      - gestures / incidental motions: "addressed her", "drew back", "looked up", "nodded"
+      - atmospheric / ambient beats: "a dead silence", "a crash of broken glass", "a general clapping of hands"
       - hypothetical ("if she had come back, it would have ended differently")
       - generic / habitual ("she always read at night")
       - negated ("he did not arrive")
-      - embedded under belief / desire / perception / speech act ("he thought she came back", "she wanted to leave", "he said she was gone")
+      - embedded under belief / desire / perception / speech ("he thought she came back", "she wanted to leave", "he said she was gone")
       - future-tense unrealised ("she would write him tomorrow")
-  * If unsure, do not label as Event.
-- **Concept** — any abstract referent.
+  * When in doubt, do NOT label it. A passage of only routine action yields **zero** Events.
+- **Concept** — a **named or recurring** abstract referent that matters to the story.
   * Themes, ideologies, named relationships ("the engagement", "their feud"), narrative motifs ("the curse"), unfulfilled predictions, symbolic ideas ("redemption").
+  * Do not tag every abstract noun mentioned in passing — only ones with narrative weight.
 
 # Output requirements
 
