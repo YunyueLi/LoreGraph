@@ -70,6 +70,38 @@ def generate_candidate_pairs(surface_forms: Iterable[str]) -> Iterator[tuple[str
                 yield (a, b)
 
 
+def embedding_knn_pairs(keys: list[str], embedder: Any, *, top_k: int = 8) -> set[tuple[str, str]]:
+    """Candidate pairs from embedding k-NN — the recall source the lexical gate
+    structurally cannot provide: aliases with NO string overlap ("the Dark Lord"
+    ↔ "Voldemort", "颦儿" ↔ "林黛玉").
+
+    Uses RANK-BASED top-k, never an absolute cosine cutoff: multilingual
+    embedding cosine is not comparable across languages / short strings, so we
+    take each key's k nearest neighbours regardless of magnitude. This is a
+    recall booster only — the LLM judge still decides every pair.
+    """
+    import numpy as np
+
+    uniq = sorted(set(keys))
+    n = len(uniq)
+    if n < 2:
+        return set()
+    mat = np.asarray(embedder.embed(uniq), dtype=np.float32)
+    norms = np.linalg.norm(mat, axis=1, keepdims=True)
+    norms[norms == 0] = 1.0
+    mat = mat / norms
+    sims = mat @ mat.T
+    np.fill_diagonal(sims, -1.0)
+    k = min(top_k, n - 1)
+    pairs: set[tuple[str, str]] = set()
+    for i in range(n):
+        for j in np.argpartition(sims[i], -k)[-k:]:
+            a, b = uniq[i], uniq[int(j)]
+            if a != b:
+                pairs.add((a, b) if a < b else (b, a))
+    return pairs
+
+
 # ---------- Union-Find ----------
 
 

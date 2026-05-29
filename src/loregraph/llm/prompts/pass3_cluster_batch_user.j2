@@ -1,0 +1,10 @@
+Entity type: **{{ entity_type }}**
+
+ANCHOR: "{{ anchor_surface }}"
+{% if anchor_contexts %}Anchor appears in:
+{% for c in anchor_contexts %}- {{ c }}
+{% endfor %}{% endif %}
+CANDIDATES:
+{% for cand in candidates %}[{{ cand.id }}] "{{ cand.surface }}"{% if cand.contexts %} — e.g. {{ cand.contexts[0] }}{% endif %}
+{% endfor %}
+Which candidates refer to the same {{ entity_type }} as the ANCHOR? Return a verdict for every id. JSON only.

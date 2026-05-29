@@ -9,6 +9,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from sqlalchemy import select, update
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from loregraph.db import schema as orm
@@ -101,6 +102,13 @@ async def list_entities(session: AsyncSession, book_id: int) -> list[Entity]:
     return [Entity.model_validate(r) for r in rows]
 
 
+async def update_entity_note(session: AsyncSession, entity_id: int, note_md: str) -> None:
+    """Pass-8 hook: write the synthesised Hybrid Note onto an entity."""
+    await session.execute(
+        update(orm.Entity).where(orm.Entity.id == entity_id).values(note_md=note_md)
+    )
+
+
 async def list_entities_in_chunk(session: AsyncSession, chunk_id: int) -> list[Entity]:
     """Entities that have at least one mention inside `chunk_id` after Pass-4."""
     stmt = (
@@ -144,10 +152,24 @@ async def insert_glucose_facts(
 
 
 async def upsert_pass_run(session: AsyncSession, data: PassRunCreate) -> PassRun:
-    row = orm.PassRun(**data.model_dump())
-    session.add(row)
-    await session.flush()
-    await session.refresh(row)
+    """True upsert on (book_id, pass_num) so re-running a pass overwrites its
+    prior row instead of violating the unique constraint."""
+    payload = data.model_dump()
+    update_cols = {k: v for k, v in payload.items() if k not in ("book_id", "pass_num")}
+    stmt = (
+        pg_insert(orm.PassRun)
+        .values(**payload)
+        .on_conflict_do_update(constraint="pass_runs_book_pass_uq", set_=update_cols)
+    )
+    await session.execute(stmt)
+    row = (
+        await session.execute(
+            select(orm.PassRun).where(
+                orm.PassRun.book_id == payload["book_id"],
+                orm.PassRun.pass_num == payload["pass_num"],
+            )
+        )
+    ).scalar_one()
     return PassRun.model_validate(row)
 
 

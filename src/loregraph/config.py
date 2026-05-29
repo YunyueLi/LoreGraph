@@ -8,9 +8,20 @@ pipeline invocation time, not here.
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
+from dotenv import load_dotenv
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Load .env into os.environ so `os.getenv("OPENROUTER_API_KEY")` (and any
+# other provider-specific key not declared as a Pydantic field) resolves.
+# pydantic-settings reads .env into BaseSettings fields, but it does NOT
+# push the values into os.environ — so without this, `resolved_api_key`
+# can't see e.g. OPENROUTER_API_KEY. override=False keeps real env wins.
+_ENV_PATH = Path(__file__).resolve().parent.parent.parent / ".env"
+if _ENV_PATH.exists():
+    load_dotenv(_ENV_PATH, override=False)
 
 
 class Settings(BaseSettings):

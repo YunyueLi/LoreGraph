@@ -35,10 +35,15 @@ class ChunkCreate(BaseModel):
     atom_id: str = Field(..., description="ch{N}_p{seq}; e.g. 'ch03_p07'")
     chapter: int
     seq: int
+    # Global reading-order position across the whole book (0,1,2,...). The
+    # story-time coordinate every edge/fact inherits via its chunk.
+    story_pos: int = 0
     text: str
     token_count: int
     char_offset_start: int
     char_offset_end: int
+    # sha256 of `text` — lets incremental re-ingest skip unchanged chunks.
+    content_hash: str | None = None
 
 
 class Chunk(ChunkCreate):

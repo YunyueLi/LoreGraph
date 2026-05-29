@@ -1,0 +1,32 @@
+# Entity
+
+- **canonical_id**: `{{ entity.canonical_id }}`
+- **type**: {{ entity.type.value }}
+- **canonical_name**: {{ entity.canonical_name }}
+{% if entity.aliases %}- **aliases**: {{ entity.aliases | join(", ") }}{% endif %}
+
+# Mentions ({{ mentions|length }})
+{% for m in mentions %}
+- `{{ m.atom_id }}`: "{{ m.surface_form }}" — {{ m.snippet }}
+{% endfor %}
+
+# Outgoing edges ({{ outgoing|length }})
+{% for e in outgoing %}
+- `{{ e.atom_id }}` ({{ e.relation.value }} → {{ e.dst_name }}): "{{ e.evidence_span }}"
+{% endfor %}
+
+# Incoming edges ({{ incoming|length }})
+{% for e in incoming %}
+- `{{ e.atom_id }}` ({{ e.src_name }} → {{ e.relation.value }} → here): "{{ e.evidence_span }}"
+{% endfor %}
+
+{% if glucose %}
+# Implicit facts / state changes ({{ glucose|length }})
+{% for g in glucose %}
+- `{{ g.atom_id }}` ({{ g.dimension.value }}, {{ g.time_aspect.value }}): {{ g.statement }}
+{% endfor %}
+{% endif %}
+
+---
+
+Produce the Hybrid Note for this entity using only the context above. Follow the five-section format exactly.

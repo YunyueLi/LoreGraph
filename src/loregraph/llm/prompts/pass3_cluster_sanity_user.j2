@@ -1,0 +1,6 @@
+Entity type: **{{ entity_type }}**
+
+These surface forms are claimed to all name ONE {{ entity_type }}:
+{% for f in forms %}- "{{ f.surface }}"{% if f.context %} — e.g. {{ f.context }}{% endif %}
+{% endfor %}
+Which (if any) do NOT belong — i.e. name a different entity? Return JSON only.
