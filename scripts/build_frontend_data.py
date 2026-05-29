@@ -273,11 +273,25 @@ def _timeline(entities: list[dict], edge_list: list[dict], degree: Counter, chap
             by_chapter[ch] = ed
 
     event_ents = [e for e in entities if e["type"].lower() == "event" and e.get("chapters")]
-    ranked = sorted(
-        event_ents,
-        key=lambda e: (-degree[e["canonical_id"]], -e.get("mention_count", 0)),
-    )[:9]
-    ranked.sort(key=lambda e: min(e["chapters"]))
+    # Spread the timeline across the WHOLE book ("story shape"), not the top-9 by
+    # degree — those cluster in event-dense early chapters and collapse into one
+    # phase. Bucket events into ~9 even chapter-bands and take the most salient in
+    # each, so the beats span the arc and populate every phase.
+    NB = 9
+    lo, hi = chs[0], chs[-1]
+    span = max(1, hi - lo + 1)
+    if len(event_ents) <= NB:
+        ranked = sorted(event_ents, key=lambda e: min(e["chapters"]))
+    else:
+        buckets: dict[int, list] = {}
+        for e in event_ents:
+            bi = min(NB - 1, (min(e["chapters"]) - lo) * NB // span)
+            buckets.setdefault(bi, []).append(e)
+        ranked = [
+            max(buckets[bi], key=lambda e: (degree[e["canonical_id"]], e.get("mention_count", 0)))
+            for bi in sorted(buckets)
+        ]
+        ranked.sort(key=lambda e: min(e["chapters"]))
 
     events = []
     for k, e in enumerate(ranked):

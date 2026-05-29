@@ -1390,6 +1390,13 @@ function ClaimItem({ edge, ctx, selected, onClick, dir }) {
   const dst = entities.find(e => e.id === edge.dst);
   const sLoc = window.entityLocale(edge.src, locale)?.name || src?.name;
   const dLoc = window.entityLocale(edge.dst, locale)?.name || dst?.name;
+  // edge.claim carries the English predicate ("X — converses with — Y"). For
+  // non-English locales the predicate verb isn't translated, so reconstruct the
+  // claim from localized names + the localized relation type instead of showing
+  // raw English. English keeps the specific predicate verb.
+  const claimText = locale === "en"
+    ? edge.claim
+    : `${sLoc} — ${window.t("rel."+edge.rel)} — ${dLoc}`;
   return (
     <div className="claim" onClick={onClick} style={{borderLeftColor: selected ? "var(--gold)" : undefined}}>
       <div className="claim-rel">
@@ -1399,7 +1406,7 @@ function ClaimItem({ edge, ctx, selected, onClick, dir }) {
         <span className="arrow">{dir === "out" ? "→" : "←"}</span>
         <span className="dst" onClick={(e) => { e.stopPropagation(); gotoEntity(edge.dst); }}>{dLoc}</span>
       </div>
-      <div className="claim-text">{edge.claim}</div>
+      <div className="claim-text">{claimText}</div>
       <EvidPeek>
         <div className="evid">{edge.evidence}</div>
       </EvidPeek>

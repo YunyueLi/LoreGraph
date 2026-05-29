@@ -217,21 +217,27 @@ function EvClaim({ edge, ctx, dir }) {
   const dst = entities.find(e => e.id === edge.dst);
   const sLoc = window.entityLocale(edge.src, locale)?.name || src?.name;
   const dLoc = window.entityLocale(edge.dst, locale)?.name || dst?.name;
+  // edge.rel is a raw key and edge.label/claim carry the English predicate.
+  // Localize the relation type, and for non-English locales reconstruct the
+  // claim from localized parts (the predicate verb isn't translated).
+  const claimText = locale === "en"
+    ? edge.claim
+    : `${sLoc} — ${window.t("rel."+edge.rel)} — ${dLoc}`;
   return (
     <div className="ev-claim-card">
       <div style={{display:"flex", alignItems:"baseline", gap:8, flexWrap:"wrap", marginBottom:10}}>
         <span style={{fontFamily:"'Spectral', serif", fontStyle:"italic", fontSize:15, cursor:"pointer"}}
               onClick={() => gotoEntity(edge.src)}>{sLoc}</span>
         <span style={{fontFamily:"'JetBrains Mono', monospace", fontSize:10, letterSpacing:".18em", color:"var(--gold-deep)"}}>
-          {dir === "out" ? "→" : "←"} {edge.rel} {dir === "out" ? "→" : "←"}
+          {dir === "out" ? "→" : "←"} {window.t("rel."+edge.rel)} {dir === "out" ? "→" : "←"}
         </span>
         <span style={{fontFamily:"'Spectral', serif", fontStyle:"italic", fontSize:15, cursor:"pointer"}}
               onClick={() => gotoEntity(edge.dst)}>{dLoc}</span>
-        {edge.label && (
+        {locale === "en" && edge.label && (
           <span style={{fontFamily:"'Spectral', serif", fontStyle:"italic", color:"var(--paper-text-mute)", fontSize:13}}>· {edge.label}</span>
         )}
       </div>
-      <div style={{fontFamily:"'Spectral', serif", fontSize:15, lineHeight:1.55, marginBottom:10}}>{edge.claim}</div>
+      <div style={{fontFamily:"'Spectral', serif", fontSize:15, lineHeight:1.55, marginBottom:10}}>{claimText}</div>
       <window.EvidPeek><div className="evid">{edge.evidence}</div></window.EvidPeek>
       <div className="evid-meta">
         <span>{window.friendlyChunkId(edge.chunk, locale)}</span>
