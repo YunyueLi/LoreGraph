@@ -29,8 +29,10 @@ KNOWN: dict[str, dict] = {
     "xyj": {"titleZh": "西游记", "year": 1592, "coverTone": "rust"},
 }
 
-# Social view shows actors + things; Themes view shows ideas + the actors around them.
-SOCIAL_TYPES = {"agent", "object"}
+# Social view is a CHARACTER map — agents only (props/places/events live in the
+# Index / Reader / Timeline, not the relationship graph). Show the main cast, not
+# every minor walk-on, so the graph stays legible. Themes shows ideas + actors.
+SOCIAL_TYPES = {"agent"}
 THEMES_TYPES = {"concept", "agent"}
 SOCIAL_MAX = 46
 THEMES_MAX = 30
@@ -143,6 +145,24 @@ def _communities(node_ids: list[str], edge_pairs: list[tuple[str, str]], max_gro
     return big
 
 
+def _split_large(group: list[str], edge_pairs: list[tuple[str, str]], max_size: int = 10) -> list[list[str]]:
+    """Recursively break an over-large community into sub-factions, so the
+    densely-connected main cast doesn't end up as one giant region. Re-runs
+    detection on the group's internal subgraph (which excludes the group's own
+    local hub), surfacing the scenes within it."""
+    if len(group) <= max_size:
+        return [group]
+    gset = set(group)
+    sub_edges = [(a, b) for a, b in edge_pairs if a in gset and b in gset]
+    subs = [s for s in _communities(group, sub_edges, max_groups=4) if s]
+    if len(subs) < 2 or max(len(s) for s in subs) >= len(group):
+        return [group]  # indivisible — leave as-is
+    out: list[list[str]] = []
+    for s in subs:
+        out.extend(_split_large(s, edge_pairs, max_size))
+    return out
+
+
 def _social_clustered(
     entities: list[dict], edges: list[dict], degree: Counter, cap: int, cx: float = 500, cy: float = 400
 ) -> tuple[dict, list]:
@@ -156,21 +176,30 @@ def _social_clustered(
     name_by_id = {e["canonical_id"]: e["canonical_name"] for e in ranked}
     idset = set(ids)
     pairs = [(ed["src"], ed["dst"]) for ed in edges if ed["src"] in idset and ed["dst"] in idset]
-    groups = [g for g in _communities(ids, pairs) if g]
+    groups = []
+    for g in _communities(ids, pairs):
+        if g:
+            groups.extend(_split_large(g, pairs))
+    groups.sort(key=len, reverse=True)
     if len(groups) < 2:
         return _phyllotaxis(ids), []
 
     pos: dict[str, dict] = {}
     regions: list[dict] = []
     g = len(groups)
-    rx_ring, ry_ring = 380, 300
+    rx_ring, ry_ring = 365, 290
     for gi, members in enumerate(groups):
         members = sorted(members, key=lambda x: -degree[x])
-        ang = 2 * math.pi * gi / g - math.pi / 2
-        rcx = cx + (rx_ring * math.cos(ang) if g > 1 else 0)
-        rcy = cy + (ry_ring * math.sin(ang) if g > 1 else 0)
+        # The dominant cluster (the main cast) sits in the centre; the smaller
+        # scene-clusters orbit it — a protagonist-centric "solar system".
+        if gi == 0:
+            rcx, rcy = cx, cy
+        else:
+            ang = 2 * math.pi * (gi - 1) / max(1, g - 1) - math.pi / 2
+            rcx = cx + rx_ring * math.cos(ang)
+            rcy = cy + ry_ring * math.sin(ang)
         m = len(members)
-        spread = 44 + 14 * math.sqrt(m)
+        spread = 40 + 20 * math.sqrt(m)
         for i, mid in enumerate(members):
             a = i * 2.39996323
             r = spread * math.sqrt((i + 0.5) / m) if m > 1 else 0
@@ -181,8 +210,8 @@ def _social_clustered(
             "entity": members[0],
             "cx": round(rcx, 1),
             "cy": round(rcy, 1),
-            "rx": round(spread + 42, 1),
-            "ry": round(spread + 36, 1),
+            "rx": round(spread + 40, 1),
+            "ry": round(spread + 34, 1),
             "members": members,
         })
     return pos, regions
@@ -312,6 +341,7 @@ def convert(payload: dict) -> dict:
                 "label": label,
                 "chunk": ed.get("atom_id"),
                 "conf": ed.get("confidence"),
+                "weight": ed.get("weight"),
                 "verified": True,  # every exported claim cleared the literal-match gate
                 "evidence": ed.get("evidence_span", ""),
                 "claim": f"{sn} — {label} — {dn}",
