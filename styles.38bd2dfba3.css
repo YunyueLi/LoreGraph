@@ -5447,122 +5447,113 @@ a { color: inherit; }
   padding: 0 6px;
 }
 .tl2-ribbon-wrap {
+  flex: 1; min-height: 0;
   overflow-x: auto;
   overflow-y: hidden;
+  display: flex;
+  align-items: center;
   /* leave a safe zone at the bottom for the floating evidence trigger */
   padding-bottom: 60px;
 }
-.tl2-ribbon-track { position: relative; padding: 20px 0; }
-.tl2-ribbon-band {
-  position: absolute;
-  top: 20px; bottom: 20px;
-  background: linear-gradient(to bottom, transparent, rgba(184,149,74,0.05), transparent);
-  border-left: 1px dashed rgba(184,149,74,0.18);
-  border-right: 1px dashed rgba(184,149,74,0.18);
-}
-.tl2-ribbon-band-label {
-  position: absolute;
-  top: 12px;
-  left: 16px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px;
-  letter-spacing: 0.26em;
-  text-transform: uppercase;
-  color: var(--phase-color);
-  display: flex; align-items: baseline; gap: 8px;
-}
-.tl2-ribbon-band-label .roman {
-  font-family: 'Spectral', serif;
-  font-style: italic;
-  font-size: 14px;
-  font-weight: 500;
-}
+.tl2-ribbon-track { position: relative; flex: none; }
 
-.tl2-ribbon-axis {
-  position: absolute; left: 0; right: 0; height: 8px;
+/* base axis line spanning the track */
+.tl2-ribbon-axisline {
+  position: absolute; height: 1px;
+  transform: translateY(-50%);
+  background: rgba(138,110,54,0.26);
   pointer-events: none;
 }
-.tl2-ribbon-axis::before {
-  content: ""; position: absolute;
-  left: 80px; right: 80px; top: 4px;
-  height: 1px;
-  background: linear-gradient(to right, transparent, rgba(138,110,54,0.45) 4%, rgba(138,110,54,0.45) 96%, transparent);
+/* phase-colored run laid over the axis */
+.tl2-ribbon-seg {
+  position: absolute; height: 2px;
+  transform: translateY(-50%);
+  background: color-mix(in srgb, var(--phase-color) 62%, transparent);
+  border-radius: 2px;
+  pointer-events: none;
 }
-.tl2-ribbon-tick {
-  position: absolute; top: -3px;
-  width: 1px; height: 8px;
-  background: rgba(138,110,54,0.25);
-}
-.tl2-ribbon-tick.major { background: rgba(138,110,54,0.55); height: 10px; top: -4.5px; }
-.tl2-ribbon-tick-lbl {
-  position: absolute; top: 14px; left: 50%;
+/* phase label centered above its run */
+.tl2-ribbon-phaselbl {
+  position: absolute;
   transform: translateX(-50%);
+  display: inline-flex; align-items: baseline; gap: 7px;
+  white-space: nowrap; pointer-events: none;
+}
+.tl2-ribbon-phaselbl .roman {
+  font-family: 'Spectral', serif; font-style: italic;
+  font-size: 14px; font-weight: 500;
+  color: var(--phase-color);
+}
+.tl2-ribbon-phaselbl .name {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px; letter-spacing: 0.08em;
-  color: var(--paper-text-faint);
-  white-space: nowrap;
+  font-size: 9.5px; letter-spacing: 0.24em; text-transform: uppercase;
+  color: var(--phase-color);
+}
+.tl2-ribbon-empty {
+  position: absolute; left: 50%; transform: translate(-50%, -50%);
+  font-family: 'Spectral', serif; font-style: italic;
+  font-size: 14px; color: var(--paper-text-faint);
 }
 
-.tl2-ribbon-event {
-  position: absolute;
-  transform: translateX(-50%);
-  cursor: pointer;
-  z-index: 2;
-}
+/* event group: anchored at its dot on the axis (left:x, top:AXIS_Y) */
+.tl2-ribbon-event { position: absolute; cursor: pointer; z-index: 2; }
+.tl2-ribbon-event.active { z-index: 6; }
+
 .tl2-ribbon-conn {
-  position: absolute;
-  left: 50%; width: 1px;
-  overflow: visible;
+  position: absolute; left: 0; width: 0;
+  border-left: 1px solid color-mix(in srgb, var(--phase-color) 42%, transparent);
 }
+.tl2-ribbon-event:hover .tl2-ribbon-conn,
+.tl2-ribbon-event.active .tl2-ribbon-conn { border-left-color: var(--phase-color); }
+
 .tl2-ribbon-dot {
-  position: absolute; left: 50%; transform: translate(-50%, -50%);
-  width: 10px; height: 10px;
-  border-radius: 50%;
+  position: absolute; left: 0; top: 0;
+  transform: translate(-50%, -50%);
+  width: 9px; height: 9px; border-radius: 50%;
   background: var(--phase-color);
-  box-shadow: 0 0 0 3px #fbf7ea, 0 0 0 4px color-mix(in srgb, var(--phase-color) 38%, transparent);
-  z-index: 3;
-  transition: all 0.18s;
+  box-shadow: 0 0 0 3px var(--paper), 0 0 0 4px color-mix(in srgb, var(--phase-color) 32%, transparent);
+  transition: transform 0.18s, box-shadow 0.18s;
 }
+.tl2-ribbon-event:hover .tl2-ribbon-dot { transform: translate(-50%, -50%) scale(1.18); }
 .tl2-ribbon-event.active .tl2-ribbon-dot {
-  transform: translate(-50%, -50%) scale(1.4);
-  box-shadow: 0 0 0 3px #fbf7ea, 0 0 0 8px color-mix(in srgb, var(--phase-color) 28%, transparent);
+  transform: translate(-50%, -50%) scale(1.45);
+  box-shadow: 0 0 0 3px var(--paper), 0 0 0 7px color-mix(in srgb, var(--phase-color) 26%, transparent);
 }
+
 .tl2-ribbon-card {
-  position: relative;
-  width: 220px;
-  padding: 11px 14px 12px;
-  background: rgba(255,253,247,0.85);
-  border: 1px solid rgba(184,149,74,0.2);
-  border-radius: 2px;
+  position: absolute; left: 0; width: 180px;
   transform: translateX(-50%);
-  left: 50%;
-  margin-top: 8px;
-  transition: all 0.18s;
+  padding: 10px 13px 11px;
+  background: rgba(255,253,247,0.94);
+  border: 1px solid rgba(184,149,74,0.22);
+  border-radius: 3px;
+  box-shadow: 0 2px 8px -4px rgba(60,40,10,0.16);
+  transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s, background 0.18s;
 }
 .tl2-ribbon-event:hover .tl2-ribbon-card {
-  transform: translateX(-50%) translateY(-3px);
-  box-shadow: 0 10px 26px -8px rgba(60,40,10,0.28);
+  transform: translateX(-50%) translateY(var(--lift, 0));
+  box-shadow: 0 12px 26px -10px rgba(60,40,10,0.3);
   border-color: var(--phase-color);
 }
+.tl2-ribbon-event-up:hover   .tl2-ribbon-card { --lift: -3px; }
+.tl2-ribbon-event-down:hover .tl2-ribbon-card { --lift: 3px; }
 .tl2-ribbon-event.active .tl2-ribbon-card {
   border-color: var(--phase-color);
-  border-width: 1.5px;
   background: #fbf7ea;
-  box-shadow: 0 10px 30px -10px rgba(60,40,10,0.3);
+  box-shadow: 0 0 0 1px var(--phase-color), 0 12px 30px -12px rgba(60,40,10,0.34);
 }
 .tl2-ribbon-card-ch {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px;
+  font-size: 9px;
   color: var(--phase-color);
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  margin-bottom: 6px;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  margin-bottom: 5px;
 }
 .tl2-ribbon-card-title {
   font-family: 'Spectral', serif;
-  font-size: 14.5px;
-  line-height: 1.3;
+  font-size: 14px; line-height: 1.3;
   color: var(--paper-text);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 .tl2-ribbon-card-title em { font-style: italic; }
 
