@@ -76,7 +76,11 @@ class Pass6GlucoseExtractor:
             chunk_text=chunk.text,
             entities=chunk_entities,
         )
-        msg = await self.llm.complete(system=self._system_prompt, user=user_prompt)
+        # Entity-dense chunks yield many facts; give the JSON room so it isn't
+        # truncated into invalid JSON.
+        msg = await self.llm.complete(
+            system=self._system_prompt, user=user_prompt, max_tokens=8192
+        )
         self.usage.merge(msg)
         text = self.llm.extract_text(msg)
 
