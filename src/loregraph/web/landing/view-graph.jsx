@@ -327,18 +327,51 @@ function ViewGraph({ ctx }) {
     });
   }, [viewMode, bookId]);
 
-  const visibleEdges = useMemo(() => edges.filter(e => {
-    if (!edgeFilter[e.rel]) return false;
-    if (!seedPositions[e.src] || !seedPositions[e.dst]) return false;
-    if (activeChapter) {
-      const sA = entities.find(en => en.id === e.src);
-      const dA = entities.find(en => en.id === e.dst);
-      const sIn = Array.isArray(sA?.chapters) && sA.chapters.includes(activeChapter);
-      const dIn = Array.isArray(dA?.chapters) && dA.chapters.includes(activeChapter);
-      if (!sIn && !dIn) return false;
-    }
-    return true;
-  }), [edgeFilter, activeChapter, viewMode, bookId]);
+  // STRENGTH-RANKED BACKBONE + FOCUS REVEAL.
+  // A dense graph (Alice ≈ 315 edges, most incident to one protagonist hub) is
+  // an unreadable tangle if every edge is drawn. Default view shows only a
+  // sparse "backbone": each node's few strongest links, preferring links
+  // between non-hub nodes so the inter-group structure shows instead of the
+  // hub's spokes (the hub keeps just 2). Selecting/hovering a node reveals ALL
+  // of its connections; everything else dims.
+  const visibleEdges = useMemo(() => {
+    const base = edges.filter(e => {
+      if (!edgeFilter[e.rel]) return false;
+      if (!seedPositions[e.src] || !seedPositions[e.dst]) return false;
+      if (activeChapter) {
+        const sA = entities.find(en => en.id === e.src);
+        const dA = entities.find(en => en.id === e.dst);
+        const sIn = Array.isArray(sA?.chapters) && sA.chapters.includes(activeChapter);
+        const dIn = Array.isArray(dA?.chapters) && dA.chapters.includes(activeChapter);
+        if (!sIn && !dIn) return false;
+      }
+      return true;
+    });
+    const strength = e => (e.weight != null ? e.weight : (e.conf != null ? e.conf : 0.5));
+    const deg = {};
+    base.forEach(e => { deg[e.src] = (deg[e.src] || 0) + 1; deg[e.dst] = (deg[e.dst] || 0) + 1; });
+    const nN = Object.keys(deg).length || 1;
+    const hubCut = 0.42 * (nN - 1);
+    const isHub = id => (deg[id] || 0) >= hubCut;
+    const incident = {};
+    base.forEach(e => { (incident[e.src] ||= []).push(e); (incident[e.dst] ||= []).push(e); });
+    const keep = new Set();
+    Object.keys(incident).forEach(id => {
+      const hub = isHub(id);
+      let cand = incident[id];
+      if (!hub) {
+        const interGroup = cand.filter(e => !isHub(e.src) && !isHub(e.dst));
+        if (interGroup.length) cand = interGroup;  // prefer non-hub links for the backbone
+      }
+      cand.slice().sort((a, b) => strength(b) - strength(a))
+        .slice(0, hub ? 2 : 3)
+        .forEach(e => keep.add(e.id));
+    });
+    return base.filter(e =>
+      keep.has(e.id) ||
+      (selectedEntityId && (e.src === selectedEntityId || e.dst === selectedEntityId))
+    );
+  }, [edgeFilter, activeChapter, viewMode, bookId, selectedEntityId, entities, edges]);
 
   const edgeCounts = {
     STRUCTURAL: edges.filter(e => e.rel === "STRUCTURAL").length,
@@ -1068,7 +1101,7 @@ function GraphCanvas({ visibleEntities, visibleEdges, positions, setLivePosition
                   strokeWidth={(isSel || isHovered) ? baseW + 1.0 : baseW}
                   strokeDasharray={(isSel || isHovered) ? null : dash}
                   strokeLinecap="round"
-                  opacity={isMute ? 0.18 : ((isSel || isHovered) ? 1 : 0.6)}
+                  opacity={isMute ? 0.16 : ((isSel || isHovered) ? 1 : 0.42)}
                   markerEnd={hasArrow ? (isSel ? "url(#arr-sel)" : isMute ? "url(#arr-mute)" : `url(#arr-${edge.rel})`) : null}
                   style={{transition: "stroke-width 0.2s, opacity 0.2s"}} />
                 {isDouble && !isMute && (
