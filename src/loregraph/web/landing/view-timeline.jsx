@@ -704,10 +704,15 @@ function RibbonMode({ ctx, tt, data, entities, locale, visibleEvents, selectedEv
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [dockOpen]);
-  const CH_WIDTH = 36 * zoom;
-  const AXIS_PAD = 80;
-  const totalWidth = AXIS_PAD * 2 + 61 * CH_WIDTH;
+  // Scale to the BOOK's real chapter span, not a hard-coded 61 (P&P): short
+  // books fill the viewport, long books scroll. Otherwise a 12-chapter book
+  // crams every event into the left ~15% and the cards collide.
+  const maxCh = Math.max(1, ...visibleEvents.map(e => e.chapter || 1), ..._activePhases.map(p => p.end || 1));
+  const AXIS_PAD = 130;  // >= half the 220px card so the first chapter's card doesn't clip off-screen
+  const CH_WIDTH = Math.max(40, Math.min(130, 1080 / maxCh)) * zoom;
+  const totalWidth = AXIS_PAD * 2 + maxCh * CH_WIDTH;
   const LANE_H = 68;
+  const tickStep = maxCh <= 14 ? 2 : maxCh <= 40 ? 5 : 10;
   const chToX = (ch) => AXIS_PAD + (ch - 1) * CH_WIDTH;
   const cur = visibleEvents.find(e => e.id === selectedEventId) || visibleEvents[0];
   const curPhase = cur && _activePhases.find(p => p.id === cur.phase);
@@ -769,9 +774,9 @@ function RibbonMode({ ctx, tt, data, entities, locale, visibleEvents, selectedEv
           })}
           {/* axis */}
           <div className="tl2-ribbon-axis" style={{top: LANE_H * 2.5 + 30}}>
-            {Array.from({length: 61}, (_, i) => i+1).map(ch => (
-              <div key={ch} className={"tl2-ribbon-tick " + (ch % 5 === 0 ? "major" : "")} style={{left: chToX(ch)}}>
-                {(ch === 1 || ch % 10 === 0 || ch === 61) && <span className="tl2-ribbon-tick-lbl">ch{ch}</span>}
+            {Array.from({length: maxCh}, (_, i) => i+1).map(ch => (
+              <div key={ch} className={"tl2-ribbon-tick " + (ch % tickStep === 0 ? "major" : "")} style={{left: chToX(ch)}}>
+                {(ch === 1 || ch % tickStep === 0 || ch === maxCh) && <span className="tl2-ribbon-tick-lbl">ch{ch}</span>}
               </div>
             ))}
           </div>
