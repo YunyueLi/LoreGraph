@@ -31,6 +31,16 @@ from loregraph.db.engine import init_engine, session_scope
 ROOT = Path(__file__).resolve().parent.parent
 
 
+def _v(x: object) -> object:
+    """Normalize an enum-or-string column to its string value.
+
+    The ORM declares these columns as native Postgres ENUMs built from string
+    values (not bound to the Python enum class), so SQLAlchemy returns plain
+    strings on load. Tolerate both so the export is robust either way.
+    """
+    return x.value if hasattr(x, "value") else x
+
+
 async def export_book(book_id: int, frontend_id: str, license_: str, out_path: Path) -> dict:
     include_text = license_ == "public-domain"
     init_engine()
@@ -80,7 +90,7 @@ async def export_book(book_id: int, frontend_id: str, license_: str, out_path: P
         entity_list = [
             {
                 "canonical_id": e.canonical_id,
-                "type": e.type.value,
+                "type": _v(e.type),
                 "subtype": (e.attributes or {}).get("subtype"),
                 "tier": (e.attributes or {}).get("tier"),
                 "canonical_name": e.canonical_name,
@@ -108,13 +118,13 @@ async def export_book(book_id: int, frontend_id: str, license_: str, out_path: P
                 {
                     "src": id_to_canon.get(e.src_entity_id),
                     "dst": id_to_canon.get(e.dst_entity_id),
-                    "relation": e.relation.value,
+                    "relation": _v(e.relation),
                     "predicate": attrs.get("predicate"),
                     "weight": attrs.get("weight"),
                     "sentiment": attrs.get("sentiment"),
                     "evidence_span": e.evidence_span,
                     "confidence": e.confidence,
-                    "inference_depth": e.inference_depth.value,
+                    "inference_depth": _v(e.inference_depth),
                     "atom_id": id_to_atom.get(e.chunk_id),
                 }
             )
@@ -134,8 +144,8 @@ async def export_book(book_id: int, frontend_id: str, license_: str, out_path: P
         glucose_list = [
             {
                 "entity": id_to_canon.get(g.entity_id),
-                "dimension": g.dimension.value,
-                "time_aspect": g.time_aspect.value,
+                "dimension": _v(g.dimension),
+                "time_aspect": _v(g.time_aspect),
                 "statement": g.statement,
                 "evidence_span": g.evidence_span,
                 "confidence": g.confidence,
