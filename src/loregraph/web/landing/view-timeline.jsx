@@ -714,6 +714,30 @@ function RibbonMode({ ctx, tt, data, entities, locale, visibleEvents, selectedEv
   const LANE_H = 68;
   const tickStep = maxCh <= 14 ? 2 : maxCh <= 40 ? 5 : 10;
   const chToX = (ch) => AXIS_PAD + (ch - 1) * CH_WIDTH;
+  const AXIS_Y = LANE_H * 2.5 + 30;
+  const CARD_W = 230;
+  const CARD_GAP = 16;
+  const ROW_H = 108;
+  // Greedy non-overlapping row packing: each card is centered on its chapter's x;
+  // pack cards into stacked rows below the axis so NO two cards ever overlap —
+  // for any book and any chapter spread (fixed lanes used to collide).
+  const rowOf = useMemo(() => {
+    const sorted = [...visibleEvents].sort(
+      (a, b) => (a.chapter - b.chapter) || String(a.id).localeCompare(String(b.id))
+    );
+    const rowRight = [];
+    const out = {};
+    sorted.forEach(ev => {
+      const cx = AXIS_PAD + (ev.chapter - 1) * CH_WIDTH;
+      const left = cx - CARD_W / 2;
+      let r = 0;
+      while (r < rowRight.length && rowRight[r] > left - CARD_GAP) r++;
+      out[ev.id] = r;
+      rowRight[r] = cx + CARD_W / 2;
+    });
+    return out;
+  }, [visibleEvents, CH_WIDTH]);
+  const numRows = Math.max(1, ...Object.values(rowOf).map(r => r + 1));
   const cur = visibleEvents.find(e => e.id === selectedEventId) || visibleEvents[0];
   const curPhase = cur && _activePhases.find(p => p.id === cur.phase);
   const curEntity = cur && entities.find(e => e.id === cur.id);
@@ -760,7 +784,7 @@ function RibbonMode({ ctx, tt, data, entities, locale, visibleEvents, selectedEv
       </div>
 
       <div className="tl2-ribbon-wrap" ref={wrapRef}>
-        <div className="tl2-ribbon-track" style={{width: totalWidth, height: LANE_H * 5 + 80}}>
+        <div className="tl2-ribbon-track" style={{width: totalWidth, height: AXIS_Y + 44 + numRows * ROW_H + 40}}>
           {_activePhases.map(p => {
             const x1 = chToX(p.start), x2 = chToX(p.end);
             return (
@@ -788,24 +812,18 @@ function RibbonMode({ ctx, tt, data, entities, locale, visibleEvents, selectedEv
             const loc = window.entityLocale(ev.id, locale);
             const name = loc?.name || ent?.name;
             const isSel = selectedEventId === ev.id;
-            const y = LANE_H * 2.5 + 30 + ev.lane * (LANE_H * 0.5);
+            const row = rowOf[ev.id] || 0;
+            const y = AXIS_Y + 44 + row * ROW_H;  // card sits below the axis in its packed row
+            const connH = y - AXIS_Y;
             return (
               <div key={ev.id}
                 className={"tl2-ribbon-event " + (isSel ? "active" : "")}
                 style={{left: x, top: y, "--phase-color": phase.color}}
                 onClick={() => setSelectedEventId(ev.id)}>
-                <svg className="tl2-ribbon-conn" style={{
-                  height: Math.abs(ev.lane * (LANE_H * 0.5)) + 8,
-                  top: ev.lane > 0 ? -8 : "auto",
-                  bottom: ev.lane < 0 ? -8 : "auto",
-                }}>
+                <svg className="tl2-ribbon-conn" style={{height: connH, bottom: "100%", top: "auto"}}>
                   <line x1="0.5" y1="0" x2="0.5" y2="100%" stroke={phase.color} strokeWidth="1" strokeDasharray="2 3" opacity="0.6" />
                 </svg>
-                <div className="tl2-ribbon-dot" style={{
-                  top: ev.lane > 0 ? `-${Math.abs(ev.lane * (LANE_H * 0.5)) + 4}px`
-                    : ev.lane < 0 ? `calc(100% + ${Math.abs(ev.lane * (LANE_H * 0.5)) - 4}px)`
-                    : "50%",
-                }} />
+                <div className="tl2-ribbon-dot" style={{top: `-${connH}px`}} />
                 <div className="tl2-ribbon-card">
                   <div className="tl2-ribbon-card-ch">ch{ev.chapter}</div>
                   <div className="tl2-ribbon-card-title"><em>{name}</em></div>
