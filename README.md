@@ -1,12 +1,8 @@
 <div align="center">
 
-<img src="assets/hero-banner.svg" alt="LoreGraph — book pages with floating graph nodes linked by thin lines to gold-highlighted spans on each page; tagline: 'every node cites the page it came from.'" width="100%" />
-
-<br>
-
 # LoreGraph
 
-***knowledge graphs that quote the page they came from.***
+### *knowledge graphs that quote the page they came from*
 
 LoreGraph turns a novel, play, screenplay, or libretto into a **queryable knowledge graph** —
 characters, objects, events and concepts, the typed relations between them, and the facts each
@@ -14,19 +10,43 @@ implies — where **every single claim is anchored to a literal span of the sour
 
 No hallucinated edges. No "trust me." Click any relationship and you land on the exact sentence it came from.
 
-<br>
-
-[![License](https://img.shields.io/badge/LICENSE-Apache_2.0-b8954a?style=for-the-badge&labelColor=1a1a1a)](LICENSE)
-[![Python](https://img.shields.io/badge/PYTHON-3.11+-b8954a?style=for-the-badge&labelColor=1a1a1a)](pyproject.toml)
-[![Pipeline](https://img.shields.io/badge/PIPELINE-8_PASS-b8954a?style=for-the-badge&labelColor=1a1a1a)](#the-pipeline)
-[![Model](https://img.shields.io/badge/MODEL-Claude_Opus_4.8-b8954a?style=for-the-badge&labelColor=1a1a1a)](#configuration)
-[![Status](https://img.shields.io/badge/STATUS-ALPHA-b8954a?style=for-the-badge&labelColor=1a1a1a)](#status--roadmap)
+`Apache-2.0`  ·  `Python 3.11+`  ·  `8-pass pipeline`  ·  `Claude Opus 4.8`  ·  `multilingual`  ·  `Alpha`
 
 **English**  ·  [简体中文](README.zh-CN.md)
 
 [Why](#why-loregraph) · [What you get](#what-you-get) · [Pipeline](#the-pipeline) · [Quick start](#quick-start) · [Architecture](#architecture) · [Corpus](#the-corpus) · [Roadmap](#status--roadmap)
 
 </div>
+
+---
+
+```mermaid
+flowchart LR
+    SRC([book.txt]):::io
+    subgraph EXTRACT["EXTRACTION · every claim is anchored to a literal source span"]
+        direction LR
+        P1["1 · Chunk"]:::det
+        P2["2 · Entity"]:::llm
+        P3["3 · Resolve"]:::llm
+        P4["4 · Coref"]:::llm
+        P5["5 · Relations"]:::llm
+        P6["6 · GLUCOSE"]:::llm
+        P7["7 · Verify"]:::gate
+        P8["8 · Note"]:::llm
+        P1 --> P2 --> P3 --> P4 --> P5 --> P6 --> P7 --> P8
+    end
+    GRAPH[("knowledge graph<br/>Postgres · pgvector")]:::store
+    SRC --> P1
+    P8 --> GRAPH
+
+    classDef io fill:#f3ecdd,stroke:#8a6d3b,color:#3a2d18
+    classDef det fill:#e3d3ad,stroke:#8a6d3b,color:#3a2d18
+    classDef llm fill:#c9a253,stroke:#6b5126,color:#2a2008
+    classDef gate fill:#b34a2f,stroke:#6e2616,color:#ffffff
+    classDef store fill:#33414f,stroke:#1a232c,color:#eef2ff
+```
+
+> **1** is deterministic · **2–6, 8** are LLM passes · **7** is the ≥95% literal-match verification gate.
 
 ---
 
@@ -68,8 +88,8 @@ Each entity gets a structured **Hybrid Note**: `[CONTEXT] [FACTS] [INFERENCES] [
 
 ## The pipeline
 
-A book flows through eight passes. Chunking and the GLUCOSE step are deterministic; the rest are LLM calls
-that all route through one hardened client.
+A book flows through eight passes (diagram above). Chunking is deterministic; the rest are LLM calls that
+all route through one hardened client.
 
 | # | Pass | What it does |
 |---|---|---|
@@ -121,22 +141,36 @@ uv run loregraph view                        # FastAPI + the web reading-room
 
 ## Architecture
 
-```
-                 ┌──────────── EXTRACT (evidence-anchored) ────────────┐
-  book.txt  ──►  │  1 chunk → 2 entity → 3 resolve → 4 coref →          │
-                 │  5 relations → 6 GLUCOSE → 7 verify → 8 note         │
-                 └──────────────────────────┬──────────────────────────┘
-                                             ▼
-                            Postgres + pgvector  (entities, edges,
-                            glucose facts, notes, chunks, embeddings)
-                                             │
-                                   scripts/export_book.py
-                                             ▼
-                          data/exports/<book>.json  (derived metadata;
-                          full reading text only for public-domain works)
-                                             ▼
-                            Web reading-room (Reader · Graph · Timeline
-                                          · Index · Ask · multilingual)
+```mermaid
+flowchart TB
+    SRC([book.txt]):::io
+
+    subgraph PIPE["loregraph.pipeline · 8 passes wired by orchestrator.py"]
+        EX["chunk · entity · resolve · coref<br/>relations · GLUCOSE · verify · note"]:::llm
+    end
+
+    subgraph SVC["loregraph.llm · the only path to a model"]
+        direction LR
+        CLIENT["hardened client<br/>prompt-cache · retries · 15+ providers"]:::accent
+        EMBED["multilingual embedder<br/>e5-large · 1024-dim · local"]:::accent
+    end
+
+    DB[("loregraph.db · Postgres + pgvector<br/>entities · edges · facts · notes · chunks")]:::store
+    EXP["scripts/export_book.py"]:::det
+    JSON[/"data/exports/&lt;book&gt;.json"/]:::io
+    WEB["loregraph.web · reading-room<br/>Reader · Graph · Timeline · Index · Ask"]:::web
+
+    SRC --> PIPE
+    PIPE <--> SVC
+    PIPE --> DB
+    DB --> EXP --> JSON --> WEB
+
+    classDef io fill:#f3ecdd,stroke:#8a6d3b,color:#3a2d18
+    classDef det fill:#e3d3ad,stroke:#8a6d3b,color:#3a2d18
+    classDef llm fill:#c9a253,stroke:#6b5126,color:#2a2008
+    classDef accent fill:#d9b978,stroke:#6b5126,color:#2a2008
+    classDef store fill:#33414f,stroke:#1a232c,color:#eef2ff
+    classDef web fill:#7a5230,stroke:#3a2614,color:#ffffff
 ```
 
 - **`src/loregraph/pipeline/`** — the passes, one module each, wired by `orchestrator.py`.
