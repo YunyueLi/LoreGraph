@@ -50,8 +50,11 @@ def _humanize(predicate: str | None, relation: str) -> str:
     return relation.lower()
 
 
-def _phyllotaxis(ranked: list[str], cx: float = 500, cy: float = 400, rmax: float = 360) -> dict:
-    """Sunflower layout: most-connected node near centre, even angular spread."""
+def _phyllotaxis(ranked: list[str], cx: float = 500, cy: float = 400, rmax: float = 380) -> dict:
+    """Sunflower layout: nodes evenly spread by a golden-angle spiral. The hub
+    sits near centre but everything is well separated (no overlap), which the
+    sim's charge force then relaxes. Edge clutter is handled by hover-only
+    labels, not by the node positions."""
     pos: dict[str, dict] = {}
     n = max(1, len(ranked))
     for i, eid in enumerate(ranked):
