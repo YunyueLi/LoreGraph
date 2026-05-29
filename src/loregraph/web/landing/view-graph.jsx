@@ -307,9 +307,12 @@ function ViewGraph({ ctx }) {
   };
 
   const bookId = (activeBook && activeBook.id) || "pap";
-  const SOCIAL_REGIONS = SOCIAL_REGIONS_BY_BOOK[bookId] || SOCIAL_REGIONS_BY_BOOK.pap;
-  const SOCIAL_POS = SOCIAL_POS_BY_BOOK[bookId] || SOCIAL_POS_BY_BOOK.pap;
-  const THEMES_POS = THEMES_POS_BY_BOOK[bookId] || THEMES_POS_BY_BOOK.pap;
+  // Curated demo books use their hand-authored coordinates; real exported books
+  // (data-exports.js) carry generated positions on the book record; anything else
+  // falls back to empty (no nodes) rather than borrowing P&P's wrong layout.
+  const SOCIAL_REGIONS = SOCIAL_REGIONS_BY_BOOK[bookId] || (activeBook && activeBook.socialRegions) || [];
+  const SOCIAL_POS = SOCIAL_POS_BY_BOOK[bookId] || (activeBook && activeBook.socialPos) || {};
+  const THEMES_POS = THEMES_POS_BY_BOOK[bookId] || (activeBook && activeBook.themesPos) || {};
 
   // CHRONICLE layout removed — timeline now lives in its own view.
 
@@ -456,6 +459,8 @@ function ViewGraph({ ctx }) {
               setActiveChapter={setActiveChapter}
               locale={locale}
               tt={tt}
+              book={activeBook}
+              chapters={[...new Set(entities.flatMap(e => e.chapters || []))].sort((a, b) => a - b)}
             />
           )}
         </div>
@@ -1685,13 +1690,52 @@ const PP_STRUCTURE = {
   ],
 };
 
-function getStructure(locale) {
+// Generic 3-part volume split for any book that has no hand-authored structure.
+function generateStructure(locale, chapters) {
+  const parts = {
+    en: ["Part One", "Part Two", "Part Three"],
+    "zh-CN": ["第一部分", "第二部分", "第三部分"],
+    "zh-TW": ["第一部分", "第二部分", "第三部分"],
+    ja: ["第一部", "第二部", "第三部"],
+    ko: ["1부", "2부", "3부"],
+    fr: ["Partie I", "Partie II", "Partie III"],
+    es: ["Parte I", "Parte II", "Parte III"],
+    de: ["Teil I", "Teil II", "Teil III"],
+  };
+  const labels = parts[locale] || parts.en;
+  const romans = ["I", "II", "III"];
+  const chs = (chapters || []).filter((n) => Number.isFinite(n));
+  if (!chs.length) return [];
+  const size = Math.ceil(chs.length / 3);
+  const vols = [];
+  for (let i = 0; i < 3; i++) {
+    const slice = chs.slice(i * size, (i + 1) * size);
+    if (!slice.length) continue;
+    vols.push({
+      vol: romans[i],
+      start: slice[0],
+      end: slice[slice.length - 1],
+      subtitle: labels[i],
+      theme: "",
+      chapters: slice.map((n) => ({ n, t: "" })),
+    });
+  }
+  return vols;
+}
+
+function getStructure(locale, book, chapters) {
+  // Curated demo book keeps its rich structure; everything else is generated
+  // from its real chapter list (so no book ever borrows P&P's volume labels).
+  if (book && book.id !== "pap" && chapters && chapters.length) {
+    return generateStructure(locale, chapters);
+  }
   return PP_STRUCTURE[locale] || PP_STRUCTURE.en;
 }
 
-function VolumeNavigator({ activeChapter, setActiveChapter, locale, tt }) {
+function VolumeNavigator({ activeChapter, setActiveChapter, locale, tt, book, chapters }) {
   const { useState } = React;
-  const structure = getStructure(locale);
+  const structure = getStructure(locale, book, chapters);
+  const TOTAL = structure.length ? structure[structure.length - 1].end : 61;
   const [expandedVol, setExpandedVol] = useState(null);
 
   const L = locale;
@@ -1712,7 +1756,7 @@ function VolumeNavigator({ activeChapter, setActiveChapter, locale, tt }) {
       {structure.map((vol) => {
         const isExpanded = expandedVol === vol.vol;
         const isInRange = activeChapter && activeChapter >= vol.start && activeChapter <= vol.end;
-        const fillPct = Math.round(((vol.end - vol.start + 1) / 61) * 100);
+        const fillPct = Math.round(((vol.end - vol.start + 1) / TOTAL) * 100);
         return (
           <div key={vol.vol} style={{marginBottom:8}}>
             <button className={"gv-vol-header " + (isInRange ? "active" : "")}
@@ -1732,7 +1776,7 @@ function VolumeNavigator({ activeChapter, setActiveChapter, locale, tt }) {
               </div>
               <span className="gv-vol-chevron">{isExpanded ? "▴" : "▾"}</span>
             </button>
-            {isExpanded && (
+            {isExpanded && vol.theme && (
               <p className="gv-vol-theme">{vol.theme}</p>
             )}
             {isExpanded && (

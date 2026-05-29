@@ -24,6 +24,7 @@ const DEST = path.join(__dirname, "frontend", "dist");
 // Load order — must match the <script> order in landing/index.html.
 const ORDER = [
   "data.js",
+  "data-exports.js",
   "i18n.js",
   "avatars.jsx",
   "covers.jsx",
