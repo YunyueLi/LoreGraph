@@ -13,8 +13,9 @@ from __future__ import annotations
 
 import json
 import math
+import random
 import re
-from collections import Counter
+from collections import Counter, defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -70,6 +71,121 @@ def _layout(entities: list[dict], degree: Counter, allowed: set[str], cap: int) 
         key=lambda e: -degree[e["canonical_id"]],
     )[:cap]
     return _phyllotaxis([e["canonical_id"] for e in ranked])
+
+
+def _communities(node_ids: list[str], edge_pairs: list[tuple[str, str]], max_groups: int = 6) -> list[list[str]]:
+    """Label-propagation community detection. A protagonist hub connects to
+    everyone and would swallow all communities, so hub-incident edges are
+    EXCLUDED while detecting — the real sub-groups (court, tea-party, …) emerge
+    among the rest; hubs and stragglers are then assigned to the group they tie
+    to most."""
+    deg: Counter = Counter()
+    adj_full: dict[str, set] = defaultdict(set)
+    for a, b in edge_pairs:
+        if a != b:
+            adj_full[a].add(b)
+            adj_full[b].add(a)
+            deg[a] += 1
+            deg[b] += 1
+    nset = set(node_ids)
+    n = len(node_ids)
+    hub_cut = 0.5 * (n - 1) if n > 1 else 1e9
+    hubs = {x for x in node_ids if deg[x] >= hub_cut}
+    adj: dict[str, set] = {x: set() for x in node_ids}
+    for a, b in edge_pairs:
+        if a in nset and b in nset and a != b and a not in hubs and b not in hubs:
+            adj[a].add(b)
+            adj[b].add(a)
+
+    rng = random.Random(7)
+    label = {x: i for i, x in enumerate(node_ids)}
+    lp_nodes = [x for x in node_ids if x not in hubs]
+    for _ in range(40):
+        rng.shuffle(lp_nodes)
+        changed = False
+        for x in lp_nodes:
+            if not adj[x]:
+                continue
+            cnt = Counter(label[m] for m in adj[x])
+            best = max(cnt, key=lambda lab: (cnt[lab], -lab))
+            if label[x] != best:
+                label[x] = best
+                changed = True
+        if not changed:
+            break
+
+    groups: dict[int, list[str]] = defaultdict(list)
+    for x in lp_nodes:
+        groups[label[x]].append(x)
+    big = sorted((g for g in groups.values() if len(g) >= 2), key=len, reverse=True)
+    leftovers = [x for g in groups.values() if len(g) < 2 for x in g]
+    if len(big) > max_groups:
+        leftovers += [x for g in big[max_groups:] for x in g]
+        big = big[:max_groups]
+
+    def nearest(x: str) -> int | None:
+        best_i, best_c = None, 0
+        for i, g in enumerate(big):
+            c = sum(1 for m in g if m in adj_full[x])
+            if c > best_c:
+                best_c, best_i = c, i
+        return best_i
+
+    for x in leftovers + sorted(hubs, key=lambda h: -deg[h]):
+        i = nearest(x)
+        if i is None:
+            if big:
+                big[0].append(x)
+            else:
+                big.append([x])
+        else:
+            big[i].append(x)
+    return big
+
+
+def _social_clustered(
+    entities: list[dict], edges: list[dict], degree: Counter, cap: int, cx: float = 500, cy: float = 400
+) -> tuple[dict, list]:
+    """Cluster the social graph into communities laid out as separated, labelled
+    regions (soft ellipses) — instead of one node radiating to everything."""
+    ranked = sorted(
+        (e for e in entities if e["type"].lower() in SOCIAL_TYPES and degree[e["canonical_id"]] > 0),
+        key=lambda e: -degree[e["canonical_id"]],
+    )[:cap]
+    ids = [e["canonical_id"] for e in ranked]
+    name_by_id = {e["canonical_id"]: e["canonical_name"] for e in ranked}
+    idset = set(ids)
+    pairs = [(ed["src"], ed["dst"]) for ed in edges if ed["src"] in idset and ed["dst"] in idset]
+    groups = [g for g in _communities(ids, pairs) if g]
+    if len(groups) < 2:
+        return _phyllotaxis(ids), []
+
+    pos: dict[str, dict] = {}
+    regions: list[dict] = []
+    g = len(groups)
+    rx_ring, ry_ring = 380, 300
+    for gi, members in enumerate(groups):
+        members = sorted(members, key=lambda x: -degree[x])
+        ang = 2 * math.pi * gi / g - math.pi / 2
+        rcx = cx + (rx_ring * math.cos(ang) if g > 1 else 0)
+        rcy = cy + (ry_ring * math.sin(ang) if g > 1 else 0)
+        m = len(members)
+        spread = 44 + 14 * math.sqrt(m)
+        for i, mid in enumerate(members):
+            a = i * 2.39996323
+            r = spread * math.sqrt((i + 0.5) / m) if m > 1 else 0
+            pos[mid] = {"x": round(rcx + r * math.cos(a), 1), "y": round(rcy + r * math.sin(a), 1)}
+        regions.append({
+            "id": f"grp{gi}",
+            "title": name_by_id.get(members[0], f"Group {gi + 1}"),
+            "entity": members[0],
+            "cx": round(rcx, 1),
+            "cy": round(rcy, 1),
+            "rx": round(spread + 42, 1),
+            "ry": round(spread + 36, 1),
+            "members": members,
+        })
+    return pos, regions
 
 
 # Four narrative acts for the generic timeline (matches the view's phase shape).
@@ -234,6 +350,7 @@ def convert(payload: dict) -> dict:
     tokens = sum(c["tokens"] for c in chunks)
     all_chapters = sorted({c for e in raw_entities for c in (e.get("chapters") or [])})
     tl = _timeline(raw_entities, edges, degree, all_chapters)
+    social_pos, social_regions = _social_clustered(raw_entities, raw_edges, degree, SOCIAL_MAX)
     book = {
         "id": bid,
         "title": meta["title"],
@@ -253,9 +370,9 @@ def convert(payload: dict) -> dict:
         "cost": 0,
         "active": False,
         "fullText": meta.get("full_text_available", False),
-        "socialPos": _layout(raw_entities, degree, SOCIAL_TYPES, SOCIAL_MAX),
+        "socialPos": social_pos,
         "themesPos": _layout(raw_entities, degree, THEMES_TYPES, THEMES_MAX),
-        "socialRegions": [],
+        "socialRegions": social_regions,
         "timelinePhases": tl["phases"],
         "timelineEvents": tl["events"],
     }
