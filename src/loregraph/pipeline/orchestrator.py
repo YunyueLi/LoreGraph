@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections import Counter
 from datetime import UTC, datetime
 from typing import Any
 
@@ -39,6 +40,12 @@ MAX_PASS_NUM_V0_1 = 8
 # ~10-15 concurrent; the client's retry+jitter absorbs the occasional 429.
 # This is what turns a ~20-min sequential entity pass into ~2 min.
 _LLM_CONCURRENCY = 10
+
+# Cap how many entities a single chunk sends to Pass-5/6. Dense chunks (西游记:
+# 50-60 entities) otherwise make the prompt huge and the edge/fact search
+# combinatorial — 2.7h / $116 for 60% of one pass, plus 403s under sustained
+# load. The most-mentioned entities carry essentially all the real relations.
+_MAX_CHUNK_ENTITIES = 20
 
 
 def _is_fatal(exc: BaseException) -> bool:
@@ -257,6 +264,19 @@ class Orchestrator:
             session=self.ctx.session, entities=entities, mentions=mentions
         )
 
+    async def _chunk_entity_pairs(self, chunks: list) -> list:
+        """Per chunk, its entities — capped to the most-mentioned (book-wide) so
+        dense chunks don't explode Pass-5/6 prompt size, cost and 403 risk."""
+        mentions = await repo.list_mentions(self.ctx.session, self.ctx.book_id)
+        importance = Counter(m.entity_id for m in mentions if m.entity_id is not None)
+        pairs = []
+        for chunk in chunks:
+            ents = await repo.list_entities_in_chunk(self.ctx.session, chunk.id)
+            if len(ents) > _MAX_CHUNK_ENTITIES:
+                ents = sorted(ents, key=lambda e: -importance.get(e.id, 0))[:_MAX_CHUNK_ENTITIES]
+            pairs.append((chunk, ents))
+        return pairs
+
     async def _run_pass_5_relation(self) -> dict[str, Any]:
         chunks = await repo.list_chunks(self.ctx.session, self.ctx.book_id)
         if not chunks:
@@ -268,10 +288,7 @@ class Orchestrator:
         extractor = Pass5RelationExtractor(self.ctx.llm)
         # Fetch each chunk's entity list serially (fast, shared session), then
         # parallelize the LLM relation extraction.
-        pairs = [
-            (chunk, await repo.list_entities_in_chunk(self.ctx.session, chunk.id))
-            for chunk in chunks
-        ]
+        pairs = await self._chunk_entity_pairs(chunks)
         per_chunk = await _gather_bounded(
             [extractor.extract_chunk(chunk, ents) for chunk, ents in pairs],
             _LLM_CONCURRENCY,
@@ -315,10 +332,7 @@ class Orchestrator:
         )
 
         extractor = Pass6GlucoseExtractor(self.ctx.llm)
-        pairs = [
-            (chunk, await repo.list_entities_in_chunk(self.ctx.session, chunk.id))
-            for chunk in chunks
-        ]
+        pairs = await self._chunk_entity_pairs(chunks)
         per_chunk = await _gather_bounded(
             [extractor.extract_chunk(chunk, ents) for chunk, ents in pairs],
             _LLM_CONCURRENCY,
