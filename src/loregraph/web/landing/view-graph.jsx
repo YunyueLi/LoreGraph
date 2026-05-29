@@ -666,7 +666,10 @@ function SocialOverlay({ regions, entities, locale, selectedEntityId, setSelecte
       {regions.map((r) => {
         const isActive = r.members.includes(selectedEntityId) || r.entity === selectedEntityId;
         const dim = anyActive && !isActive;
-        const title = (typeof r.title === "string") ? r.title : (r.title[locale] || r.title.en);
+        // Prefer the localized name of the region's representative entity, so
+        // auto-generated faction labels (e.g. "the Mouse") localize too.
+        const title = (r.entity && window.entityLocale(r.entity, locale)?.name)
+          || ((typeof r.title === "string") ? r.title : (r.title[locale] || r.title.en));
         return (
           <g key={r.id}
              style={{cursor: r.entity ? "pointer" : "default", transition: "opacity 0.4s", opacity: dim ? 0.42 : 1}}
