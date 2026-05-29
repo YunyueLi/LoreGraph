@@ -13,6 +13,7 @@ column was reserved at Pass-2 time.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import re
 from dataclasses import dataclass
@@ -25,8 +26,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from loregraph.db import repository as repo
 from loregraph.db import schema as orm
 from loregraph.llm.client import LLMClient, LLMUsage
-from loregraph.models.enums import EntityType
 from loregraph.models.entities import Entity
+from loregraph.models.enums import EntityType
 
 log = logging.getLogger(__name__)
 
@@ -80,6 +81,17 @@ _SNIPPET_PAD = 40
 _MAX_MENTIONS = 30
 _MAX_EDGES = 25
 _MAX_GLUCOSE = 15
+# Per-entity note synthesis is one LLM call each — parallelize it (sequential
+# was an end-of-pipeline bottleneck on entity-rich books).
+_NOTE_CONCURRENCY = 10
+
+_STUB_NOTE = (
+    "[CONTEXT]\n(insufficient evidence in source text)\n\n"
+    "[FACTS]\n- (none recorded)\n\n"
+    "[INFERENCES]\n- (none recorded)\n\n"
+    "[GAPS]\n- (none recorded)\n\n"
+    "[EVIDENCE]\n- (none recorded)\n"
+)
 
 
 @dataclass(slots=True)
@@ -118,30 +130,28 @@ class Pass8NoteSynth:
         self._system_prompt = _jinja_env.get_template(self.SYSTEM_TEMPLATE).render()
         self._user_template = _jinja_env.get_template(self.USER_TEMPLATE)
 
-    async def synthesise(self, session: AsyncSession, entity: Entity) -> str:
+    async def _build_user_prompt(self, session: AsyncSession, entity: Entity) -> str | None:
+        """Gather an entity's evidence (DB reads — must run serially on the
+        shared session) and render the user prompt. None ⇒ no evidence."""
         mentions = await self._collect_mentions(session, entity.id)
         outgoing, incoming = await self._collect_edges(session, entity.id)
         glucose = await self._collect_glucose(session, entity.id)
-
-        # An entity with literally no supporting evidence isn't worth a Note;
-        # write a stub so the front-end has *something* to display.
         if not mentions and not outgoing and not incoming and not glucose:
-            return (
-                "[CONTEXT]\n(insufficient evidence in source text)\n\n"
-                "[FACTS]\n- (none recorded)\n\n"
-                "[INFERENCES]\n- (none recorded)\n\n"
-                "[GAPS]\n- (none recorded)\n\n"
-                "[EVIDENCE]\n- (none recorded)\n"
-            )
-
-        user_prompt = self._user_template.render(
+            return None
+        return self._user_template.render(
             entity=entity,
             mentions=mentions[:_MAX_MENTIONS],
             outgoing=outgoing[:_MAX_EDGES],
             incoming=incoming[:_MAX_EDGES],
             glucose=glucose[:_MAX_GLUCOSE],
         )
-        msg = await self.llm.complete(system=self._system_prompt, user=user_prompt)
+
+    async def synthesise(self, session: AsyncSession, entity: Entity) -> str:
+        prompt = await self._build_user_prompt(session, entity)
+        if prompt is None:
+            # No supporting evidence — a stub so the front-end has something.
+            return _STUB_NOTE
+        msg = await self.llm.complete(system=self._system_prompt, user=prompt)
         self.usage.merge(msg)
         return self.llm.extract_text(msg).strip()
 
@@ -242,18 +252,34 @@ class Pass8NoteSynth:
         # Compute tier ranking once up-front; heuristic-only, no LLM.
         tier_map = await self._compute_tiers(session, entities)
 
+        # Phase A — gather evidence + render prompts SERIALLY (shared session).
+        prompts = [await self._build_user_prompt(session, e) for e in entities]
+
+        # Phase B — synthesise notes CONCURRENTLY (the per-entity LLM call was
+        # the bottleneck). DB writes stay out of here.
+        sem = asyncio.Semaphore(_NOTE_CONCURRENCY)
+
+        async def _one(prompt: str | None) -> str:
+            if prompt is None:
+                return _STUB_NOTE
+            async with sem:
+                msg = await self.llm.complete(system=self._system_prompt, user=prompt)
+            self.usage.merge(msg)
+            return self.llm.extract_text(msg).strip()
+
+        raws = await asyncio.gather(*(_one(p) for p in prompts), return_exceptions=True)
+
+        # Phase C — persist SERIALLY.
         notes_written = 0
         subtypes_assigned = 0
         tiers_assigned = 0
-        for entity in entities:
-            try:
-                raw = await self.synthesise(session, entity)
-            except Exception as exc:  # noqa: BLE001
+        for entity, raw in zip(entities, raws, strict=True):
+            if isinstance(raw, Exception):
                 log.warning(
                     "Pass-8: skipping entity %s (%s) — %s",
                     entity.canonical_id,
                     entity.canonical_name,
-                    exc,
+                    raw,
                 )
                 continue
             subtype, note_md = _parse_meta_and_strip(raw, entity.type)
