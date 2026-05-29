@@ -20,7 +20,7 @@ from pydantic import BaseModel
 
 from loregraph.llm.client import LLMClient, LLMUsage
 from loregraph.llm.gleaning import GleaningConfig, glean
-from loregraph.llm.parser import parse_into
+from loregraph.llm.parser import LLMOutputError, parse_into
 from loregraph.models.atoms import Chunk
 from loregraph.models.entities import MentionCreate
 from loregraph.models.enums import EntityType
@@ -69,10 +69,19 @@ class Pass2EntityExtractor:
                 chunk_text=chunk.text,
                 already_extracted=found,
             )
-            msg = await self.llm.complete(system=self._system_prompt, user=user_prompt)
+            # Dense chunks (esp. CJK) can emit many entities; give the JSON room
+            # so it isn't truncated mid-array into invalid JSON.
+            msg = await self.llm.complete(
+                system=self._system_prompt, user=user_prompt, max_tokens=8192
+            )
             self.usage.merge(msg)
             text = self.llm.extract_text(msg)
-            return parse_into(_Pass2Response, text).entities
+            try:
+                return parse_into(_Pass2Response, text).entities
+            except LLMOutputError:
+                # One malformed/truncated chunk must not kill the pass — skip it.
+                log.warning("Pass-2: malformed JSON for chunk %s — skipping", chunk.atom_id)
+                return []
 
         async def initial() -> list[_ExtractedEntity]:
             return await _call_with_context([])

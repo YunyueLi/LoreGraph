@@ -23,13 +23,14 @@ ComEM batched LLM matching, sClust black-hole guard):
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import logging
 import random
 from collections import Counter, defaultdict
 from collections.abc import Iterator, Sequence
 from pathlib import Path
-from typing import TypeVar
+from typing import Any, TypeVar
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pydantic import BaseModel, Field
@@ -59,6 +60,7 @@ _DEFAULT_CONFIDENCE_FLOOR = 0.6
 _DEFAULT_KNN_K = 8
 _DEFAULT_BATCH_SIZE = 10  # ComEM: accuracy degrades past ~12 candidates/call
 _DEFAULT_SANITY_MIN_CLUSTER = 3
+_DEFAULT_CONCURRENCY = 10  # parallel judge/sanity LLM calls (was the bottleneck)
 
 _T = TypeVar("_T")
 
@@ -111,6 +113,7 @@ class Pass3Clusterer:
         knn_k: int = _DEFAULT_KNN_K,
         batch_size: int = _DEFAULT_BATCH_SIZE,
         sanity_min_cluster: int = _DEFAULT_SANITY_MIN_CLUSTER,
+        concurrency: int = _DEFAULT_CONCURRENCY,
     ) -> None:
         self.llm = llm
         self.confidence_floor = confidence_floor
@@ -118,11 +121,26 @@ class Pass3Clusterer:
         self.knn_k = knn_k
         self.batch_size = batch_size
         self.sanity_min_cluster = sanity_min_cluster
+        self.concurrency = concurrency
         self.usage = LLMUsage()
         self._batch_system = _jinja_env.get_template(self.BATCH_SYSTEM_TEMPLATE).render()
         self._batch_user = _jinja_env.get_template(self.BATCH_USER_TEMPLATE)
         self._sanity_system = _jinja_env.get_template(self.SANITY_SYSTEM_TEMPLATE).render()
         self._sanity_user = _jinja_env.get_template(self.SANITY_USER_TEMPLATE)
+
+    async def _bounded_gather(self, coros: list[Any]) -> list[Any]:
+        """Run independent LLM coroutines with bounded concurrency. A failed
+        task becomes None (caller coalesces) so one bad call never kills the pass."""
+        if not coros:
+            return []
+        sem = asyncio.Semaphore(self.concurrency)
+
+        async def _run(c: Any) -> Any:
+            async with sem:
+                return await c
+
+        res = await asyncio.gather(*(_run(c) for c in coros), return_exceptions=True)
+        return [None if isinstance(r, Exception) else r for r in res]
 
     async def cluster_book(self, book_id: int, mentions: list[Mention]) -> list[EntityCreate]:
         """Return one EntityCreate per detected cluster, all 4 types interleaved."""
@@ -216,38 +234,49 @@ class Pass3Clusterer:
             adj[a].add(b)
             adj[b].add(a)
 
-        # ---- Batched anchor judging (each undirected pair judged once) ----
+        # ---- Batched anchor judging — run CONCURRENTLY (each undirected pair
+        # judged once, from its lexicographically-smaller endpoint). Sequential
+        # judging was the Pass-3 bottleneck (~55 min on a 50-chunk book). ----
         uf = UnionFind(unique_keys)
-        calls = merges = 0
+        jobs: list[tuple[str, Any]] = []
         for anchor in unique_keys:
             partners = sorted(p for p in adj[anchor] if p > anchor)
             for batch in _chunks(partners, self.batch_size):
-                confirmed = await self._judge_anchor_batch(
-                    entity_type, anchor, list(batch), display_for, contexts
+                jobs.append(
+                    (
+                        anchor,
+                        self._judge_anchor_batch(
+                            entity_type, anchor, list(batch), display_for, contexts
+                        ),
+                    )
                 )
-                calls += 1
-                for key in confirmed:
-                    uf.union(anchor, key)
-                    merges += 1
+        results = await self._bounded_gather([c for _, c in jobs])
+        merges = 0
+        for (anchor, _), confirmed in zip(jobs, results, strict=True):
+            for key in confirmed or []:
+                uf.union(anchor, key)
+                merges += 1
         log.info(
-            "Pass-3: %s: %d candidate pairs → %d batched calls, %d merges",
+            "Pass-3: %s: %d candidate pairs → %d judge calls, %d merges",
             entity_type.value,
             len(candidate_pairs),
-            calls,
+            len(jobs),
             merges,
         )
 
-        # ---- Connected components + transitivity (black-hole) guard ----
-        final: list[set[str]] = []
-        for cluster in uf.components():
-            if len(cluster) >= self.sanity_min_cluster:
-                outliers = await self._cluster_outliers(entity_type, cluster, display_for, contexts)
-                keep = cluster - outliers
-                if keep:
-                    final.append(keep)
-                final.extend({o} for o in outliers)
-            else:
-                final.append(cluster)
+        # ---- Connected components + transitivity (black-hole) guard (parallel) ----
+        components = uf.components()
+        big = [c for c in components if len(c) >= self.sanity_min_cluster]
+        final: list[set[str]] = [c for c in components if len(c) < self.sanity_min_cluster]
+        sanity = await self._bounded_gather(
+            [self._cluster_outliers(entity_type, c, display_for, contexts) for c in big]
+        )
+        for cluster, outliers in zip(big, sanity, strict=True):
+            outliers = outliers or set()
+            keep = cluster - outliers
+            if keep:
+                final.append(keep)
+            final.extend({o} for o in outliers)
 
         return [self._build_entity(book_id, entity_type, c, display_for, freq) for c in final if c]
 
