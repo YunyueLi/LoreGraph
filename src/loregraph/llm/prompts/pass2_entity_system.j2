@@ -36,7 +36,7 @@ You must classify each entity as exactly one of:
 # Output requirements
 
 For each entity, output:
-- `surface_form`: the exact phrase as it appears (lower-cased "the doctor" is fine; "John" preferred over "he").
+- `surface_form`: the exact phrase as it appears (lower-cased "the doctor" is fine; "John" preferred over "he"). For languages written **without spaces** (Chinese, Japanese), give the entity's **name only** — do NOT append trailing speech / action verbs (道, 曰, 雲, 說, 問, 笑, 大喜, 驚, etc.) or particles. Use 三藏 not 三藏道, 八戒 not 八戒大喜, 行者 not 行者驚.
 - `type`: one of `Agent`, `Object`, `Event`, `Concept`.
 - `evidence_span`: a **literal substring of the chunk text** — copy-paste character-for-character; at least one full clause when possible. Never paraphrase. Never normalise punctuation. Never collapse whitespace. The substring must appear verbatim in the chunk; otherwise we discard the entity.
 

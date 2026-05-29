@@ -22,7 +22,7 @@ from loregraph.pipeline.orchestrator import make_llm_client_from_env
 from loregraph.pipeline.pass2_entity import Pass2EntityExtractor
 
 
-async def run(book_id: int, limit: int | None, concurrency: int) -> None:
+async def run(book_id: int, limit: int | None, concurrency: int, offset: int = 0) -> None:
     init_engine()
     async with session_scope() as session:
         rows = (
@@ -40,6 +40,8 @@ async def run(book_id: int, limit: int | None, concurrency: int) -> None:
             SimpleNamespace(id=r.id, book_id=r.book_id, atom_id=r.atom_id, text=r.text)
             for r in rows
         ]
+    if offset:
+        chunks = chunks[offset:]
     if limit:
         chunks = chunks[:limit]
 
@@ -55,7 +57,7 @@ async def run(book_id: int, limit: int | None, concurrency: int) -> None:
 
     by_type: Counter[str] = Counter()
     distinct: set[tuple[str, str]] = set()
-    events: Counter[str] = Counter()
+    surfaces: dict[str, Counter[str]] = {}
     n_fail = 0
     for r in results:
         if isinstance(r, BaseException):
@@ -65,25 +67,26 @@ async def run(book_id: int, limit: int | None, concurrency: int) -> None:
             t = m.type.value if hasattr(m.type, "value") else m.type
             by_type[t] += 1
             distinct.add((t, m.surface_form.strip().lower()))
-            if t == "Event":
-                events[m.surface_form.strip()] += 1
+            surfaces.setdefault(t, Counter())[m.surface_form.strip()] += 1
 
     dt: Counter[str] = Counter(t for t, _ in distinct)
     print(f"chunks={len(chunks)} failures={n_fail}")
     print(f"mentions by type:   {dict(by_type)}  (total={sum(by_type.values())})")
     print(f"distinct by type:   {dict(dt)}  (TOTAL distinct={len(distinct)})")
-    print("\ntop 25 Event surfaces:")
-    for s, n in events.most_common(25):
-        print(f"  {n:3d}  {s[:72]}")
+    for show in ("Agent", "Event"):
+        print(f"\ntop 25 {show} surfaces:")
+        for s, n in surfaces.get(show, Counter()).most_common(25):
+            print(f"  {n:3d}  {s[:72]}")
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--book-id", type=int, default=2)
     ap.add_argument("--limit", type=int, default=None)
+    ap.add_argument("--offset", type=int, default=0)
     ap.add_argument("--concurrency", type=int, default=8)
     a = ap.parse_args()
-    asyncio.run(run(a.book_id, a.limit, a.concurrency))
+    asyncio.run(run(a.book_id, a.limit, a.concurrency, a.offset))
     return 0
 
 
