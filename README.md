@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/hero-banner.svg" alt="LoreGraph hero — a row of book pages with floating graph nodes connected by thin lines to gold-highlighted spans on each page; italic tagline reads 'every node cites the page it came from.'" width="100%" />
+<img src="assets/hero-banner.svg" alt="LoreGraph — book pages with floating graph nodes linked by thin lines to gold-highlighted spans on each page; tagline: 'every node cites the page it came from.'" width="100%" />
 
 <br>
 
@@ -8,275 +8,197 @@
 
 ***knowledge graphs that quote the page they came from.***
 
-A 7-pass LLM pipeline that turns a novel, screenplay, or script
-into a queryable knowledge graph
-where every claim is anchored to a literal span of the source text.
+LoreGraph turns a novel, play, screenplay, or libretto into a **queryable knowledge graph** —
+characters, objects, events and concepts, the typed relations between them, and the facts each
+implies — where **every single claim is anchored to a literal span of the source text.**
+
+No hallucinated edges. No "trust me." Click any relationship and you land on the exact sentence it came from.
 
 <br>
 
-[![Live demo](https://img.shields.io/badge/LIVE_DEMO-yunyueli.github.io%2Floregraph-b8954a?style=for-the-badge&labelColor=1a1a1a&logo=github&logoColor=b8954a)](https://github.com/YunyueLi/LoreGraph)
-[![Stars](https://img.shields.io/github/stars/YunyueLi/LoreGraph?style=for-the-badge&label=STARS&labelColor=1a1a1a&color=b8954a&logo=github&logoColor=b8954a)](https://github.com/YunyueLi/LoreGraph/stargazers)
 [![License](https://img.shields.io/badge/LICENSE-Apache_2.0-b8954a?style=for-the-badge&labelColor=1a1a1a)](LICENSE)
-[![Version](https://img.shields.io/badge/VERSION-0.1.0-b8954a?style=for-the-badge&labelColor=1a1a1a)](#-roadmap)
-
-[![Passes](https://img.shields.io/badge/PASSES-7-b8954a?style=for-the-badge&labelColor=1a1a1a)](#-the-7-pass-pipeline)
-[![Status](https://img.shields.io/badge/STATUS-ALPHA-b8954a?style=for-the-badge&labelColor=1a1a1a)](#-roadmap)
 [![Python](https://img.shields.io/badge/PYTHON-3.11+-b8954a?style=for-the-badge&labelColor=1a1a1a)](pyproject.toml)
-
-<br>
+[![Pipeline](https://img.shields.io/badge/PIPELINE-8_PASS-b8954a?style=for-the-badge&labelColor=1a1a1a)](#the-pipeline)
+[![Model](https://img.shields.io/badge/MODEL-Claude_Opus_4.8-b8954a?style=for-the-badge&labelColor=1a1a1a)](#configuration)
+[![Status](https://img.shields.io/badge/STATUS-ALPHA-b8954a?style=for-the-badge&labelColor=1a1a1a)](#status--roadmap)
 
 **English**  ·  [简体中文](README.zh-CN.md)
 
-[**Quick start**](#-quick-start) · [**What you get**](#-what-you-get) · [**Pipeline**](#-the-7-pass-pipeline) · [**Deploy**](#-deploy-your-own-demo) · [**Roadmap**](#-roadmap)
-
-<br>
-
-> *"Books are not made to be believed,*
-> *but to be subjected to inquiry."*
->
-> **Umberto Eco** · *The Name of the Rose*
+[Why](#why-loregraph) · [What you get](#what-you-get) · [Pipeline](#the-pipeline) · [Quick start](#quick-start) · [Architecture](#architecture) · [Corpus](#the-corpus) · [Roadmap](#status--roadmap)
 
 </div>
 
 ---
 
-## ✨ Why this exists
+## Why LoreGraph
 
-Mainstream **GraphRAG** pipelines work on the open web — when sources contradict, you add more sources. **Fiction is different.**
+Most "knowledge graph from text" tools extract triples and ask you to trust them. For **fiction** that's
+fatal: a graph that quietly invents a relationship is worse than no graph. LoreGraph is built on one
+non-negotiable rule:
 
-When you ask *what does this character believe?* the answer must come **from the text alone**. Every inference must **cite a span**. The graph must reason about **multi-character viewpoints**, **foreshadowing**, and **counterfactual continuations**.
+> **Every extracted claim carries an `evidence_span` — a literal substring of the source — and a
+> chain-of-verification pass rejects any claim whose span isn't a ≥95% literal match.**
 
-**LoreGraph** turns a single novel, screenplay, or script into a queryable knowledge graph with **every claim grounded in a literal substring of the source text** — exposed through a CLI and an interactive web UI.
+It is also **closed-world**: the model may only use the text in front of it. It is told, explicitly, to
+forget what it knows about the real "Elizabeth Bennet" or "孫悟空" and report only what *this* book says.
 
-It synthesizes the strongest ideas from four lines of work:
-
-|  |  |
-|---|---|
-| **Narrative NLP** | BookNLP · LitBank · GLUCOSE · Literary Event Detection |
-| **Industrial KG-RAG** | Microsoft GraphRAG · HippoRAG 2 · LightRAG · Zep |
-| **LLM extraction** | GPT-NER · Chain-of-Verification · BOOKCOREF |
-| **Agent simulation** *(v0.4)* | Generative Agents · SymbolicToM · MCTS narrative |
-
-— behind a strict **≥ 95% evidence-span literal match** policy as the hallucination gate.
+And it is **multilingual end-to-end**: the 85-work reference corpus spans English, 中文, Русский, Deutsch,
+Français, Italiano, 日本語, Ελληνικά, and more. Source text stays in its original script; entity
+resolution runs on a multilingual embedding model so that **"林黛玉" / "颦儿"** or **"the Dark Lord" /
+"Voldemort"** merge into one node even with zero string overlap.
 
 ---
 
-## 🚀 Quick start
+## What you get
+
+For every book, a web reading-room with five linked views — all driven by the same evidence-anchored graph:
+
+| View | What it shows |
+|---|---|
+| 📖 **Reader** | The original text, with every entity mention highlighted and clickable. |
+| 🕸 **Graph** | A force-directed character/object/event/concept network. Hover any edge → the source line. |
+| ⏳ **Timeline** | The story's events in reading order (the graph carries story-time on every fact). |
+| 📇 **Index** | Searchable entity catalogue with per-entity profile cards. |
+| 💬 **Ask** | Question-answering grounded in the graph — every answer cites its evidence. |
+
+Each entity gets a structured **Hybrid Note**: `[CONTEXT] [FACTS] [INFERENCES] [BEHAVIOR_PATTERN] [GAPS]
+[EVIDENCE]` — facts kept strictly separate from inferences, every inference tagged with a confidence level.
+
+---
+
+## The pipeline
+
+A book flows through eight passes. Chunking and the GLUCOSE step are deterministic; the rest are LLM calls
+that all route through one hardened client.
+
+| # | Pass | What it does |
+|---|---|---|
+| 1 | **Chunk** | Deterministic, chapter-aware splitter (English *and* CJK "第N回" headers). Stamps each chunk with a global story-time position. |
+| 2 | **Entity** | Extracts typed mentions (Agent / Object / Event / Concept) with a literal evidence span. Uses *gleaning* (a "what did you miss?" retry) for recall. |
+| 3 | **Resolve** | Production entity resolution: lexical **+ embedding-kNN blocking** → batched LLM matching → connected components → a black-hole-prevention sanity pass. Merges aliases across scripts. |
+| 4 | **Coref** | Links every mention to its canonical entity. |
+| 5 | **Relations** | Five typed relations (STRUCTURAL / INTERACTS / ASSERTS / INFLUENCES / PREDICTS) + a predicate, weight and sentiment, each with evidence. |
+| 6 | **GLUCOSE** | Implicit commonsense facts (cause / emotion / location / possession / attribute) about each entity. |
+| 7 | **Verify** | Chain-of-verification: drops any claim whose evidence span isn't a literal match. Hard ≥95% gate. |
+| 8 | **Note** | Synthesises the per-entity Hybrid Note, assigns a subtype and an importance tier. |
+
+**Production engineering** (researched against Splink / ComEM / GraphRAG and the Anthropic + OpenRouter docs):
+
+- **Prompt caching** on the stable system prompt — measured **99.9% cache hit** on repeat calls (≈10× cheaper input).
+- **Bounded-parallel** per-chunk LLM calls (≈10× faster than sequential) with retry + backoff + jitter.
+- **Per-pass commits + idempotent re-runs** — a failed pass resumes with `--from N`; nothing double-writes.
+- **Provider-agnostic** client: Claude Opus 4.8 via OpenRouter by default, swappable to 15+ backends.
+
+---
+
+## Quick start
 
 ```bash
-git clone https://github.com/YunyueLi/LoreGraph.git
-cd LoreGraph
-cp .env.example .env                                  # pick a provider + key (see below)
-docker compose up -d                                  # postgres + pgvector
-pip install -e ".[dev]" && alembic upgrade head
+# 1. Install (uv)
+uv sync
 
-loregraph ingest examples/yellow_wallpaper/input.txt --title "Yellow Wallpaper"
-loregraph extract --book-id 1
-loregraph view --book-id 1                            # opens http://localhost:8000
+# 2. Postgres 16+ with pgvector
+createdb loregraph && psql loregraph -c "CREATE EXTENSION IF NOT EXISTS vector;"
+uv run alembic upgrade head
+
+# 3. Configure (.env)
+cp .env.example .env        # set LOREGRAPH_LLM_PROVIDER + your API key
+                            # default: openrouter + anthropic/claude-opus-4.8
+
+# 4. Ingest a public-domain text and extract its graph
+uv run loregraph ingest path/to/book.txt --title "Pride and Prejudice" --author "Jane Austen" --language en
+uv run loregraph extract --book-id 1        # runs passes 1–8
+uv run loregraph status --book-id 1         # pass-by-pass progress, tokens, cost
+
+# 5. See it
+uv run loregraph view                        # FastAPI + the web reading-room
 ```
 
-> A short novel (~6 000 words) runs all 7 passes for roughly **$0.20 – 1.00** on Anthropic with prompt-cache discounts. Costs on DeepSeek / Qwen / Gemini Flash are typically **3–10× cheaper**; local Ollama / vLLM is **free** at the cost of slower / smaller models.
+> **Cost & speed.** Every call's tokens and cost land in `pass_runs.stats`. A mid-size novel runs in minutes,
+> not hours, thanks to concurrency + caching. The per-book budget ceiling is configurable.
 
 ---
 
-## 🔌 Bring your own LLM
+## Architecture
 
-LoreGraph runs on **any LLM that speaks Anthropic native or OpenAI-compatible chat-completions**. Switch provider by setting one env var:
+```
+                 ┌──────────── EXTRACT (evidence-anchored) ────────────┐
+  book.txt  ──►  │  1 chunk → 2 entity → 3 resolve → 4 coref →          │
+                 │  5 relations → 6 GLUCOSE → 7 verify → 8 note         │
+                 └──────────────────────────┬──────────────────────────┘
+                                             ▼
+                            Postgres + pgvector  (entities, edges,
+                            glucose facts, notes, chunks, embeddings)
+                                             │
+                                   scripts/export_book.py
+                                             ▼
+                          data/exports/<book>.json  (derived metadata;
+                          full reading text only for public-domain works)
+                                             ▼
+                            Web reading-room (Reader · Graph · Timeline
+                                          · Index · Ask · multilingual)
+```
+
+- **`src/loregraph/pipeline/`** — the passes, one module each, wired by `orchestrator.py`.
+- **`src/loregraph/llm/`** — the single LLM client (caching, retries, multi-provider) + the local multilingual embedder.
+- **`src/loregraph/db/`** — SQLAlchemy 2.0 schema + async repository. Migrations under `migrations/`.
+- **`src/loregraph/web/`** — FastAPI API + the landing / reading-room front-end.
+- Full design in [`docs/architecture.md`](docs/architecture.md).
+
+---
+
+## The corpus
+
+LoreGraph ships with a reference set of **85 canonical works** — novels, plays, operas and early films
+across 11 languages (Pride and Prejudice · 西游记 · Crime and Punishment · Faust · Les Misérables · …).
+
+**Copyright is respected, strictly.** Source texts are **never committed** — `data/books/` is git-ignored.
+Only *derived* metadata (the graph, short fair-use evidence spans, profile notes) is published, and full
+reading text is embedded only for public-domain works. In-copyright works are processed locally and
+surfaced as graph + analysis only.
+
+---
+
+## Configuration
+
+| Variable | Default | Notes |
+|---|---|---|
+| `LOREGRAPH_LLM_PROVIDER` | `openrouter` | `anthropic`, `openai`, `deepseek`, `ollama`, … (15+) |
+| `LOREGRAPH_LLM_MODEL` | preset per provider | OpenRouter preset = `anthropic/claude-opus-4.8` |
+| `LOREGRAPH_EMBED_MODEL` | `intfloat/multilingual-e5-large` | local, 1024-dim, multilingual |
+| `DATABASE_URL` | local Postgres | must use the async `asyncpg` driver |
+| `LOREGRAPH_COST_CEILING_USD` | `100` | per-book hard stop |
+
+---
+
+## Status & roadmap
+
+**Alpha.** The extraction engine is production-hardened and the reference corpus is being processed.
+
+- [x] 8-pass evidence-anchored extraction pipeline
+- [x] Production entity resolution (embedding blocking + batched matching + transitivity guard)
+- [x] Multilingual (source text + embeddings + UI), prompt caching, concurrency, resumable runs
+- [x] Web reading-room: Reader · Graph · Timeline · Index · Ask
+- [ ] **Narrative-time graph** — watch relationships *evolve* across the story (a slider for "as of chapter N")
+- [ ] **Community / faction layer** — auto-detected families, factions, subplots
+- [ ] **Cross-book meta-graph** — archetypes & influence linking all 85 works
+- [ ] **Grounded character chat** — "talk to" a character; answers cited + spoiler-aware
+- [ ] **Quality scoring** — per-book confidence / coverage metrics beyond the literal-match gate
+
+---
+
+## Development
 
 ```bash
-# Anthropic Claude (default — retains prompt caching)
-LOREGRAPH_LLM_PROVIDER=anthropic
-ANTHROPIC_API_KEY=sk-ant-...
-
-# DeepSeek
-LOREGRAPH_LLM_PROVIDER=deepseek
-DEEPSEEK_API_KEY=sk-...
-
-# Local Ollama, no key
-LOREGRAPH_LLM_PROVIDER=ollama
-LOREGRAPH_LLM_MODEL=llama3.2          # optional override
-
-# Any OpenAI-compatible endpoint
-LOREGRAPH_LLM_PROVIDER=openai_compatible
-LOREGRAPH_LLM_BASE_URL=https://your.endpoint/v1
-LOREGRAPH_LLM_API_KEY=...
-LOREGRAPH_LLM_MODEL=your-model
+uv run ruff format && uv run ruff check     # lint + format
+uv run mypy src                             # types
+uv run pytest -m unit                       # fast unit tests
+uv run pytest -m integration                # Postgres testcontainer + mocked LLM
 ```
 
-Built-in provider presets (each ships with a sensible default model):
+Conventions live in [`CLAUDE.md`](CLAUDE.md); the per-pass spec is in [`docs/7-pass-pipeline.md`](docs/7-pass-pipeline.md).
 
-| Group | Providers |
-|---|---|
-| **Frontier** | `anthropic` · `openai` · `gemini` · `grok` |
-| **China** | `deepseek` · `kimi` (Moonshot) · `zhipu` (GLM) · `qwen` (DashScope) |
-| **Open-weights hosts** | `groq` · `together` · `fireworks` · `mistral` |
-| **Local** | `ollama` · `vllm` |
-| **Custom** | `openai_compatible` |
+## License
 
-API key resolution chain: `LOREGRAPH_LLM_API_KEY` (generic) → provider-canonical env (`OPENAI_API_KEY`, `DEEPSEEK_API_KEY`, `MOONSHOT_API_KEY`, …) → none. Prompt caching stays native on Anthropic; OpenAI auto-cache and DeepSeek context-cache are surfaced automatically when the provider exposes `cached_tokens`.
-
----
-
-## 📖 What you get
-
-After `loregraph extract` finishes, the database holds typed entities, typed relations, and 10-dimensional implicit facts — every one anchored to a literal span:
-
-<div align="center">
-  <img src="assets/demo-graph.svg" alt="A fragment of an extracted knowledge graph showing 4 entity shapes (circle/square/diamond/hexagon for Agent/Object/Event/Concept), typed relations (STRUCTURAL/INTERACTS/SYMBOLIZES/PREDICTS/CAUSES/INFLUENCES), and a gold-accented callout proving every edge cites a literal evidence_span from a specific chunk." width="100%" />
-</div>
-
-Click any node or edge in the web UI and you see its full provenance:
-
-<div align="center">
-  <img src="assets/evidence-panel.svg" alt="LoreGraph web UI mockup: a browser window with the graph view on the left and a detail panel on the right. The panel displays the selected entity's canonical name, type chip, mention count, aliases, outgoing edges with evidence quotes, and GLUCOSE implicit facts. A gold chip at the bottom marks all claims as Pass-7 verified." width="100%" />
-</div>
-
----
-
-## 🔬 The 7-pass pipeline
-
-<div align="center">
-  <img src="assets/7-pass-pipeline.svg" alt="Seven sequential passes: Chunk → Entity → Cluster → Coref → Relation → GLUCOSE → CoVe. Pass-7 is highlighted in gold as the verification gate that requires ≥ 95% evidence-span literal match." width="100%" />
-</div>
-
-| Pass | Job | Key technique |
-|---|---|---|
-| **1** Chunk | Chapter-aware slicing | 600–1200 token chunks, 20% overlap, `atom_id = ch{N}_p{seq}` |
-| **2** Entity | 4 ontological types | LLM + Pydantic schema, **gleaning ≤ 2 rounds** |
-| **3** Cluster | Book-wide canonical IDs | BookNLP-style alias merge: cheap string gating + LLM pairwise judge |
-| **4** Coref | Mention → canonical binding | LingMess / LLM coref; pronoun resolution lands in v0.2 |
-| **5** Relation + Event | 5 typed relations | Realis-trigger event definition (LitBank); strict endpoint set |
-| **6** GLUCOSE | 10-dim implicit info | `cause / emotion / location / possession / attribute` × `before / after` |
-| **7** CoVe | Verification gate | Chain-of-Verification; **≥ 95% literal evidence_span match** to pass |
-
----
-
-## 🧬 What's in the graph
-
-<div align="center">
-  <img src="assets/ontology.svg" alt="LoreGraph ontology overview: four entity-type cards (Agent circle / Object square / Event diamond / Concept hexagon) with examples; five relation-class cards each showing the line style that encodes the type; GLUCOSE 10-dim implicit-fact schema strip at the bottom (5 dimensions × 2 time aspects × inference depth)." width="100%" />
-</div>
-
----
-
-## 🏗️ Architecture
-
-<div align="center">
-  <img src="assets/architecture.svg" alt="Five horizontal layer cards: Web UI (FastAPI + React + Cytoscape), CLI (Typer), Pipeline (7-Pass orchestrator), LLM (Anthropic SDK + prompt cache), Storage (SQLAlchemy 2.0 + Postgres + pgvector). One LLM gateway, one storage backend, evidence-grounded edges throughout." width="100%" />
-</div>
-
-Full design rationale, paper-by-paper mapping, and the WMG → LoreGraph ancestry are in [**`docs/architecture.md`**](docs/architecture.md).
-
----
-
-## 🚢 Deploy your own demo
-
-<div align="center">
-  <img src="assets/deploy-flow.svg" alt="Deployment topology: Cloudflare Pages serves the React SPA, calling a Render web service running FastAPI + LoreGraph, which connects to a Neon serverless Postgres + pgvector. Final step: gh repo edit --homepage pins the live URL on the GitHub About card." width="100%" />
-</div>
-
-Three free-tier services + your Anthropic key get a shareable public demo in **~15 minutes**. Step-by-step walkthrough, including how to seed the demo with public-domain books: [**`docs/deployment.md`**](docs/deployment.md).
-
----
-
-## 🗺️ Roadmap
-
-| Version | Focus | Status |
-|---|---|---|
-| **v0.1** | 7-Pass extraction · CLI · Web UI · deployment | ✅ Shipped |
-| **v0.2** | Leiden community detection · HippoRAG 2 PPR retrieval · LightRAG dual-level keyword index | 🚧 Planned |
-| **v0.3** | Internal reflection · foreshadowing detection · cross-chapter contradiction sweep | 📋 Backlog |
-| **v0.4** | Generative Agents + SymbolicToM belief graphs + MCTS counterfactual continuation | 📋 Backlog |
-
----
-
-## 📜 Academic foundations
-
-LoreGraph stands on four lines of prior work. Full BibTeX in [**`docs/references.bib`**](docs/references.bib).
-
-<details>
-<summary><strong>Narrative NLP</strong> — BookNLP, LitBank, GLUCOSE, Literary Event Detection</summary>
-
-<br>
-
-- Bamman, Lewke, Mansoor. *An Annotated Dataset of Coreference in English Literature*. LREC 2020. (**LitBank**)
-- Sims, Park, Bamman. *Literary Event Detection*. ACL 2019.
-- Mostafazadeh et al. *GLUCOSE: GeneraLized and COntextualized Story Explanations*. EMNLP 2020 (**Best Paper**).
-- Elson, Dames, McKeown. *Extracting Social Networks from Literary Fiction*. ACL 2010.
-- Sims & Bamman. *Measuring Information Propagation in Literary Social Networks*. EMNLP 2020.
-
-</details>
-
-<details>
-<summary><strong>Industrial KG-RAG</strong> — GraphRAG, HippoRAG 2, LightRAG, Zep</summary>
-
-<br>
-
-- Edge et al. *From Local to Global: A GraphRAG Approach*. arXiv:2404.16130, 2024. (**Microsoft GraphRAG**)
-- Gutiérrez et al. *HippoRAG 2: From RAG to Memory*. arXiv:2502.14802, 2025.
-- Guo et al. *LightRAG: Simple and Fast Retrieval-Augmented Generation*. arXiv:2410.05779, 2024.
-- Rasmussen et al. *Zep: A Temporal Knowledge Graph Architecture*. arXiv:2501.13956, 2025.
-
-</details>
-
-<details>
-<summary><strong>LLM extraction & verification</strong> — GPT-NER, CoVe, BOOKCOREF</summary>
-
-<br>
-
-- Wang et al. *GPT-NER: Named Entity Recognition via LLMs*. arXiv:2304.10428, 2023.
-- Dhuliawala et al. *Chain-of-Verification Reduces Hallucination*. arXiv:2309.11495, 2023.
-- Cabot & Navigli. *REBEL: Relation Extraction by End-to-end Language Generation*. Findings of EMNLP 2021.
-- Liu et al. *Lost in the Middle*. arXiv:2307.03172, 2023.
-
-</details>
-
-<details>
-<summary><strong>Agent simulation</strong> — Generative Agents, SymbolicToM, FANToM, MCTS narrative (v0.4 roadmap)</summary>
-
-<br>
-
-- Park et al. *Generative Agents*. UIST 2023.
-- Sclar et al. *SymbolicToM: Minding LMs' (Lack of) Theory of Mind*. arXiv:2306.00924, 2023.
-- Kim et al. *FANToM: Stress-testing Machine Theory of Mind*. EMNLP 2023.
-- Gandhi et al. *BigToM*. arXiv:2306.15448, 2023.
-- *Narrative Studio*: MCTS for story-tree planning. arXiv:2504.02426, 2025.
-
-</details>
-
-If LoreGraph is useful in your work, please cite the underlying papers as well as this project:
-
-```bibtex
-@software{li2026loregraph,
-  author = {Li, Yunyue},
-  title  = {LoreGraph: Knowledge graphs from closed-world fiction},
-  year   = {2026},
-  url    = {https://github.com/YunyueLi/LoreGraph}
-}
-```
-
----
-
-## 🤝 Contributing
-
-Issues and PRs welcome. A few starting points:
-
-- Repo conventions: [`CLAUDE.md`](CLAUDE.md)
-- Design rationale: [`docs/architecture.md`](docs/architecture.md)
-- 7-Pass spec: [`docs/7-pass-pipeline.md`](docs/7-pass-pipeline.md)
-
-> **Important** — every bug report should include a minimal reproducible passage from a **public-domain text** (Project Gutenberg / Library of Congress / equivalent). Never paste copyrighted material into issues or test fixtures.
-
----
-
-## 📄 License
-
-Apache 2.0 — see [`LICENSE`](LICENSE).
-
-<br>
-
-<div align="center">
-
-<sub>Built by <a href="https://github.com/YunyueLi">@YunyueLi</a> · <em>make the graph cite its work.</em></sub>
-
-</div>
+[Apache 2.0](LICENSE). Source texts are not part of this repository; the reference corpus is assembled
+locally from public sources (Project Gutenberg, Wikisource, …) at ingest time.

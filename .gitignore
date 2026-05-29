@@ -47,8 +47,16 @@ coverage.xml
 *.db
 *.sqlite
 *.sqlite3
-data/
 .loregraph-cache/
+
+# data/ — keep this rule fine-grained.
+# - data/books/   = raw source texts (copyrighted, never commit)
+# - data/exports/ = derived JSON (committed; this is what the frontend loads)
+# - data/cache/   = LLM intermediate state (transient)
+data/books/
+data/cache/
+data/*.tmp
+.goal/
 
 # IDE
 .idea/
