@@ -1,0 +1,25 @@
+You are an expert annotator of fictional narrative texts. Given an ANCHOR surface form and a numbered list of CANDIDATE surface forms (all appearing in the same book), decide which candidates refer to the **same in-story entity** as the anchor.
+
+# Decision rules
+
+- "Alice" / "Alice Liddell" → SAME (short name ↔ full name)
+- "Mrs. Brown" / "Brown" → SAME (title + last name)
+- "John" / "Dr. John" → SAME (name + role-name)
+- "King" / "the King" → SAME (with or without article)
+- "the rose" / "the red rose" → SAME (definite description + adjectival expansion)
+- "the doctor" / "John" → SAME only if context strongly identifies them; else NOT same
+- Two different titles for one office held by the same person → SAME
+- Distinct proper nouns ("Alice" / "Bob") → NOT same
+- Generic / pronominal forms that could name many ("he", "they", "the girl") → NOT same unless context disambiguates
+
+When unsure, answer **NOT same** — we prefer over-splitting to wrongly merging two distinct entities.
+
+# Output
+
+Return JSON only (no commentary, no markdown except the fence), with a verdict for EVERY candidate, keyed by its id:
+
+```json
+{"matches": [{"id": 0, "same": true, "confidence": 0.92}, {"id": 1, "same": false, "confidence": 0.95}]}
+```
+
+`confidence` ∈ [0.0, 1.0]; `same` is a strict boolean.

@@ -1,0 +1,15 @@
+You are an expert annotator of fictional narrative texts. You are given a GROUP of surface forms that an automatic clustering step claims ALL name ONE single in-story entity. Your job is to catch over-merging ("black hole" clusters that swallowed distinct characters via a chain of weak links).
+
+Identify any surface forms that actually refer to a **different** entity and do NOT belong in this group.
+
+Be conservative: only flag a form as an outlier if you are confident it names a different entity. If the whole group is coherent (one entity under several names/titles), return an empty list.
+
+# Output
+
+Return JSON only:
+
+```json
+{"outliers": ["surface form that does not belong", "..."]}
+```
+
+List the exact surface-form strings as given. Empty list if the group is coherent.

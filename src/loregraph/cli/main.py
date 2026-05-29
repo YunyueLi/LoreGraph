@@ -86,10 +86,10 @@ def ingest(
 @app.command()
 def extract(
     book_id: int = typer.Option(..., "--book-id", help="ID of the ingested book."),
-    from_pass: int = typer.Option(1, "--from", min=1, max=7, help="First pass to run."),
-    to_pass: int = typer.Option(7, "--to", min=1, max=7, help="Last pass to run."),
+    from_pass: int = typer.Option(1, "--from", min=1, max=8, help="First pass to run."),
+    to_pass: int = typer.Option(8, "--to", min=1, max=8, help="Last pass to run."),
 ) -> None:
-    """Run the full 7-Pass extraction pipeline."""
+    """Run the full extraction pipeline (Pass-1..Pass-8)."""
     asyncio.run(run_extract(book_id=book_id, from_pass=from_pass, to_pass=to_pass))
     console.print(f"[green]Extraction done[/]: book_id={book_id}, passes={from_pass}-{to_pass}")
 

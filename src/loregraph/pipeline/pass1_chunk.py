@@ -14,6 +14,7 @@ Strategy
 
 from __future__ import annotations
 
+import hashlib
 import re
 from dataclasses import dataclass
 from typing import Any
@@ -27,9 +28,13 @@ from loregraph.utils.tokens import count_tokens
 #   - arabic digits
 #   - an ordinal word, with an optional leading "the" article ("the First")
 CHAPTER_HEADER_RE = re.compile(
-    r"^[ \t]*(?:CHAPTER|Chapter)\s+"
-    r"(?:[IVXLCDM]+|\d+|(?:[Tt]he\s+)?[A-Z][a-z]+)"
-    r"\.?(?:[ \t]*[\-:—][^\n]*)?[ \t]*$",
+    r"^[ \t]*(?:"
+    # English: "Chapter 12", "CHAPTER IV", "Chapter the First"
+    r"(?:CHAPTER|Chapter)\s+(?:[IVXLCDM]+|\d+|(?:[Tt]he\s+)?[A-Z][a-z]+)"
+    # CJK: "第一回" / "第十二章" / "第三卷" (西游记 uses 回, 红楼梦 too; + optional title)
+    r"|第\s*[〇零一二三四五六七八九十百千两\d]+\s*[回章卷節节折]"
+    r")"
+    r"\.?(?:[ \t　:：—\-][^\n]*)?[ \t]*$",
     flags=re.MULTILINE,
 )
 
@@ -139,14 +144,22 @@ class Pass1Chunker:
 
     def chunk(self, *, book_id: int, text: str) -> list[ChunkCreate]:
         chapters = _split_into_chapters(text)
-        all_chunks: list[ChunkCreate] = []
+        raws: list[dict[str, Any]] = []
         for span in chapters:
             chapter_text = text[span.start : span.end]
-            for raw in _split_chapter_text(
-                chapter_text=chapter_text,
-                chapter_start=span.start,
-                chapter_num=span.chapter,
-                cfg=self.config,
-            ):
-                all_chunks.append(ChunkCreate(book_id=book_id, **raw))
-        return all_chunks
+            raws.extend(
+                _split_chapter_text(
+                    chapter_text=chapter_text,
+                    chapter_start=span.start,
+                    chapter_num=span.chapter,
+                    cfg=self.config,
+                )
+            )
+        # Assign the global story-time position (chunks come out in
+        # (chapter, seq) reading order) and a content hash for incremental runs.
+        out: list[ChunkCreate] = []
+        for pos, raw in enumerate(raws):
+            raw["story_pos"] = pos
+            raw["content_hash"] = hashlib.sha256(raw["text"].encode("utf-8")).hexdigest()
+            out.append(ChunkCreate(book_id=book_id, **raw))
+        return out

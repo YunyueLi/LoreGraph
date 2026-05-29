@@ -80,10 +80,16 @@ class Chunk(Base):
     atom_id: Mapped[str] = mapped_column(Text, nullable=False)
     chapter: Mapped[int] = mapped_column(Integer, nullable=False)
     seq: Mapped[int] = mapped_column(Integer, nullable=False)
+    # Global reading-order position across the whole book (0,1,2,... in
+    # (chapter, seq) order). This is the story-time coordinate every edge /
+    # fact inherits via its chunk — the basis of the narrative timeline.
+    story_pos: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     text: Mapped[str] = mapped_column(Text, nullable=False)
     token_count: Mapped[int] = mapped_column(Integer, nullable=False)
     char_offset_start: Mapped[int] = mapped_column(Integer, nullable=False)
     char_offset_end: Mapped[int] = mapped_column(Integer, nullable=False)
+    # sha256 of the chunk text — lets incremental re-ingest skip unchanged chunks.
+    content_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
     embedding: Mapped[list[float] | None] = mapped_column(Vector(VECTOR_DIM), nullable=True)
 
     __table_args__ = (
@@ -168,6 +174,21 @@ class Edge(Base):
     attributes: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict, server_default="{}"
     )
+    # ── Narrative-temporal (Pass-8 reconcile) ────────────────────────
+    # story_pos where this relation starts holding (inherited from chunk),
+    # and where a later contradicting edge supersedes it. We SOFT-invalidate
+    # (set invalid_from_pos + superseded_by_edge_id) — never delete — so the
+    # relationship's full history over the story is preserved.
+    valid_from_pos: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    invalid_from_pos: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    superseded_by_edge_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("edges.id", ondelete="SET NULL"), nullable=True
+    )
+    # Dedup group: duplicate edges (same src/dst/relation/predicate) point at
+    # the representative edge; the query layer collapses by this.
+    canonical_edge_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("edges.id", ondelete="SET NULL"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -177,6 +198,7 @@ class Edge(Base):
         Index("edges_src_idx", "src_entity_id"),
         Index("edges_dst_idx", "dst_entity_id"),
         Index("edges_book_rel_idx", "book_id", "relation"),
+        Index("edges_canonical_idx", "canonical_edge_id"),
     )
 
 
@@ -199,6 +221,12 @@ class GlucoseFact(Base):
     evidence_span: Mapped[str] = mapped_column(Text, nullable=False)
     inference_depth: Mapped[InferenceDepth] = mapped_column(_inference_depth, nullable=False)
     confidence: Mapped[float] = mapped_column(Float, nullable=False)
+    # Story-time + dedup, parallel to edges (Pass-8 reconcile). Emotion /
+    # location / possession facts legitimately change across the story.
+    valid_from_pos: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    canonical_fact_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("glucose_facts.id", ondelete="SET NULL"), nullable=True
+    )
 
     __table_args__ = (
         CheckConstraint("confidence >= 0 AND confidence <= 1", name="glucose_conf_range"),
@@ -223,6 +251,49 @@ class PassRun(Base):
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     __table_args__ = (
-        CheckConstraint("pass_num BETWEEN 1 AND 7", name="pass_runs_pass_num_range"),
+        # 1-7 extract · 8 reconcile · 9 community · 10 note
+        CheckConstraint("pass_num BETWEEN 1 AND 10", name="pass_runs_pass_num_range"),
         UniqueConstraint("book_id", "pass_num", name="pass_runs_book_pass_uq"),
     )
+
+
+class Community(Base):
+    """A detected cluster of entities — a faction / family / location group /
+    subplot. Produced by Pass-9 (community detection + LLM report)."""
+
+    __tablename__ = "communities"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    book_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("books.id", ondelete="CASCADE"), nullable=False
+    )
+    # Hierarchy: 0 = finest clustering; higher = coarser. parent_id links a
+    # fine community to the coarser one that contains it (à la GraphRAG Leiden).
+    level: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    parent_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("communities.id", ondelete="SET NULL"), nullable=True
+    )
+    label: Mapped[str] = mapped_column(Text, nullable=False, server_default="")
+    summary_md: Mapped[str] = mapped_column(Text, nullable=False, server_default="")
+    size: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    attributes: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, default=dict, server_default="{}"
+    )
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(VECTOR_DIM), nullable=True)
+
+    __table_args__ = (Index("communities_book_level_idx", "book_id", "level"),)
+
+
+class CommunityMember(Base):
+    """Many-to-many: which entities belong to which community."""
+
+    __tablename__ = "community_members"
+
+    community_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("communities.id", ondelete="CASCADE"), primary_key=True
+    )
+    entity_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("entities.id", ondelete="CASCADE"), primary_key=True
+    )
+
+    __table_args__ = (Index("community_members_entity_idx", "entity_id"),)

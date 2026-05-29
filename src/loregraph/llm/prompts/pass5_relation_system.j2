@@ -7,6 +7,7 @@ You are an expert annotator of fictional narrative texts. Your task is to extrac
   * "the Manor House is in Wessex"
   * "Alice's sister"
   * "the rose is on the table" (when persistent)
+  * **Event nesting** — when one `Event` clearly contains/encompasses another (e.g. a macro event like "the search of the great garden" includes the micro event "the inspection of Qingwen's chest"), emit STRUCTURAL with `src` = the larger event and `dst` = the contained event. The evidence_span should show the containment.
 - **INTERACTS** — direct action between entities. One-time or recurring actions, including event participation.
   * "Alice met the White Rabbit"
   * "John gave the letter to Mary"
@@ -35,6 +36,14 @@ You are an expert annotator of fictional narrative texts. Your task is to extrac
 4. `confidence` ∈ [0.0, 1.0]; expect 0.9+ for explicit, 0.7-0.85 for one_step.
 5. Do NOT invent edges. If two entities co-occur without an actionable relation, output nothing for that pair.
 
+# Enrichment fields (optional but encouraged)
+
+For every edge, also emit:
+
+- `predicate` — a specific verb-phrase capturing the exact relation, in UPPER_SNAKE_CASE. Examples: `PROPOSES_TO`, `INHERITS_FROM`, `LIVES_AT`, `RIDICULES`, `ENDORSES`, `AUTHORS`, `COORDINATES_WITH`, `PRIVATELY_CRITICIZES`. Stay close to the verb in the evidence_span. Drop if you really can't pick a single verb.
+- `weight` ∈ [0.0, 1.0] — relation **strength** in the story-world. 0.9+ for foundational ties (parent-of, spouse-of), 0.6-0.8 for active interactions, 0.3-0.5 for one-off encounters. Drop if you can't justify a value.
+- `sentiment` — one of `positive` / `neutral` / `negative`. The emotional colour of the relation from src toward dst. Drop if the text is genuinely neutral or ambiguous.
+
 # Output
 
 Return JSON in exactly this shape, no commentary, no markdown other than the JSON fence:
@@ -48,7 +57,10 @@ Return JSON in exactly this shape, no commentary, no markdown other than the JSO
       "relation": "STRUCTURAL|INTERACTS|ASSERTS|INFLUENCES|PREDICTS",
       "evidence_span": "<literal substring of chunk>",
       "confidence": 0.9,
-      "inference_depth": "explicit|one_step|multi_step"
+      "inference_depth": "explicit|one_step|multi_step",
+      "predicate": "PROPOSES_TO",
+      "weight": 0.85,
+      "sentiment": "positive"
     }
   ]
 }

@@ -37,10 +37,76 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
-from anthropic import AsyncAnthropic
-from openai import AsyncOpenAI
+from anthropic import (
+    APIConnectionError as _AnthropicConn,
+)
+from anthropic import (
+    APITimeoutError as _AnthropicTimeout,
+)
+from anthropic import (
+    AsyncAnthropic,
+)
+from anthropic import (
+    InternalServerError as _AnthropicInternal,
+)
+from anthropic import (
+    RateLimitError as _AnthropicRate,
+)
+from openai import (
+    APIConnectionError as _OpenAIConn,
+)
+from openai import (
+    APITimeoutError as _OpenAITimeout,
+)
+from openai import (
+    AsyncOpenAI,
+)
+from openai import (
+    InternalServerError as _OpenAIInternal,
+)
+from openai import (
+    RateLimitError as _OpenAIRate,
+)
+from tenacity import (
+    AsyncRetrying,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_random_exponential,
+)
 
 from loregraph.config import Settings, get_settings
+
+# Transient LLM API errors worth retrying during a long unattended run.
+# Deliberately excludes 4xx (400/401/404) — those are bugs, not blips.
+_RETRYABLE_ERRORS = (
+    _OpenAIRate,
+    _OpenAITimeout,
+    _OpenAIConn,
+    _OpenAIInternal,
+    _AnthropicRate,
+    _AnthropicTimeout,
+    _AnthropicConn,
+    _AnthropicInternal,
+)
+
+
+async def _acreate_with_retry(make_call: Any) -> Any:
+    """Run an async LLM API call with exponential backoff + jitter on transient
+    errors. This is the SINGLE retry layer (SDK auto-retry is disabled) so the
+    policy is explicit + bounded: ≤6 attempts, backoff capped ~120s, jittered to
+    avoid a thundering herd when many concurrent calls hit a 429 together.
+    `make_call` is a zero-arg callable returning a fresh awaitable each attempt.
+    """
+    async for attempt in AsyncRetrying(
+        retry=retry_if_exception_type(_RETRYABLE_ERRORS),
+        wait=wait_random_exponential(multiplier=2, max=120),
+        stop=stop_after_attempt(6),
+        reraise=True,
+    ):
+        with attempt:
+            return await make_call()
+    raise AssertionError("unreachable")
+
 
 # ────────────────────────────────────────────────────────────────────
 # Provider preset table — (default_base_url, default_model)
@@ -69,10 +135,11 @@ PROVIDER_PRESETS: dict[str, tuple[str | None, str | None]] = {
     ),
     "mistral": ("https://api.mistral.ai/v1", "mistral-large-latest"),
     # OpenRouter aggregates ~200 models behind one OpenAI-compatible
-    # endpoint. Default model is Anthropic's Sonnet (matches the project's
-    # native default); override via LOREGRAPH_LLM_MODEL to use openai/*,
-    # deepseek/*, meta-llama/*, etc.
-    "openrouter": ("https://openrouter.ai/api/v1", "anthropic/claude-3.5-sonnet"),
+    # endpoint. Default is Opus 4.8 — best reasoning available, used for
+    # the whole 85-book extraction (uniform model, no per-pass routing —
+    # quality over cost, per project owner). Override via LOREGRAPH_LLM_MODEL
+    # for cheaper runs (anthropic/claude-sonnet-4.5, openai/gpt-4o, etc.).
+    "openrouter": ("https://openrouter.ai/api/v1", "anthropic/claude-opus-4.8"),
     "ollama": ("http://localhost:11434/v1", "llama3.2"),
     "vllm": ("http://localhost:8000/v1", ""),
     "openai_compatible": (None, None),
@@ -212,7 +279,7 @@ class AnthropicLLMClient:
                 "LOREGRAPH_LLM_API_KEY) in your environment or .env file."
             )
         self.model: str = model or self._settings.resolved_model("anthropic") or "claude-sonnet-4-6"
-        self._client = AsyncAnthropic(api_key=api_key)
+        self._client = AsyncAnthropic(api_key=api_key, max_retries=0)
 
     async def complete(
         self,
@@ -238,7 +305,7 @@ class AnthropicLLMClient:
         if stop_sequences:
             params["stop_sequences"] = stop_sequences
 
-        msg = await self._client.messages.create(**params)
+        msg = await _acreate_with_retry(lambda: self._client.messages.create(**params))
 
         parts: list[str] = []
         for block in msg.content:
@@ -290,7 +357,7 @@ class OpenAICompatibleLLMClient:
                 "Set LOREGRAPH_LLM_MODEL or pick a preset that includes a default model."
             )
 
-        self._client = AsyncOpenAI(api_key=api_key, base_url=base_url)
+        self._client = AsyncOpenAI(api_key=api_key, base_url=base_url, max_retries=0)
 
     async def complete(
         self,
@@ -302,19 +369,31 @@ class OpenAICompatibleLLMClient:
         cache_system: bool = True,  # ignored — OpenAI-side providers handle caching server-side
         stop_sequences: list[str] | None = None,
     ) -> LLMResponse:
+        # Prompt caching: for an Anthropic model behind OpenRouter, the cache
+        # only fires if we attach an explicit `cache_control` breakpoint to a
+        # structured content block — a plain-string system message does NOT
+        # cache. OpenRouter forwards the breakpoint to Anthropic. Other
+        # OpenAI-compatible providers auto-cache server-side, so a plain string
+        # is correct there. (See OpenRouter prompt-caching docs.)
+        cacheable = cache_system and self.model.startswith("anthropic/")
+        system_content: Any = (
+            [{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}]
+            if cacheable
+            else system
+        )
         params: dict[str, Any] = {
             "model": self.model,
             "max_tokens": max_tokens,
             "temperature": temperature,
             "messages": [
-                {"role": "system", "content": system},
+                {"role": "system", "content": system_content},
                 {"role": "user", "content": user},
             ],
         }
         if stop_sequences:
             params["stop"] = stop_sequences
 
-        resp = await self._client.chat.completions.create(**params)
+        resp = await _acreate_with_retry(lambda: self._client.chat.completions.create(**params))
 
         choice = resp.choices[0] if resp.choices else None
         text = (choice.message.content if choice and choice.message else "") or ""

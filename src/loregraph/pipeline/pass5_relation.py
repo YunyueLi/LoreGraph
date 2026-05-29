@@ -14,6 +14,7 @@ Hard post-validation:
 from __future__ import annotations
 
 import logging
+import re
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -37,6 +38,9 @@ _jinja_env = Environment(
 )
 
 
+_VALID_SENTIMENTS = {"positive", "neutral", "negative"}
+
+
 class _ExtractedEdge(BaseModel):
     src_canonical_id: str
     dst_canonical_id: str
@@ -44,6 +48,10 @@ class _ExtractedEdge(BaseModel):
     evidence_span: str
     confidence: float = Field(ge=0.0, le=1.0)
     inference_depth: InferenceDepth = InferenceDepth.EXPLICIT
+    # v1.1 enrichment — all optional, stored in edges.attributes JSONB.
+    predicate: str | None = None        # specific verb, e.g. PROPOSES_TO / INHERITS_FROM
+    weight: float | None = Field(default=None, ge=0.0, le=1.0)
+    sentiment: str | None = None        # positive / neutral / negative
 
 
 class _Pass5Response(BaseModel):
@@ -111,6 +119,15 @@ class Pass5RelationExtractor:
                 )
                 continue
 
+            attrs: dict[str, object] = {}
+            if raw.predicate:
+                # normalise to UPPER_SNAKE so downstream queries are clean
+                attrs["predicate"] = re.sub(r"[\s\-]+", "_", raw.predicate.strip()).upper()
+            if raw.weight is not None:
+                attrs["weight"] = raw.weight
+            if raw.sentiment and raw.sentiment.lower() in _VALID_SENTIMENTS:
+                attrs["sentiment"] = raw.sentiment.lower()
+
             edges.append(
                 EdgeCreate(
                     book_id=chunk.book_id,
@@ -121,6 +138,7 @@ class Pass5RelationExtractor:
                     evidence_span=raw.evidence_span,
                     confidence=raw.confidence,
                     inference_depth=raw.inference_depth,
+                    attributes=attrs,
                 )
             )
         return edges
