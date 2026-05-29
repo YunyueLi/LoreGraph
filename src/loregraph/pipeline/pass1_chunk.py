@@ -34,7 +34,7 @@ CHAPTER_HEADER_RE = re.compile(
     # CJK: "第一回" / "第十二章" / "第三卷" (西游记 uses 回, 红楼梦 too; + optional title)
     r"|第\s*[〇零一二三四五六七八九十百千两\d]+\s*[回章卷節节折]"
     r")"
-    r"\.?(?:[ \t　:：—\-][^\n]*)?[ \t]*$",
+    r"\.?(?:[ \t　:：—\-][^\n]*)?[ \t]*$",  # noqa: RUF001 - fullwidth colon/space intentional for CJK
     flags=re.MULTILINE,
 )
 
@@ -46,6 +46,13 @@ class ChunkerConfig:
 
     max_tokens: int = 1200
     overlap_ratio: float = 0.20
+
+
+# A real chapter has substantial body text after its heading line; a
+# table-of-contents entry is just the heading (the next heading follows almost
+# immediately). Drop headings whose body falls below this so a leading TOC
+# doesn't double the chapter count (e.g. Gutenberg's Alice: 12 TOC + 12 body).
+_MIN_CHAPTER_BODY_TOKENS = 50
 
 
 @dataclass(slots=True)
@@ -60,12 +67,19 @@ def _split_into_chapters(text: str) -> list[_ChapterSpan]:
     if not matches:
         return [_ChapterSpan(chapter=1, start=0, end=len(text))]
 
-    spans: list[_ChapterSpan] = []
-    for i, match in enumerate(matches):
-        start = match.start()
-        end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
-        spans.append(_ChapterSpan(chapter=i + 1, start=start, end=end))
-    return spans
+    bounds = [
+        (m.end(), m.start(), (matches[i + 1].start() if i + 1 < len(matches) else len(text)))
+        for i, m in enumerate(matches)
+    ]
+    kept = [
+        (start, end)
+        for body_start, start, end in bounds
+        if count_tokens(text[body_start:end]) >= _MIN_CHAPTER_BODY_TOKENS
+    ]
+    if not kept:  # nothing cleared the bar — keep every heading rather than lose the text
+        kept = [(start, end) for _, start, end in bounds]
+
+    return [_ChapterSpan(chapter=i + 1, start=s, end=e) for i, (s, e) in enumerate(kept)]
 
 
 def _split_chapter_text(
