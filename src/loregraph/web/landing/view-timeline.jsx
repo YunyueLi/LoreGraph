@@ -33,6 +33,11 @@ const TL_PHASES = [
     sub:   { en: "Reckoning & reunion", "zh-CN": "对峙与重逢", "zh-TW": "對峙與重逢", ja: "対峙と再会", ko: "대치와 재회", fr: "Confrontation & retrouvailles", es: "Confrontación y reencuentro", de: "Konfrontation & Wiedersehen" } },
 ];
 
+// Active phases for the current book. ViewTimeline points this at the book's
+// generated timeline (or the curated P&P default) before any child renders, so
+// the mode components can read it without prop-threading.
+let _activePhases = TL_PHASES;
+
 /* =================== HELPERS =================== */
 
 function toRoman(n) {
@@ -96,7 +101,7 @@ function tlGetPivot(ev, allEdges, evidenceEdges) {
 /* =================== TOP-LEVEL =================== */
 
 function ViewTimeline({ ctx }) {
-  const { tt, data: _rawData, entities, edges, locale, selectedEntityId, setSelectedEntityId, tlMode, chunks: bookChunks, glucose: bookGlucose } = ctx;
+  const { tt, data: _rawData, entities, edges, locale, selectedEntityId, setSelectedEntityId, tlMode, chunks: bookChunks, glucose: bookGlucose, activeBook } = ctx;
   // Shadow `data` with per-book-scoped chunks/edges/glucose so every internal
   // `data.X` reference and every subcomponent receiving `data={data}` reads
   // the active book's records (not the global pool that mixes all books).
@@ -105,13 +110,17 @@ function ViewTimeline({ ctx }) {
   const [selectedEventId, setSelectedEventId] = useState("v03");
   const [phaseFilter, setPhaseFilter] = useState(null);
 
-  const events = TL_EVENTS;
+  const events = (activeBook && activeBook.timelineEvents && activeBook.timelineEvents.length)
+    ? activeBook.timelineEvents : TL_EVENTS;
+  _activePhases = (activeBook && activeBook.timelinePhases && activeBook.timelinePhases.length)
+    ? activeBook.timelinePhases : TL_PHASES;
   const visibleEvents = phaseFilter ? events.filter(e => e.phase === phaseFilter) : events;
+  const safeEventId = events.some(e => e.id === selectedEventId) ? selectedEventId : (events[0] && events[0].id);
 
   const shared = {
     ctx, tt, data, entities, locale,
     selectedEntityId, setSelectedEntityId,
-    selectedEventId, setSelectedEventId,
+    selectedEventId: safeEventId, setSelectedEventId,
     events, visibleEvents, phaseFilter, setPhaseFilter,
   };
 
@@ -145,7 +154,7 @@ function TimelineToolbar({ tt, locale, events, phaseFilter, setPhaseFilter }) {
             <span>{tt("tl.all")}</span>
             <span className="tl2-phase-pip-ct">{events.length}</span>
           </button>
-          {TL_PHASES.map(p => {
+          {_activePhases.map(p => {
             const n = events.filter(e => e.phase === p.id).length;
             return (
               <button key={p.id}
@@ -324,7 +333,7 @@ function FolioRail({ visibleEvents, inViewId, locale, onPick }) {
   return (
     <aside className="tl2-folio-rail">
       <div className="tl2-folio-rail-spine" />
-      {TL_PHASES.map(p => {
+      {_activePhases.map(p => {
         const phaseEvents = visibleEvents.filter(e => e.phase === p.id);
         if (!phaseEvents.length) return null;
         return (
@@ -359,7 +368,7 @@ function FolioRail({ visibleEvents, inViewId, locale, onPick }) {
 }
 
 function FolioSpread({ ev, idx, total, data, entities, locale, tt, setSelectedEntityId }) {
-  const phase = TL_PHASES.find(p => p.id === ev.phase);
+  const phase = _activePhases.find(p => p.id === ev.phase);
   const entity = entities.find(e => e.id === ev.id);
   const loc = window.entityLocale(ev.id, locale);
   const name = loc?.name || entity?.name;
@@ -514,7 +523,7 @@ function StageMode({ ctx, tt, data, entities, locale, visibleEvents, setSelected
 
   if (!cur) return <div className="empty">No events</div>;
 
-  const phase = TL_PHASES.find(p => p.id === cur.phase);
+  const phase = _activePhases.find(p => p.id === cur.phase);
   const entity = entities.find(e => e.id === cur.id);
   const loc = window.entityLocale(cur.id, locale);
   const name = loc?.name || entity?.name;
@@ -529,7 +538,7 @@ function StageMode({ ctx, tt, data, entities, locale, visibleEvents, setSelected
       {/* progress dot bar */}
       <div className="tl2-stage-progress">
         {visibleEvents.map((ev, i) => {
-          const p = TL_PHASES.find(x => x.id === ev.phase);
+          const p = _activePhases.find(x => x.id === ev.phase);
           return (
             <button key={ev.id}
               className={"tl2-stage-progress-dot " + (i === curIdx ? "active" : "") + (i < curIdx ? " past" : "")}
@@ -701,7 +710,7 @@ function RibbonMode({ ctx, tt, data, entities, locale, visibleEvents, selectedEv
   const LANE_H = 68;
   const chToX = (ch) => AXIS_PAD + (ch - 1) * CH_WIDTH;
   const cur = visibleEvents.find(e => e.id === selectedEventId) || visibleEvents[0];
-  const curPhase = cur && TL_PHASES.find(p => p.id === cur.phase);
+  const curPhase = cur && _activePhases.find(p => p.id === cur.phase);
   const curEntity = cur && entities.find(e => e.id === cur.id);
   const curLoc = cur && window.entityLocale(cur.id, locale);
   const curName = curLoc?.name || curEntity?.name;
@@ -747,7 +756,7 @@ function RibbonMode({ ctx, tt, data, entities, locale, visibleEvents, selectedEv
 
       <div className="tl2-ribbon-wrap" ref={wrapRef}>
         <div className="tl2-ribbon-track" style={{width: totalWidth, height: LANE_H * 5 + 80}}>
-          {TL_PHASES.map(p => {
+          {_activePhases.map(p => {
             const x1 = chToX(p.start), x2 = chToX(p.end);
             return (
               <div key={p.id} className="tl2-ribbon-band" style={{left: x1, width: x2-x1, "--phase-color": p.color}}>
@@ -769,7 +778,7 @@ function RibbonMode({ ctx, tt, data, entities, locale, visibleEvents, selectedEv
           {/* events */}
           {visibleEvents.map(ev => {
             const x = chToX(ev.chapter);
-            const phase = TL_PHASES.find(p => p.id === ev.phase);
+            const phase = _activePhases.find(p => p.id === ev.phase);
             const ent = entities.find(e => e.id === ev.id);
             const loc = window.entityLocale(ev.id, locale);
             const name = loc?.name || ent?.name;
