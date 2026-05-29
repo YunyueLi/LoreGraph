@@ -42,7 +42,9 @@ def _v(x: object) -> object:
     return x.value if hasattr(x, "value") else x
 
 
-async def export_book(book_id: int, frontend_id: str, license_: str, out_path: Path) -> dict:
+async def export_book(
+    book_id: int, frontend_id: str, license_: str, out_path: Path, max_entities: int = 0
+) -> dict:
     include_text = license_ == "public-domain"
     init_engine()
     async with session_scope() as session:
@@ -120,6 +122,21 @@ async def export_book(book_id: int, frontend_id: str, license_: str, out_path: P
         chunk_edges: dict[int, int] = defaultdict(int)
         for e in edges:
             chunk_edges[e.chunk_id] += 1
+
+        # ---- cap to the most-connected entities ----
+        # A 100-chapter book yields 15k+ entities (mostly one-off objects/events);
+        # shipping them all is a 17MB payload. Keep the top-N by edge degree (then
+        # mentions) — the graph/index focus on what matters; full data stays in DB.
+        if max_entities and len(entities) > max_entities:
+            deg: dict[int, int] = defaultdict(int)
+            for e in edges:
+                deg[e.src_entity_id] += 1
+                deg[e.dst_entity_id] += 1
+            ranked = sorted(entities, key=lambda e: (-deg.get(e.id, 0), -ent_mentions.get(e.id, 0)))
+            kept = {e.id for e in ranked[:max_entities]}
+            entities = [e for e in entities if e.id in kept]
+            edges = [e for e in edges if e.src_entity_id in kept and e.dst_entity_id in kept]
+            glucose = [g for g in glucose if g.entity_id in kept]
 
         # ---- build records ----
         chunk_list = [
@@ -217,8 +234,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--frontend-id", required=True)
     ap.add_argument("--license", default="public-domain")
     ap.add_argument("--out", required=True)
+    ap.add_argument("--max-entities", type=int, default=0, help="cap to top-N by degree (0 = all)")
     args = ap.parse_args(argv)
-    meta = asyncio.run(export_book(args.book_id, args.frontend_id, args.license, ROOT / args.out))
+    meta = asyncio.run(
+        export_book(args.book_id, args.frontend_id, args.license, ROOT / args.out, args.max_entities)
+    )
     print(f"exported {args.frontend_id}: {json.dumps(meta['counts'])} -> {args.out}")
     return 0
 

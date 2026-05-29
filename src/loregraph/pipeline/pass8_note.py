@@ -247,13 +247,38 @@ class Pass8NoteSynth:
 
     # ------- pass driver -------
 
-    async def synthesise_all(self, session: AsyncSession, book_id: int) -> dict[str, int]:
+    async def _edge_degree(self, session: AsyncSession, book_id: int) -> dict[int, int]:
+        rows = (
+            await session.execute(
+                select(orm.Edge.src_entity_id, orm.Edge.dst_entity_id).where(
+                    orm.Edge.book_id == book_id
+                )
+            )
+        ).all()
+        deg: dict[int, int] = {}
+        for s, d in rows:
+            deg[s] = deg.get(s, 0) + 1
+            deg[d] = deg.get(d, 0) + 1
+        return deg
+
+    async def synthesise_all(
+        self, session: AsyncSession, book_id: int, max_entities: int = 0
+    ) -> dict[str, int]:
         entities = await repo.list_entities(session, book_id)
+        # On huge books (西游记: 15k+ entities, mostly one-off objects/events)
+        # cap note synthesis to the most-connected — noting every one-off entity
+        # is slow, costly, and never displayed (the export caps the same way).
+        targets = entities
+        if max_entities and len(entities) > max_entities:
+            degree = await self._edge_degree(session, book_id)
+            targets = sorted(entities, key=lambda e: (-degree.get(e.id, 0), e.canonical_name))[
+                :max_entities
+            ]
         # Compute tier ranking once up-front; heuristic-only, no LLM.
-        tier_map = await self._compute_tiers(session, entities)
+        tier_map = await self._compute_tiers(session, targets)
 
         # Phase A — gather evidence + render prompts SERIALLY (shared session).
-        prompts = [await self._build_user_prompt(session, e) for e in entities]
+        prompts = [await self._build_user_prompt(session, e) for e in targets]
 
         # Phase B — synthesise notes CONCURRENTLY (the per-entity LLM call was
         # the bottleneck). DB writes stay out of here.
@@ -273,7 +298,7 @@ class Pass8NoteSynth:
         notes_written = 0
         subtypes_assigned = 0
         tiers_assigned = 0
-        for entity, raw in zip(entities, raws, strict=True):
+        for entity, raw in zip(targets, raws, strict=True):
             if isinstance(raw, Exception):
                 log.warning(
                     "Pass-8: skipping entity %s (%s) — %s",
@@ -299,6 +324,7 @@ class Pass8NoteSynth:
             notes_written += 1
         return {
             "entities_total": len(entities),
+            "noted_targets": len(targets),
             "notes_written": notes_written,
             "subtypes_assigned": subtypes_assigned,
             "tiers_assigned": tiers_assigned,
