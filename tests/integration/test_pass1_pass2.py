@@ -13,7 +13,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from loregraph.db import repository as repo
-from loregraph.llm.client import LLMClient
+from loregraph.llm.client import LLMClient, LLMResponse
 from loregraph.models.atoms import BookCreate, ChunkCreate
 from loregraph.models.enums import EntityType
 from loregraph.pipeline.pass1_chunk import ChunkerConfig, Pass1Chunker
@@ -48,18 +48,14 @@ async def test_pass1_chunks_persist_correctly(session: AsyncSession) -> None:
 # ---- Pass-2 ----
 
 
-def _stub_message(text_body: str) -> object:
-    """Mimic the shape of anthropic.types.Message just enough for our code."""
-    from types import SimpleNamespace
-
-    return SimpleNamespace(
-        content=[SimpleNamespace(text=text_body)],
-        usage=SimpleNamespace(
-            input_tokens=100,
-            output_tokens=50,
-            cache_creation_input_tokens=0,
-            cache_read_input_tokens=0,
-        ),
+def _stub_message(text_body: str) -> LLMResponse:
+    """Return the normalized LLMResponse that `LLMClient.complete` yields."""
+    return LLMResponse(
+        text=text_body,
+        input_tokens=100,
+        output_tokens=50,
+        cache_creation_input_tokens=0,
+        cache_read_input_tokens=0,
     )
 
 

@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from loregraph.db import repository as repo
-from loregraph.llm.client import LLMClient
+from loregraph.llm.client import LLMClient, LLMResponse
 from loregraph.models.atoms import BookCreate, ChunkCreate
 from loregraph.models.entities import EntityCreate, MentionCreate
 from loregraph.models.enums import (
@@ -21,15 +20,13 @@ from loregraph.models.enums import (
 from loregraph.pipeline.pass6_glucose import Pass6GlucoseExtractor
 
 
-def _stub_message(text_body: str) -> object:
-    return SimpleNamespace(
-        content=[SimpleNamespace(text=text_body)],
-        usage=SimpleNamespace(
-            input_tokens=120,
-            output_tokens=80,
-            cache_creation_input_tokens=0,
-            cache_read_input_tokens=0,
-        ),
+def _stub_message(text_body: str) -> LLMResponse:
+    return LLMResponse(
+        text=text_body,
+        input_tokens=120,
+        output_tokens=80,
+        cache_creation_input_tokens=0,
+        cache_read_input_tokens=0,
     )
 
 
