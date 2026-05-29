@@ -1045,7 +1045,10 @@ function GraphCanvas({ visibleEntities, visibleEdges, positions, setLivePosition
             const hasArrow = EDGE_HAS_ARROW[edge.rel];
             const isDouble = edge.rel === "SYMBOLIZES";
             const isStructural = edge.rel === "STRUCTURAL";
-            const showLabel = isSel || isHovered;
+            // Label only the specific edge under the cursor / explicitly clicked —
+            // NOT every edge of a selected node (a hub like Alice has dozens, which
+            // turns the centre into an unreadable pile of relation tags).
+            const showLabel = isHovered || edge.id === selectedEdgeId;
             const label = window.t("rel."+edge.rel);
 
             return (
