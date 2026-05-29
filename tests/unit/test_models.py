@@ -148,9 +148,9 @@ def test_glucose_fact_all_fields_required() -> None:
 
 @pytest.mark.unit
 def test_pass_run_pass_num_bounds() -> None:
-    for ok in (1, 4, 7):
+    for ok in (1, 7, 8, 10):  # 1-7 extract · 8 reconcile · 9 community · 10 note
         PassRunCreate(book_id=1, pass_num=ok)
-    for bad in (0, 8, -1):
+    for bad in (0, 11, -1):
         with pytest.raises(ValidationError):
             PassRunCreate(book_id=1, pass_num=bad)
 
