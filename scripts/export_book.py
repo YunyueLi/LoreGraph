@@ -21,6 +21,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+from collections import defaultdict
 from pathlib import Path
 
 from sqlalchemy import select
@@ -62,21 +63,10 @@ async def export_book(book_id: int, frontend_id: str, license_: str, out_path: P
             .all()
         )
         id_to_atom = {c.id: c.atom_id for c in chunks}
-        chunk_list = [
-            {
-                "atom_id": c.atom_id,
-                "chapter": c.chapter,
-                "seq": c.seq,
-                "char_start": c.char_offset_start,
-                "char_end": c.char_offset_end,
-                "token_count": c.token_count,
-                **({"text": c.text} if include_text else {}),
-            }
-            for c in chunks
-        ]
+        id_to_chapter = {c.id: c.chapter for c in chunks}
         chapters = sorted({c.chapter for c in chunks})
 
-        # ---- entities ----
+        # ---- load entities / edges / glucose / mentions ----
         entities = (
             (
                 await session.execute(
@@ -87,21 +77,7 @@ async def export_book(book_id: int, frontend_id: str, license_: str, out_path: P
             .all()
         )
         id_to_canon = {e.id: e.canonical_id for e in entities}
-        entity_list = [
-            {
-                "canonical_id": e.canonical_id,
-                "type": _v(e.type),
-                "subtype": (e.attributes or {}).get("subtype"),
-                "tier": (e.attributes or {}).get("tier"),
-                "canonical_name": e.canonical_name,
-                "aliases": list(e.aliases or []),
-                "attributes": e.attributes or {},
-                "note_md": e.note_md or "",
-            }
-            for e in entities
-        ]
 
-        # ---- edges ----
         edges = (
             (
                 await session.execute(
@@ -111,6 +87,70 @@ async def export_book(book_id: int, frontend_id: str, license_: str, out_path: P
             .scalars()
             .all()
         )
+        glucose = (
+            (
+                await session.execute(
+                    select(orm.GlucoseFact)
+                    .where(orm.GlucoseFact.book_id == book_id)
+                    .order_by(orm.GlucoseFact.id)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        mention_rows = (
+            await session.execute(
+                select(orm.Mention.entity_id, orm.Mention.chunk_id).where(
+                    orm.Mention.book_id == book_id
+                )
+            )
+        ).all()
+
+        # ---- aggregates (per-entity mentions/chapters, per-chunk density) ----
+        ent_mentions: dict[int, int] = defaultdict(int)
+        ent_chapters: dict[int, set[int]] = defaultdict(set)
+        chunk_mentions: dict[int, int] = defaultdict(int)
+        for entity_id, chunk_id in mention_rows:
+            chunk_mentions[chunk_id] += 1
+            if entity_id is not None:
+                ent_mentions[entity_id] += 1
+                ch = id_to_chapter.get(chunk_id)
+                if ch is not None:
+                    ent_chapters[entity_id].add(ch)
+        chunk_edges: dict[int, int] = defaultdict(int)
+        for e in edges:
+            chunk_edges[e.chunk_id] += 1
+
+        # ---- build records ----
+        chunk_list = [
+            {
+                "atom_id": c.atom_id,
+                "chapter": c.chapter,
+                "seq": c.seq,
+                "char_start": c.char_offset_start,
+                "char_end": c.char_offset_end,
+                "token_count": c.token_count,
+                "mention_count": chunk_mentions.get(c.id, 0),
+                "edge_count": chunk_edges.get(c.id, 0),
+                **({"text": c.text} if include_text else {}),
+            }
+            for c in chunks
+        ]
+        entity_list = [
+            {
+                "canonical_id": e.canonical_id,
+                "type": _v(e.type),
+                "subtype": (e.attributes or {}).get("subtype"),
+                "tier": (e.attributes or {}).get("tier"),
+                "canonical_name": e.canonical_name,
+                "aliases": list(e.aliases or []),
+                "mention_count": ent_mentions.get(e.id, 0),
+                "chapters": sorted(ent_chapters.get(e.id, set())),
+                "attributes": e.attributes or {},
+                "note_md": e.note_md or "",
+            }
+            for e in entities
+        ]
         edge_list = []
         for e in edges:
             attrs = e.attributes or {}
@@ -128,19 +168,6 @@ async def export_book(book_id: int, frontend_id: str, license_: str, out_path: P
                     "atom_id": id_to_atom.get(e.chunk_id),
                 }
             )
-
-        # ---- glucose facts ----
-        glucose = (
-            (
-                await session.execute(
-                    select(orm.GlucoseFact)
-                    .where(orm.GlucoseFact.book_id == book_id)
-                    .order_by(orm.GlucoseFact.id)
-                )
-            )
-            .scalars()
-            .all()
-        )
         glucose_list = [
             {
                 "entity": id_to_canon.get(g.entity_id),
@@ -149,6 +176,7 @@ async def export_book(book_id: int, frontend_id: str, license_: str, out_path: P
                 "statement": g.statement,
                 "evidence_span": g.evidence_span,
                 "confidence": g.confidence,
+                "inference_depth": _v(g.inference_depth),
                 "atom_id": id_to_atom.get(g.chunk_id),
             }
             for g in glucose
