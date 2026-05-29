@@ -714,30 +714,40 @@ function RibbonMode({ ctx, tt, data, entities, locale, visibleEvents, selectedEv
   const LANE_H = 68;
   const tickStep = maxCh <= 14 ? 2 : maxCh <= 40 ? 5 : 10;
   const chToX = (ch) => AXIS_PAD + (ch - 1) * CH_WIDTH;
-  const AXIS_Y = LANE_H * 2.5 + 30;
   const CARD_W = 230;
   const CARD_GAP = 16;
   const ROW_H = 108;
-  // Greedy non-overlapping row packing: each card is centered on its chapter's x;
-  // pack cards into stacked rows below the axis so NO two cards ever overlap —
-  // for any book and any chapter spread (fixed lanes used to collide).
-  const rowOf = useMemo(() => {
+  const CARD_H = 86;
+  const AXIS_GAP = 28;
+  // Greedy two-sided packing: place each centered card in the nearest free row
+  // ABOVE or BELOW the axis (ties alternate sides), so cards never overlap and
+  // stagger on both sides — compact and balanced for any book.
+  const place = useMemo(() => {
     const sorted = [...visibleEvents].sort(
       (a, b) => (a.chapter - b.chapter) || String(a.id).localeCompare(String(b.id))
     );
-    const rowRight = [];
+    const up = [];
+    const down = [];
     const out = {};
+    let tie = 0;
     sorted.forEach(ev => {
       const cx = AXIS_PAD + (ev.chapter - 1) * CH_WIDTH;
       const left = cx - CARD_W / 2;
-      let r = 0;
-      while (r < rowRight.length && rowRight[r] > left - CARD_GAP) r++;
-      out[ev.id] = r;
-      rowRight[r] = cx + CARD_W / 2;
+      const free = (arr) => { let r = 0; while (r < arr.length && arr[r] > left - CARD_GAP) r++; return r; };
+      const ru = free(up);
+      const rd = free(down);
+      const side = rd < ru ? "down" : ru < rd ? "up" : (tie++ % 2 === 0 ? "down" : "up");
+      const r = side === "down" ? rd : ru;
+      (side === "down" ? down : up)[r] = cx + CARD_W / 2;
+      out[ev.id] = { side, row: r };
     });
     return out;
   }, [visibleEvents, CH_WIDTH]);
-  const numRows = Math.max(1, ...Object.values(rowOf).map(r => r + 1));
+  const _pv = Object.values(place);
+  const numUp = Math.max(0, ..._pv.filter(p => p.side === "up").map(p => p.row + 1));
+  const numDown = Math.max(0, ..._pv.filter(p => p.side === "down").map(p => p.row + 1));
+  const AXIS_Y = 24 + AXIS_GAP + CARD_H + numUp * ROW_H;
+  const trackH = AXIS_Y + AXIS_GAP + CARD_H + numDown * ROW_H + 24;
   const cur = visibleEvents.find(e => e.id === selectedEventId) || visibleEvents[0];
   const curPhase = cur && _activePhases.find(p => p.id === cur.phase);
   const curEntity = cur && entities.find(e => e.id === cur.id);
@@ -784,7 +794,7 @@ function RibbonMode({ ctx, tt, data, entities, locale, visibleEvents, selectedEv
       </div>
 
       <div className="tl2-ribbon-wrap" ref={wrapRef}>
-        <div className="tl2-ribbon-track" style={{width: totalWidth, height: AXIS_Y + 44 + numRows * ROW_H + 40}}>
+        <div className="tl2-ribbon-track" style={{width: totalWidth, height: trackH}}>
           {_activePhases.map(p => {
             const x1 = chToX(p.start), x2 = chToX(p.end);
             return (
@@ -812,18 +822,22 @@ function RibbonMode({ ctx, tt, data, entities, locale, visibleEvents, selectedEv
             const loc = window.entityLocale(ev.id, locale);
             const name = loc?.name || ent?.name;
             const isSel = selectedEventId === ev.id;
-            const row = rowOf[ev.id] || 0;
-            const y = AXIS_Y + 44 + row * ROW_H;  // card sits below the axis in its packed row
-            const connH = y - AXIS_Y;
+            const pl = place[ev.id] || { side: "down", row: 0 };
+            const connH = AXIS_GAP + pl.row * ROW_H;
+            const y = pl.side === "down" ? AXIS_Y + connH : AXIS_Y - connH - CARD_H;
+            const connStyle = pl.side === "down"
+              ? { height: connH, bottom: "100%", top: "auto" }
+              : { height: connH, top: "100%", bottom: "auto" };
+            const dotStyle = pl.side === "down" ? { top: `-${connH}px` } : { top: `calc(100% + ${connH}px)` };
             return (
               <div key={ev.id}
                 className={"tl2-ribbon-event " + (isSel ? "active" : "")}
                 style={{left: x, top: y, "--phase-color": phase.color}}
                 onClick={() => setSelectedEventId(ev.id)}>
-                <svg className="tl2-ribbon-conn" style={{height: connH, bottom: "100%", top: "auto"}}>
+                <svg className="tl2-ribbon-conn" style={connStyle}>
                   <line x1="0.5" y1="0" x2="0.5" y2="100%" stroke={phase.color} strokeWidth="1" strokeDasharray="2 3" opacity="0.6" />
                 </svg>
-                <div className="tl2-ribbon-dot" style={{top: `-${connH}px`}} />
+                <div className="tl2-ribbon-dot" style={dotStyle} />
                 <div className="tl2-ribbon-card">
                   <div className="tl2-ribbon-card-ch">ch{ev.chapter}</div>
                   <div className="tl2-ribbon-card-title"><em>{name}</em></div>
