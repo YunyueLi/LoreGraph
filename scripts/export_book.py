@@ -159,7 +159,9 @@ async def export_book(
                 "type": _v(e.type),
                 "subtype": (e.attributes or {}).get("subtype"),
                 "tier": (e.attributes or {}).get("tier"),
-                "canonical_name": e.canonical_name,
+                # Prefer the LLM-canonicalized well-known name (孙悟空) over the raw
+                # most-frequent surface form (行者) when canonicalize_book.py has run.
+                "canonical_name": (e.attributes or {}).get("canon") or e.canonical_name,
                 "aliases": list(e.aliases or []),
                 "mention_count": ent_mentions.get(e.id, 0),
                 "chapters": sorted(ent_chapters.get(e.id, set())),
