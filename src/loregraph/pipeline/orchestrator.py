@@ -20,6 +20,7 @@ from loregraph.db import schema as orm
 from loregraph.llm.client import LLMClient, make_llm_client
 from loregraph.models.enums import PassStatus
 from loregraph.models.runs import PassRunCreate
+from loregraph.pipeline.canonicalize import canonicalize
 from loregraph.pipeline.context import PipelineContext
 from loregraph.pipeline.pass1_chunk import ChunkerConfig, Pass1Chunker
 from loregraph.pipeline.pass2_entity import Pass2EntityExtractor
@@ -247,6 +248,12 @@ class Orchestrator:
 
         clusterer = Pass3Clusterer(self.ctx.llm)
         entities_in = await clusterer.cluster_book(book_id=self.ctx.book_id, mentions=mentions)
+
+        # GraphRAG-style canonicalization: refine to well-known names (行者→孙悟空),
+        # tag factions (取经队伍/天庭/妖魔…) and flag generic collectives (妖精/群妖) —
+        # written to entities.attributes. Best-effort: a miss never loses entities.
+        canon_n = await self._canonicalize_entities(entities_in)
+
         entities_out = await repo.insert_entities(self.ctx.session, entities_in)
 
         self.ctx.usage.merge_from(clusterer.usage)
@@ -254,8 +261,50 @@ class Orchestrator:
         return {
             "mentions_seen": len(mentions),
             "entities_created": len(entities_out),
+            "canonicalized": canon_n,
             **clusterer.usage.to_dict(),
         }
+
+    async def _canonicalize_entities(self, entities_in: list[Any]) -> int:
+        """Tag each entity with attributes.canon/faction/generic via the LLM
+        (updates entities_in in place; returns how many were refined). Fully
+        best-effort — any failure leaves entities with their surface-form names."""
+        if not entities_in:
+            return 0
+        book = await repo.get_book(self.ctx.session, self.ctx.book_id)
+        if book is None:
+            return 0
+        items = [
+            {
+                "id": e.canonical_id,
+                "name": e.canonical_name,
+                "aliases": list(e.aliases or []),
+                "type": e.type.value,
+            }
+            for e in entities_in
+        ]
+        try:
+            results = await canonicalize(
+                self.ctx.llm, book.title, book.language, items, usage=self.ctx.usage
+            )
+        except Exception as exc:
+            log.warning("Pass-3 canonicalization skipped (%s)", exc)
+            return 0
+        n = 0
+        for e in entities_in:
+            r = results.get(e.canonical_id)
+            if r is None:
+                continue
+            attrs = dict(e.attributes or {})
+            if r.canon and r.canon.strip():
+                attrs["canon"] = r.canon.strip()
+            if r.faction and r.faction.strip():
+                attrs["faction"] = r.faction.strip()
+            attrs["generic"] = bool(r.generic)
+            e.attributes = attrs
+            n += 1
+        log.info("Pass-3 canonicalization: refined %d/%d entities", n, len(entities_in))
+        return n
 
     async def _run_pass_4_coref(self) -> dict[str, Any]:
         entities = await repo.list_entities(self.ctx.session, self.ctx.book_id)
@@ -270,7 +319,7 @@ class Orchestrator:
             session=self.ctx.session, entities=entities, mentions=mentions
         )
 
-    async def _chunk_entity_pairs(self, chunks: list) -> list:
+    async def _chunk_entity_pairs(self, chunks: list[Any]) -> list[Any]:
         """Per chunk, its entities — capped to the most-mentioned (book-wide) so
         dense chunks don't explode Pass-5/6 prompt size, cost and 403 risk."""
         mentions = await repo.list_mentions(self.ctx.session, self.ctx.book_id)
