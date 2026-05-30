@@ -1,0 +1,112 @@
+{
+ "仙家": {
+  "en": "Immortals",
+  "zh-CN": "仙家",
+  "zh-TW": "仙家",
+  "ja": "仙人",
+  "ko": "신선",
+  "fr": "Immortels",
+  "es": "Inmortales",
+  "de": "Unsterbliche"
+ },
+ "佛门": {
+  "en": "Buddhist Orders",
+  "zh-CN": "佛门",
+  "zh-TW": "佛門",
+  "ja": "仏門",
+  "ko": "불문",
+  "fr": "Ordres Bouddhistes",
+  "es": "Órdenes Budistas",
+  "de": "Buddhistische Orden"
+ },
+ "凡间": {
+  "en": "Mortal World",
+  "zh-CN": "凡间",
+  "zh-TW": "凡間",
+  "ja": "人間",
+  "ko": "인간세계",
+  "fr": "Monde Mortel",
+  "es": "Mundo Mortal",
+  "de": "Sterbliche Welt"
+ },
+ "取经队伍": {
+  "en": "Pilgrimage Party",
+  "zh-CN": "取经队伍",
+  "zh-TW": "取經隊伍",
+  "ja": "取経隊",
+  "ko": "경전을 찾는 여행단",
+  "fr": "Équipe du Pèlerinage",
+  "es": "Equipo de Peregrinaje",
+  "de": "Pilgergruppe"
+ },
+ "地府": {
+  "en": "Underworld",
+  "zh-CN": "地府",
+  "zh-TW": "地府",
+  "ja": "地獄",
+  "ko": "저승",
+  "fr": "Monde Souterrain",
+  "es": "Inframundo",
+  "de": "Unterwelt"
+ },
+ "天庭": {
+  "en": "Heavenly Court",
+  "zh-CN": "天庭",
+  "zh-TW": "天庭",
+  "ja": "天宮",
+  "ko": "천정",
+  "fr": "Cour Céleste",
+  "es": "Corte Celestial",
+  "de": "Himmlischer Hof"
+ },
+ "妖魔": {
+  "en": "Demons",
+  "zh-CN": "妖魔",
+  "zh-TW": "妖魔",
+  "ja": "妖魔",
+  "ko": "요괴",
+  "fr": "Démons",
+  "es": "Demonios",
+  "de": "Dämonen"
+ },
+ "朝廷": {
+  "en": "Imperial Court",
+  "zh-CN": "朝廷",
+  "zh-TW": "朝廷",
+  "ja": "朝廷",
+  "ko": "조정",
+  "fr": "Cour Impériale",
+  "es": "Corte Imperial",
+  "de": "Kaiserlicher Hof"
+ },
+ "群猴": {
+  "en": "Monkey Horde",
+  "zh-CN": "群猴",
+  "zh-TW": "群猴",
+  "ja": "猿の群れ",
+  "ko": "원들의 무리",
+  "fr": "Horde de Singes",
+  "es": "Horda de Monos",
+  "de": "Affenhorde"
+ },
+ "花果山": {
+  "en": "Flower-Fruit Mountain",
+  "zh-CN": "花果山",
+  "zh-TW": "花果山",
+  "ja": "花果山",
+  "ko": "화과산",
+  "fr": "Mont des Fleurs et des Fruits",
+  "es": "Montaña de las Flores y los Frutos",
+  "de": "Blumen-Frucht-Berg"
+ },
+ "龙宫": {
+  "en": "Dragon Palace",
+  "zh-CN": "龙宫",
+  "zh-TW": "龍宮",
+  "ja": "龍宮",
+  "ko": "용궁",
+  "fr": "Palais du Dragon",
+  "es": "Palacio del Dragón",
+  "de": "Drachenpalast"
+ }
+}
