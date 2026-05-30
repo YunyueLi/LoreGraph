@@ -37,6 +37,11 @@ THEMES_TYPES = {"concept", "agent"}
 SOCIAL_MAX = 46
 THEMES_MAX = 30
 
+# Catch-all region for social nodes the LLM left without a faction.
+_OTHER_KEY = "other"
+_OTHER_LABEL = {"en": "Other", "zh-CN": "其他", "zh-TW": "其他", "ja": "その他",
+                "ko": "기타", "fr": "Autres", "es": "Otros", "de": "Andere"}
+
 
 def _summary(note_md: str) -> str:
     if not note_md:
@@ -163,17 +168,76 @@ def _split_large(group: list[str], edge_pairs: list[tuple[str, str]], max_size: 
     return out
 
 
+def _solar_layout(groups: list[list[str]], degree: Counter, cx: float, cy: float) -> tuple[dict, list]:
+    """Biggest group centred, the rest orbit it (a protagonist-centric solar
+    system). Returns (positions, [(rcx, rcy, spread, members), ...])."""
+    pos: dict[str, dict] = {}
+    metas: list[tuple] = []
+    g = len(groups)
+    rx_ring, ry_ring = 380, 300
+    for gi, members in enumerate(groups):
+        members = sorted(members, key=lambda x: -degree[x])
+        if gi == 0:
+            rcx, rcy = cx, cy
+        else:
+            ang = 2 * math.pi * (gi - 1) / max(1, g - 1) - math.pi / 2
+            rcx = cx + rx_ring * math.cos(ang)
+            rcy = cy + ry_ring * math.sin(ang)
+        m = len(members)
+        spread = 40 + 20 * math.sqrt(m)
+        for i, mid in enumerate(members):
+            a = i * 2.39996323
+            r = spread * math.sqrt((i + 0.5) / m) if m > 1 else 0
+            pos[mid] = {"x": round(rcx + r * math.cos(a), 1), "y": round(rcy + r * math.sin(a), 1)}
+        metas.append((round(rcx, 1), round(rcy, 1), spread, members))
+    return pos, metas
+
+
 def _social_clustered(
-    entities: list[dict], edges: list[dict], degree: Counter, cap: int, cx: float = 500, cy: float = 400
+    entities: list[dict], edges: list[dict], degree: Counter, cap: int, cx: float = 500, cy: float = 400,
+    faction_labels: dict | None = None,
 ) -> tuple[dict, list]:
-    """Cluster the social graph into communities laid out as separated, labelled
-    regions (soft ellipses) — instead of one node radiating to everything."""
-    ranked = sorted(
-        (e for e in entities if e["type"].lower() in SOCIAL_TYPES and degree[e["canonical_id"]] > 0),
-        key=lambda e: -degree[e["canonical_id"]],
-    )[:cap]
+    """Cluster the social graph into separated, labelled regions (soft ellipses).
+
+    When canonicalize_book.py has tagged entities with a ``faction`` (the
+    GraphRAG-style LLM step), group by that SEMANTIC faction — far cleaner than
+    graph topology for works like 西游记 (取经队伍 / 天庭 / 妖魔 …). Otherwise fall
+    back to label-propagation communities. Generic/collective entities (妖精,
+    群妖, …) are dropped so the character graph isn't swamped by non-individuals."""
+    pool = [
+        e for e in entities
+        if e["type"].lower() in SOCIAL_TYPES and degree[e["canonical_id"]] > 0
+        and not (e.get("attributes") or {}).get("generic")
+    ]
+    ranked = sorted(pool, key=lambda e: -degree[e["canonical_id"]])[:cap]
     ids = [e["canonical_id"] for e in ranked]
     name_by_id = {e["canonical_id"]: e["canonical_name"] for e in ranked}
+
+    # --- faction grouping (preferred) ---
+    fac_by_id = {
+        e["canonical_id"]: ((e.get("attributes") or {}).get("faction") or "").strip() for e in ranked
+    }
+    if ids and sum(1 for v in fac_by_id.values() if v) >= max(4, 0.4 * len(ids)):
+        fac_groups: dict[str, list[str]] = defaultdict(list)
+        for eid in ids:
+            fac_groups[fac_by_id[eid] or _OTHER_KEY].append(eid)
+        named = sorted(fac_groups.items(), key=lambda kv: -len(kv[1]))
+        pos, metas = _solar_layout([m for _, m in named], degree, cx, cy)
+        regions = []
+        for gi, ((fac, _members), (rcx, rcy, spread, members)) in enumerate(zip(named, metas, strict=True)):
+            label = _OTHER_LABEL if fac == _OTHER_KEY else ((faction_labels or {}).get(fac) or fac)
+            regions.append({
+                "id": f"fac{gi}",
+                "title": _OTHER_LABEL["zh-CN"] if fac == _OTHER_KEY else fac,
+                "label": label,  # localized faction name → region title
+                "entity": members[0],  # click focuses the faction's hub
+                "cx": rcx, "cy": rcy,
+                "rx": round(spread + 44, 1), "ry": round(spread + 36, 1),
+                "members": members,
+            })
+        return pos, regions
+
+    # --- fallback: topological communities (books without faction tags) ---
     idset = set(ids)
     pairs = [(ed["src"], ed["dst"]) for ed in edges if ed["src"] in idset and ed["dst"] in idset]
     groups = []
@@ -277,15 +341,15 @@ def _timeline(entities: list[dict], edge_list: list[dict], degree: Counter, chap
     # degree — those cluster in event-dense early chapters and collapse into one
     # phase. Bucket events into ~9 even chapter-bands and take the most salient in
     # each, so the beats span the arc and populate every phase.
-    NB = 9
+    nb = 9
     lo, hi = chs[0], chs[-1]
     span = max(1, hi - lo + 1)
-    if len(event_ents) <= NB:
+    if len(event_ents) <= nb:
         ranked = sorted(event_ents, key=lambda e: min(e["chapters"]))
     else:
         buckets: dict[int, list] = {}
         for e in event_ents:
-            bi = min(NB - 1, (min(e["chapters"]) - lo) * NB // span)
+            bi = min(nb - 1, (min(e["chapters"]) - lo) * nb // span)
             buckets.setdefault(bi, []).append(e)
         ranked = [
             max(buckets[bi], key=lambda e: (degree[e["canonical_id"]], e.get("mention_count", 0)))
@@ -394,7 +458,12 @@ def convert(payload: dict) -> dict:
     tokens = sum(c["tokens"] for c in chunks)
     all_chapters = sorted({c for e in raw_entities for c in (e.get("chapters") or [])})
     tl = _timeline(raw_entities, edges, degree, all_chapters)
-    social_pos, social_regions = _social_clustered(raw_entities, raw_edges, degree, SOCIAL_MAX)
+    # Localized faction labels (data/exports/<id>.factions.json), if canonicalized.
+    fac_path = EXPORTS_DIR / f"{bid}.factions.json"
+    faction_labels = json.loads(fac_path.read_text(encoding="utf-8")) if fac_path.exists() else {}
+    social_pos, social_regions = _social_clustered(
+        raw_entities, raw_edges, degree, SOCIAL_MAX, faction_labels=faction_labels
+    )
     book = {
         "id": bid,
         "title": meta["title"],
@@ -427,7 +496,10 @@ def convert(payload: dict) -> dict:
 def main() -> int:
     if not EXPORTS_DIR.exists():
         raise SystemExit(f"no exports dir: {EXPORTS_DIR}")
-    files = sorted(f for f in EXPORTS_DIR.glob("*.json") if not f.name.endswith(".i18n.json"))
+    files = sorted(
+        f for f in EXPORTS_DIR.glob("*.json")
+        if not (f.name.endswith(".i18n.json") or f.name.endswith(".factions.json"))
+    )
     if not files:
         raise SystemExit(f"no *.json in {EXPORTS_DIR}")
 
