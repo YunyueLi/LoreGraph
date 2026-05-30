@@ -364,13 +364,21 @@ function ViewGraph({ ctx }) {
         if (interGroup.length) cand = interGroup;  // prefer non-hub links for the backbone
       }
       cand.slice().sort((a, b) => strength(b) - strength(a))
-        .slice(0, hub ? 2 : 3)
+        .slice(0, hub ? 1 : 2)
         .forEach(e => keep.add(e.id));
     });
-    return base.filter(e =>
-      keep.has(e.id) ||
-      (selectedEntityId && (e.src === selectedEntityId || e.dst === selectedEntityId))
-    );
+    // Selecting a node reveals its strongest links — but CAPPED. A hub like 孙悟空
+    // has dozens; drawing them all turns the centre into an unreadable starburst
+    // (and the per-frame paint of that many paths is what made zoom flicker).
+    const sel = new Set();
+    if (selectedEntityId) {
+      base
+        .filter(e => e.src === selectedEntityId || e.dst === selectedEntityId)
+        .sort((a, b) => strength(b) - strength(a))
+        .slice(0, 14)
+        .forEach(e => sel.add(e.id));
+    }
+    return base.filter(e => keep.has(e.id) || sel.has(e.id));
   }, [edgeFilter, activeChapter, viewMode, bookId, selectedEntityId, entities, edges]);
 
   const edgeCounts = {
@@ -416,7 +424,10 @@ function ViewGraph({ ctx }) {
     let raf = 0;
     const tick = () => {
       raf = requestAnimationFrame(tick);
-      if (restingRef.current > 8 && !draggedRef.current) return;
+      // Park once settled OR once alpha has decayed (a tightly-packed faction
+      // layout can limit-cycle and never hit the velocity floor; freezing after
+      // the ~4s settle guarantees the canvas goes quiet — no perpetual repaint).
+      if (!draggedRef.current && (restingRef.current > 8 || alphaRef.current < 0.02)) return;
       setLivePositions(prev => {
         const next = stepSimulation(prev, velRef.current, visibleEdges, anchorsRef.current, alphaRef.current, draggedRef.current);
         // detect rest: max velocity magnitude under 0.1 → resting
@@ -829,12 +840,20 @@ function GraphCanvas({ visibleEntities, visibleEdges, positions, setLivePosition
   const nodeElsRef = useRef(new Map());
   const edgeElsRef = useRef(new Map());
 
-  // edge geometry as a closure so the drag fast-path and the layout sync
-  // both use the same formula. Returns null if either endpoint is missing.
+  // O(1) id→entity lookup. `entities.find` per edge per render was O(edges×entities)
+  // — ~100k ops/render for 西游记 (600 entities), recomputed on every zoom/pan
+  // frame, which is what janked the canvas into a flicker.
+  const entityById = useMemo(() => {
+    const m = new Map();
+    for (const e of entities) m.set(e.id, e);
+    return m;
+  }, [entities]);
+
+  // Edge geometry metadata. MEMOIZED on structure only, so zoom / pan / hover /
+  // selection re-renders never recompute it — and mirrored into a ref so the drag
+  // fast-path and the layout sync still read the latest without re-subscribing.
   const edgeRenderData = useRef([]);
-  // Maintain a quick lookup from edge id → { rA, rB, parallelIdx, parallelCount, label }
-  // computed once per React render, used by useLayoutEffect and drag.
-  edgeRenderData.current = (() => {
+  edgeRenderData.current = useMemo(() => {
     const pairKey = (a, b) => a < b ? `${a}_${b}` : `${b}_${a}`;
     const pairCount = {};
     visibleEdges.forEach(e => { const k = pairKey(e.src, e.dst); pairCount[k] = (pairCount[k] || 0) + 1; });
@@ -843,8 +862,8 @@ function GraphCanvas({ visibleEntities, visibleEdges, positions, setLivePosition
       const k = pairKey(edge.src, edge.dst);
       const idx = pairIdx[k] || 0;
       pairIdx[k] = idx + 1;
-      const srcE = entities.find(en => en.id === edge.src);
-      const dstE = entities.find(en => en.id === edge.dst);
+      const srcE = entityById.get(edge.src);
+      const dstE = entityById.get(edge.dst);
       // Stable curve direction per edge — derived from the edge id so it
       // never changes during a drag. (The original formula used current
       // positions, which flipped every pixel and made edges wriggle.)
@@ -860,15 +879,19 @@ function GraphCanvas({ visibleEntities, visibleEdges, positions, setLivePosition
         curveSign,
       };
     });
-  })();
+  }, [visibleEdges, entityById]);
 
   // Re-apply all DOM positions from the ref after every render. Runs
   // synchronously before paint, so the user never sees a stale frame.
   // For non-drag renders (selection / hover changes) this just rewrites
   // the same values — the SVG repaint is identical.
+  // Re-apply DOM positions ONLY when node positions or graph structure change.
+  // Crucially NOT on every render: zoom/pan change only `transform` (handled by
+  // the parent <g>), so re-writing every node + edge attribute on each wheel tick
+  // was pure waste — the heavy paint that made the large graph flicker.
   useLayoutEffect(() => {
     syncDomFromRef(positionsRef.current, nodeElsRef.current, edgeElsRef.current, edgeRenderData.current);
-  });
+  }, [positions, visibleEdges, visibleEntities]);
 
   // Node drag: bypass React entirely until release.
   const onNodePointerDown = (entityId) => (e) => {
