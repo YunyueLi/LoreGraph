@@ -809,7 +809,7 @@ function ChronicleOverlay({ chToX, axisY }) {
 
 // =========================== Graph canvas ===========================
 function GraphCanvas({ visibleEntities, visibleEdges, positions, setLivePositions, anchorsRef, draggedRef, reignite, resetLayout, entities, selectedEntityId, setSelectedEntityId, selectedEdgeId, setSelectedEdgeId, locale, tt, selected, fullscreen, toggleFullscreen, viewMode, overlays }) {
-  const { useState, useRef, useEffect, useLayoutEffect, useCallback } = React;
+  const { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } = React;
   const svgRef = useRef(null);
   const [transform, setTransform] = useState({ x: 0, y: 0, k: 1 });
   const transformRef = useRef(transform);
