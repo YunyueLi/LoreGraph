@@ -29,6 +29,7 @@ const ORDER = [
   "avatars.jsx",
   "covers.jsx",
   "view-library.jsx",
+  "graph-physics.jsx",
   "view-graph.jsx",
   "view-reader.jsx",
   "view-entities.jsx",
