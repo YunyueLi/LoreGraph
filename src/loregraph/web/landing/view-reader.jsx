@@ -91,7 +91,9 @@ function ViewReader({ ctx }) {
               onClick={() => { if (target) setSelectedChunkId(target.id); }}
               style={{opacity: target ? 1 : 0.5}}
             >
-              <div className="rd-ch-num">{String(c.n).padStart(2, "0")}</div>
+              {/* The ordinal is only useful alongside a real title; when the
+                  name is just "Chapter N" it would duplicate the number. */}
+              {c.hasTitle && <div className="rd-ch-num">{String(c.n).padStart(2, "0")}</div>}
               <div className="rd-ch-name">{c.name}</div>
               <div className="rd-ch-ent">{c.entities}</div>
             </div>
