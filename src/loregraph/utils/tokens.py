@@ -21,8 +21,3 @@ def _encoder() -> tiktoken.Encoding:
 def count_tokens(text: str) -> int:
     """Return the cl100k token count of `text`."""
     return len(_encoder().encode(text))
-
-
-def estimate_claude_tokens(text: str) -> int:
-    """Conservative upper bound on Claude token count (cl100k + 10 % padding)."""
-    return int(count_tokens(text) * 1.10)

@@ -13,13 +13,12 @@ from loregraph.utils.spans import (
     is_literal_match,
     match_rate,
 )
-from loregraph.utils.tokens import count_tokens, estimate_claude_tokens
+from loregraph.utils.tokens import count_tokens
 
 __all__ = [
     "SpanMatch",
     "UnionFind",
     "count_tokens",
-    "estimate_claude_tokens",
     "find_literal_span",
     "generate_candidate_pairs",
     "is_candidate_pair",
