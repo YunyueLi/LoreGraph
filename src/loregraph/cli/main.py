@@ -101,6 +101,56 @@ def extract(
 
 
 @app.command()
+def export(
+    book_id: int = typer.Option(..., "--book-id", help="ID of the extracted book."),
+    frontend_id: str = typer.Option(..., "--frontend-id", help="Frontend id for the export."),
+    out: Path = typer.Option(..., "--out", help="Output JSON path."),
+    license_: str = typer.Option("public-domain", "--license", help="public-domain | copyrighted."),
+    max_entities: int = typer.Option(0, "--max-entities", help="Cap to top-N by degree (0 = all)."),
+) -> None:
+    """Export an extracted book to frontend-ready JSON."""
+    import json
+
+    from loregraph.exporters.book_export import export_book
+
+    meta = asyncio.run(export_book(book_id, frontend_id, license_, out.resolve(), max_entities))
+    console.print(f"[green]Exported[/] {frontend_id}: {json.dumps(meta['counts'])} -> {out}")
+
+
+@app.command()
+def i18n(
+    frontend_id: str = typer.Option(..., "--frontend-id", help="Frontend id (reads its export)."),
+) -> None:
+    """Translate a book's entity names + glosses into the UI locales."""
+    from loregraph.exporters.translate import run
+
+    asyncio.run(run(frontend_id))
+
+
+@app.command()
+def factions(
+    book_id: int = typer.Option(..., "--book-id", help="ID of the extracted book."),
+    frontend_id: str | None = typer.Option(
+        None, "--frontend-id", help="Required with --factions-only."
+    ),
+    limit: int = typer.Option(0, "--limit", help="Only the top-N by degree (0 = all)."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Print results, write nothing."),
+    factions_only: bool = typer.Option(
+        False, "--factions-only", help="Just localize existing DB factions."
+    ),
+) -> None:
+    """Re-run LLM canonicalization (names / factions) on an extracted book."""
+    from loregraph.exporters.canonicalize_cli import run, run_factions
+
+    if factions_only:
+        if not frontend_id:
+            raise typer.BadParameter("--factions-only requires --frontend-id")
+        asyncio.run(run_factions(book_id, frontend_id))
+    else:
+        asyncio.run(run(book_id, limit, dry_run))
+
+
+@app.command()
 def view(
     host: str = typer.Option("127.0.0.1", "--host", help="Bind address."),
     port: int = typer.Option(8000, "--port", help="HTTP port."),
