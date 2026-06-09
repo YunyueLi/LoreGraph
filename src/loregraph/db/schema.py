@@ -90,6 +90,7 @@ class Chunk(Base):
     char_offset_end: Mapped[int] = mapped_column(Integer, nullable=False)
     # sha256 of the chunk text — lets incremental re-ingest skip unchanged chunks.
     content_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Reserved for vector recall (Phase 2); not written by any v0.1 pass.
     embedding: Mapped[list[float] | None] = mapped_column(Vector(VECTOR_DIM), nullable=True)
 
     __table_args__ = (
@@ -115,6 +116,7 @@ class Entity(Base):
     attributes: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict, server_default="{}"
     )
+    # Reserved for vector recall (Phase 2); not written by any v0.1 pass.
     embedding: Mapped[list[float] | None] = mapped_column(Vector(VECTOR_DIM), nullable=True)
 
     __table_args__ = (
@@ -259,7 +261,10 @@ class PassRun(Base):
 
 class Community(Base):
     """A detected cluster of entities — a faction / family / location group /
-    subplot. Produced by Pass-9 (community detection + LLM report)."""
+    subplot. Intended for Pass-9 (community detection + LLM report).
+
+    Reserved: created by migration 0003 but NOT populated in v0.1 — no pass
+    writes it and no Pydantic model reads it (Pass-9 is unbuilt)."""
 
     __tablename__ = "communities"
 
