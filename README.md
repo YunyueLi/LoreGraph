@@ -10,7 +10,7 @@ implies — where **every single claim is anchored to a literal span of the sour
 
 No hallucinated edges. No "trust me." Click any relationship and you land on the exact sentence it came from.
 
-`Apache-2.0`  ·  `Python 3.11+`  ·  `8-pass pipeline`  ·  `Claude Opus 4.8`  ·  `multilingual`  ·  `Alpha`
+`Apache-2.0`  ·  `Python 3.11+`  ·  `8-pass pipeline`  ·  `multi-LLM · DeepSeek V4 Pro default`  ·  `multilingual`  ·  `Alpha`
 
 **English**  ·  [简体中文](README.zh-CN.md)
 
@@ -28,7 +28,7 @@ flowchart LR
         P1["1 · Chunk"]:::det
         P2["2 · Entity"]:::llm
         P3["3 · Resolve"]:::llm
-        P4["4 · Coref"]:::llm
+        P4["4 · Coref"]:::det
         P5["5 · Relations"]:::llm
         P6["6 · GLUCOSE"]:::llm
         P7["7 · Verify"]:::gate
@@ -46,7 +46,7 @@ flowchart LR
     classDef store fill:#33414f,stroke:#1a232c,color:#eef2ff
 ```
 
-> **1** is deterministic · **2–6, 8** are LLM passes · **7** is the ≥95% literal-match verification gate.
+> **1, 4** are deterministic · **2, 3, 5, 6, 8** are LLM passes · **7** is the ≥95% literal-match verification gate.
 
 ---
 
@@ -104,10 +104,10 @@ all route through one hardened client.
 
 **Production engineering** (researched against Splink / ComEM / GraphRAG and the Anthropic + OpenRouter docs):
 
-- **Prompt caching** on the stable system prompt — measured **99.9% cache hit** on repeat calls (≈10× cheaper input).
+- **Prompt caching** on the stable system prompt — on Anthropic models (direct or `anthropic/*` via OpenRouter) repeat calls reuse the cached prefix (≈10× cheaper input); other providers fall back to their own server-side caching.
 - **Bounded-parallel** per-chunk LLM calls (≈10× faster than sequential) with retry + backoff + jitter.
 - **Per-pass commits + idempotent re-runs** — a failed pass resumes with `--from N`; nothing double-writes.
-- **Provider-agnostic** client: Claude Opus 4.8 via OpenRouter by default, swappable to 15+ backends.
+- **Provider-agnostic** client: DeepSeek V4 Pro via OpenRouter by default — one key, any mainstream model — swappable to 15+ backends (Anthropic, OpenAI, DeepSeek, Gemini, local, …).
 
 ---
 
@@ -123,7 +123,7 @@ uv run alembic upgrade head
 
 # 3. Configure (.env)
 cp .env.example .env        # set LOREGRAPH_LLM_PROVIDER + your API key
-                            # default: openrouter + anthropic/claude-opus-4.8
+                            # default: openrouter + deepseek/deepseek-v4-pro
 
 # 4. Ingest a public-domain text and extract its graph
 uv run loregraph ingest path/to/book.txt --title "Pride and Prejudice" --author "Jane Austen" --language en
@@ -131,11 +131,11 @@ uv run loregraph extract --book-id 1        # runs passes 1–8
 uv run loregraph status --book-id 1         # pass-by-pass progress, tokens, cost
 
 # 5. See it
-uv run loregraph view                        # FastAPI + the web reading-room
+uv run loregraph view                        # optional local FastAPI dev server (the public site is static)
 ```
 
 > **Cost & speed.** Every call's tokens and cost land in `pass_runs.stats`. A mid-size novel runs in minutes,
-> not hours, thanks to concurrency + caching. The per-book budget ceiling is configurable.
+> not hours, thanks to concurrency + caching. A per-book budget ceiling is configurable (`LOREGRAPH_COST_CEILING_USD`); enforcement is planned.
 
 ---
 
@@ -198,10 +198,10 @@ surfaced as graph + analysis only.
 | Variable | Default | Notes |
 |---|---|---|
 | `LOREGRAPH_LLM_PROVIDER` | `openrouter` | `anthropic`, `openai`, `deepseek`, `ollama`, … (15+) |
-| `LOREGRAPH_LLM_MODEL` | preset per provider | OpenRouter preset = `anthropic/claude-opus-4.8` |
+| `LOREGRAPH_LLM_MODEL` | preset per provider | OpenRouter preset = `deepseek/deepseek-v4-pro` |
 | `LOREGRAPH_EMBED_MODEL` | `intfloat/multilingual-e5-large` | local, 1024-dim, multilingual |
 | `DATABASE_URL` | local Postgres | must use the async `asyncpg` driver |
-| `LOREGRAPH_COST_CEILING_USD` | `100` | per-book hard stop |
+| `LOREGRAPH_COST_CEILING_USD` | `20` | per-book ceiling (configured; enforcement planned) |
 
 ---
 
@@ -224,13 +224,13 @@ surfaced as graph + analysis only.
 ## Development
 
 ```bash
-uv run ruff format && uv run ruff check     # lint + format
-uv run mypy src                             # types
-uv run pytest -m unit                       # fast unit tests
-uv run pytest -m integration                # Postgres testcontainer + mocked LLM
+uv run --extra dev ruff format && uv run --extra dev ruff check   # lint + format
+uv run --extra dev python -m mypy src                             # types
+uv run --extra dev python -m pytest -m unit                       # fast unit tests
+uv run --extra dev python -m pytest -m integration                # Postgres testcontainer + mocked LLM
 ```
 
-Conventions live in [`CLAUDE.md`](CLAUDE.md); the per-pass spec is in [`docs/7-pass-pipeline.md`](docs/7-pass-pipeline.md).
+Conventions live in [`CLAUDE.md`](CLAUDE.md); the per-pass spec is in [`docs/8-pass-pipeline.md`](docs/8-pass-pipeline.md).
 
 ## License
 

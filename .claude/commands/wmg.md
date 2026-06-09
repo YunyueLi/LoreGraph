@@ -1,5 +1,5 @@
 ---
-description: Drive the 85-book end-to-end pipeline (acquire → extract → export → wire → QA → deploy). Idempotent, resumable across turns. Uses Opus 4.7 via OpenRouter.
+description: Drive the 85-book end-to-end pipeline (acquire → extract → export → wire → QA → deploy). Idempotent, resumable across turns. Uses DeepSeek V4 Pro via OpenRouter.
 ---
 
 # /wmg — 85 books end-to-end
@@ -15,10 +15,10 @@ Take every book listed in the frontend landing page through the full LoreGraph 8
 1. **All 85 books processed locally. Source txt must NEVER be committed.**
    - `data/books/*/source.txt` is in `.gitignore`. Audit `git status` before every commit.
    - Only derived JSON exports (`data/exports/*.json`) go to GitHub — those are metadata, no copyright issue.
-2. **Model: `anthropic/claude-opus-4.7` via OpenRouter.** Already wired in `.env` + `client.py`. Don't downgrade to Sonnet "to save money" — user explicitly chose Opus for quality.
+2. **Model: `deepseek/deepseek-v4-pro` via OpenRouter.** Wired in `.env` + `client.py` as the default. User chose DeepSeek V4 Pro.
 3. **Budget: uncapped.** Track cumulative spend in state, never abort on cost.
 4. **Quality is non-negotiable.** Visual bugs get root-caused and fixed in source. No CSS bandaids. Per [`MEMORY.md`](/Users/admin/.claude/projects/-Users-admin-Desktop-WMG/memory/MEMORY.md): fix the real cause, not the symptom.
-5. **Multi-language is end-to-end.** Source text in original script (zh/en/es/etc.), UI labels via i18n, entity canonical names preserved in original language. LLM prompts stay English (Opus 4.7 handles all source languages natively).
+5. **Multi-language is end-to-end.** Source text in original script (zh/en/es/etc.), UI labels via i18n, entity canonical names preserved in original language. LLM prompts stay English (DeepSeek V4 Pro handles all source languages natively).
 
 ---
 
@@ -34,7 +34,7 @@ Single source of truth. Read at the start of every turn. Write atomically (tmp +
   "updated_at": "<iso8601>",
   "turns": 0,
   "cumulative_cost_usd": 0.0,
-  "model": "anthropic/claude-opus-4.7",
+  "model": "deepseek/deepseek-v4-pro",
   "books": {
     "<frontend_id>": {
       "title": "...",
@@ -87,7 +87,7 @@ After hitting the cap, ScheduleWakeup and stop. Don't try to fit "one more" — 
 ### init
 - Verify postgres is running: `pg_isready -h localhost`. If down: `brew services start postgresql@18`.
 - Verify alembic at head: `uv run alembic current`. If not: `uv run alembic upgrade head`.
-- Verify OpenRouter creds reach Opus 4.7 via a tiny smoke ping (use the same `LLMClient` the pipeline uses; one short prompt). Confirm `provider == "openrouter"` and `model == "anthropic/claude-opus-4.7"`.
+- Verify OpenRouter creds reach the model via a tiny smoke ping (use the same `LLMClient` the pipeline uses; one short prompt). Confirm `provider == "openrouter"` and `model == "deepseek/deepseek-v4-pro"`.
 - Verify `.gitignore` contains `data/books/*/source.txt`. If not, add it and commit (`chore: ignore source texts under data/books`).
 - → phase `manifest`.
 
@@ -118,7 +118,7 @@ For each book with `ingested_book_id` and `len(passes_done) < 8`:
 - Update `passes_done` from `pass_runs` table after each successful pass.
 - Read `pass_runs.stats.cost_usd` and add to `cumulative_cost_usd`.
 
-**1 book per turn.** Opus 4.7 on a full novel through 8 passes can run 30+ minutes and many dollars. Don't gorge.
+**1 book per turn.** A full novel through 8 passes can run 30+ minutes and real money. Don't gorge.
 
 ### export
 For each book where extraction is complete but `export_path` doesn't exist:

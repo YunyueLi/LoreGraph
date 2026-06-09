@@ -14,7 +14,9 @@ class PassRunCreate(BaseModel):
     """Pipeline-pass run record. `stats` carries cost, token, match-rate counters."""
 
     book_id: int
-    pass_num: int = Field(..., ge=1, le=10)  # 1-7 extract · 8 reconcile · 9 community · 10 note
+    pass_num: int = Field(
+        ..., ge=1, le=10
+    )  # passes 1-8 today (8 = Note synthesis); 9-10 reserved (unbuilt)
     status: PassStatus = PassStatus.PENDING
     stats: dict[str, Any] = Field(default_factory=dict)
     error: str | None = None

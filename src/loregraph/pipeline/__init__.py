@@ -1,4 +1,4 @@
-"""7-Pass extraction pipeline + orchestrator."""
+"""8-Pass extraction pipeline + orchestrator."""
 
 from __future__ import annotations
 

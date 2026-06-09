@@ -10,7 +10,7 @@ LoreGraph 把一部小说、剧本、电影脚本或歌剧 libretto 变成**可�
 
 没有凭空捏造的边。不用"相信我"。点任意一条关系，直接跳到它出自的那句原文。
 
-`Apache-2.0`  ·  `Python 3.11+`  ·  `8 步流水线`  ·  `Claude Opus 4.8`  ·  `多语种`  ·  `Alpha`
+`Apache-2.0`  ·  `Python 3.11+`  ·  `8 步流水线`  ·  `多 LLM · 默认 DeepSeek V4 Pro`  ·  `多语种`  ·  `Alpha`
 
 [English](README.md)  ·  **简体中文**
 
@@ -28,7 +28,7 @@ flowchart LR
         P1["1 · 切块"]:::det
         P2["2 · 实体"]:::llm
         P3["3 · 归并"]:::llm
-        P4["4 · 指代"]:::llm
+        P4["4 · 指代"]:::det
         P5["5 · 关系"]:::llm
         P6["6 · GLUCOSE"]:::llm
         P7["7 · 核验"]:::gate
@@ -46,7 +46,7 @@ flowchart LR
     classDef store fill:#33414f,stroke:#1a232c,color:#eef2ff
 ```
 
-> **1** 是确定性的 · **2–6、8** 是 LLM 步 · **7** 是 ≥95% 字面命中的核验门槛。
+> **1、4** 是确定性的 · **2、3、5、6、8** 是 LLM 步 · **7** 是 ≥95% 字面命中的核验门槛。
 
 ---
 
@@ -101,10 +101,10 @@ Italiano、日本語、Ελληνικά 等。源文本保持原文字形；实�
 
 **生产级工程**（对标 Splink / ComEM / GraphRAG 与 Anthropic、OpenRouter 官方文档）：
 
-- **Prompt 缓存** 命中稳定系统提示——实测**命中率 99.9%**（输入便宜约 10×）。
+- **Prompt 缓存** 命中稳定系统提示——Anthropic 模型（直连或 OpenRouter 上的 `anthropic/*`）重复调用复用缓存前缀（输入便宜约 10×）；其他 provider 走各自的服务端缓存。
 - **有界并发**的逐块 LLM 调用（比串行快约 10×），带重试 + 退避 + 抖动。
 - **逐步提交 + 幂等重跑**——某步失败用 `--from N` 续跑，绝不重复写入。
-- **provider 无关**客户端：默认 OpenRouter 上的 Claude Opus 4.8，可切 15+ 后端。
+- **provider 无关**客户端：默认 OpenRouter 上的 DeepSeek V4 Pro——一个 key 通任意主流模型——可切 15+ 后端（Anthropic、OpenAI、DeepSeek、Gemini、本地…）。
 
 ---
 
@@ -117,12 +117,12 @@ createdb loregraph && psql loregraph -c "CREATE EXTENSION IF NOT EXISTS vector;"
 uv run alembic upgrade head                               # Postgres + pgvector
 
 cp .env.example .env                                      # 配置 provider + API key
-                                                          # 默认 openrouter + anthropic/claude-opus-4.8
+                                                          # 默认 openrouter + deepseek/deepseek-v4-pro
 
 uv run loregraph ingest book.txt --title "西游记" --author "吴承恩" --language zh
 uv run loregraph extract --book-id 1                      # 跑 1–8 步
 uv run loregraph status --book-id 1                       # 逐步进度、token、成本
-uv run loregraph view                                     # 启动网页阅读室
+uv run loregraph view                                     # 可选的本地 FastAPI 服务（线上是静态站点）
 ```
 
 ---
@@ -184,10 +184,10 @@ LoreGraph 自带 **85 部经典作品** 参考集——小说、戏剧、歌剧�
 | 变量 | 默认 | 说明 |
 |---|---|---|
 | `LOREGRAPH_LLM_PROVIDER` | `openrouter` | `anthropic`、`openai`、`deepseek`、`ollama`… (15+) |
-| `LOREGRAPH_LLM_MODEL` | 各 provider 预设 | OpenRouter 预设 = `anthropic/claude-opus-4.8` |
+| `LOREGRAPH_LLM_MODEL` | 各 provider 预设 | OpenRouter 预设 = `deepseek/deepseek-v4-pro` |
 | `LOREGRAPH_EMBED_MODEL` | `intfloat/multilingual-e5-large` | 本地、1024 维、多语种 |
 | `DATABASE_URL` | 本地 Postgres | 必须用异步 `asyncpg` 驱动 |
-| `LOREGRAPH_COST_CEILING_USD` | `100` | 单本硬上限 |
+| `LOREGRAPH_COST_CEILING_USD` | `20` | 单本上限（已配置；强制执行待实现）|
 
 ---
 
@@ -210,13 +210,13 @@ LoreGraph 自带 **85 部经典作品** 参考集——小说、戏剧、歌剧�
 ## 开发
 
 ```bash
-uv run ruff format && uv run ruff check     # 格式化 + lint
-uv run mypy src                             # 类型检查
-uv run pytest -m unit                       # 快速单测
-uv run pytest -m integration                # Postgres testcontainer + mocked LLM
+uv run --extra dev ruff format && uv run --extra dev ruff check   # 格式化 + lint
+uv run --extra dev python -m mypy src                             # 类型检查
+uv run --extra dev python -m pytest -m unit                       # 快速单测
+uv run --extra dev python -m pytest -m integration                # Postgres testcontainer + mocked LLM
 ```
 
-约定见 [`CLAUDE.md`](CLAUDE.md)；逐步规格见 [`docs/7-pass-pipeline.md`](docs/7-pass-pipeline.md)。
+约定见 [`CLAUDE.md`](CLAUDE.md)；逐步规格见 [`docs/8-pass-pipeline.md`](docs/8-pass-pipeline.md)。
 
 ## 许可
 

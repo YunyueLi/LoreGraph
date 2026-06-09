@@ -57,6 +57,7 @@ def _clear_llm_env(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
         "TOGETHER_API_KEY",
         "FIREWORKS_API_KEY",
         "MISTRAL_API_KEY",
+        "OPENROUTER_API_KEY",
     ]:
         monkeypatch.delenv(var, raising=False)
     yield
@@ -204,9 +205,23 @@ def test_resolved_model_falls_back_to_preset_default() -> None:
 
 
 @pytest.mark.unit
-def test_factory_returns_anthropic_client_by_default(
+def test_factory_returns_openrouter_client_by_default(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Default provider is openrouter — one key, any mainstream model."""
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-test")
+    s = Settings()  # type: ignore[call-arg]
+    client = make_llm_client(s)
+    assert isinstance(client, OpenAICompatibleLLMClient)
+    assert client.provider == "openrouter"
+    assert client.model == "deepseek/deepseek-v4-pro"
+
+
+@pytest.mark.unit
+def test_factory_returns_anthropic_client_when_selected(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LOREGRAPH_LLM_PROVIDER", "anthropic")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
     s = Settings()  # type: ignore[call-arg]
     client = make_llm_client(s)

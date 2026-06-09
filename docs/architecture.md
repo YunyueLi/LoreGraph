@@ -2,7 +2,7 @@
 
 ## Overview
 
-LoreGraph builds a queryable knowledge graph from a single closed-world fictional text (novel, screenplay, script) via a 7-Pass LLM extraction pipeline. Every node and edge is traceable to a literal span in the original text.
+LoreGraph builds a queryable knowledge graph from a single closed-world fictional text (novel, screenplay, script) via an 8-Pass LLM extraction pipeline. Every node and edge is traceable to a literal span in the original text.
 
 ## Design ancestry
 
@@ -25,13 +25,13 @@ See [`references.bib`](references.bib) for the full bibliography.
 
 ```
 ┌──────────────────────────────────────────┐
-│  Web UI   FastAPI + React + Cytoscape    │  v0.1
+│  Web UI   Static site + optional API     │  v0.1
 ├──────────────────────────────────────────┤
 │  CLI      Typer                          │  v0.1
 ├──────────────────────────────────────────┤
-│  Pipeline 7-Pass orchestrator            │  v0.1
+│  Pipeline 8-Pass orchestrator            │  v0.1
 ├──────────────────────────────────────────┤
-│  LLM      Anthropic SDK + prompt cache   │  v0.1
+│  LLM      Multi-provider + prompt cache  │  v0.1
 ├──────────────────────────────────────────┤
 │  Storage  SQLAlchemy 2.0 + PG + pgvector │  v0.1
 └──────────────────────────────────────────┘
@@ -43,18 +43,18 @@ See [`references.bib`](references.bib) for the full bibliography.
 |---|---|
 | `src/loregraph/models/` | Pydantic data models (Chunk, Mention, Entity, Edge, GlucoseFact) |
 | `src/loregraph/db/` | SQLAlchemy schema + async repository |
-| `src/loregraph/llm/` | Anthropic client wrapper + prompt templates + gleaning |
+| `src/loregraph/llm/` | Multi-provider LLM client + prompt templates + gleaning |
 | `src/loregraph/pipeline/` | One file per pass + `orchestrator.py` |
 | `src/loregraph/cli/` | Typer commands |
-| `src/loregraph/web/` | FastAPI routes + React frontend |
+| `src/loregraph/web/` | FastAPI routes + web frontends (static landing site + React app) |
 | `src/loregraph/utils/` | Token counting, span matching, logging |
-| `migrations/` | Alembic SQL migrations |
+| `migrations/` | Alembic migrations |
 | `tests/{unit,integration,e2e}/` | Three test tiers |
 
 ## v0.1 scope
 
 - **Phase 0**: configuration, schema bootstrap.
-- **Phase 1**: 7-Pass extraction (Pass-1 Chunk → Pass-7 CoVe).
+- **Phase 1**: 8-Pass extraction (Pass-1 Chunk → Pass-8 Note).
 
 Phase 2 (community detection, PPR retrieval), Phase 3 (reflection, foreshadowing), and Phase 4 (Generative Agent + SymbolicToM + MCTS counterfactual continuation) are deferred to v0.2 +.
 

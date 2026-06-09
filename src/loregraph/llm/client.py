@@ -135,11 +135,11 @@ PROVIDER_PRESETS: dict[str, tuple[str | None, str | None]] = {
     ),
     "mistral": ("https://api.mistral.ai/v1", "mistral-large-latest"),
     # OpenRouter aggregates ~200 models behind one OpenAI-compatible
-    # endpoint. Default is Opus 4.8 — best reasoning available, used for
-    # the whole 85-book extraction (uniform model, no per-pass routing —
-    # quality over cost, per project owner). Override via LOREGRAPH_LLM_MODEL
-    # for cheaper runs (anthropic/claude-sonnet-4.5, openai/gpt-4o, etc.).
-    "openrouter": ("https://openrouter.ai/api/v1", "anthropic/claude-opus-4.8"),
+    # endpoint — one key, any mainstream model. This is the default
+    # provider; default model is DeepSeek V4 Pro. Override via
+    # LOREGRAPH_LLM_MODEL (e.g. anthropic/claude-opus-4.8, openai/gpt-4o,
+    # meta-llama/llama-3.3-70b-instruct).
+    "openrouter": ("https://openrouter.ai/api/v1", "deepseek/deepseek-v4-pro"),
     "ollama": ("http://localhost:11434/v1", "llama3.2"),
     "vllm": ("http://localhost:8000/v1", ""),
     "openai_compatible": (None, None),

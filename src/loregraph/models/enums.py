@@ -25,7 +25,7 @@ class EntityType(StrEnum):
 class RelationType(StrEnum):
     """The 5 relation classes produced by Pass-5.
 
-    See `docs/7-pass-pipeline.md` for the semantics of each.
+    See `docs/8-pass-pipeline.md` for the semantics of each.
     """
 
     STRUCTURAL = "STRUCTURAL"

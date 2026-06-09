@@ -1,8 +1,7 @@
 """LoreGraph runtime configuration.
 
 Loaded from environment variables (and an optional .env file at the repo
-root). Per-book overrides live in `loregraph.yaml` and are layered on at
-pipeline invocation time, not here.
+root).
 """
 
 from __future__ import annotations
@@ -36,7 +35,7 @@ class Settings(BaseSettings):
 
     # ── LLM provider selection ───────────────────────────────────────
     llm_provider: str = Field(
-        default="anthropic",
+        default="openrouter",
         alias="LOREGRAPH_LLM_PROVIDER",
         description=(
             "Which LLM backend to use. One of: anthropic, openai, deepseek, "
@@ -84,7 +83,9 @@ class Settings(BaseSettings):
     # ── Legacy / behaviour ───────────────────────────────────────────
     model: str = Field("claude-sonnet-4-6", alias="LOREGRAPH_MODEL")
     log_level: str = Field("INFO", alias="LOREGRAPH_LOG_LEVEL")
-    cost_ceiling_usd: float = Field(20.0, alias="LOREGRAPH_COST_CEILING_USD")
+    cost_ceiling_usd: float = Field(
+        20.0, alias="LOREGRAPH_COST_CEILING_USD"
+    )  # configured but NOT yet enforced by the orchestrator (planned)
 
     # ── Provider lookup helpers ─────────────────────────────────────
     def resolved_api_key(self, provider: str) -> str | None:

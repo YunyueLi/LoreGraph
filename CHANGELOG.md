@@ -8,11 +8,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Default LLM = DeepSeek V4 Pro via OpenRouter.** Provider default switched to `openrouter`,
+  default model `deepseek/deepseek-v4-pro`. One key reaches any mainstream model; fully
+  configurable via `LOREGRAPH_LLM_*`. Docs (README, `CLAUDE.md`, `.env.example`, `render.yaml`)
+  realigned, and the cost ceiling marked *configured but not yet enforced*.
+- **Multi-provider LLM client** — 15+ backends (OpenAI, DeepSeek, Kimi, GLM, Qwen, Gemini, Groq,
+  xAI, Mistral, Together, Fireworks, Ollama, vLLM, OpenRouter) behind the OpenAI-compatible SDK;
+  Anthropic stays native. Per-provider presets + `LOREGRAPH_LLM_BASE_URL` escape hatch.
+- **Pass-8 Note synthesis** — per-entity Hybrid Note (`[CONTEXT]`/`[FACTS]`/`[INFERENCES]`/`[GAPS]`/
+  `[EVIDENCE]`) → `entities.note_md` + subtype/tier. `MAX_PASS_NUM_V0_1` 7 → 8; CLI `--to` 7 → 8.
+- **Pass-3 canonicalization** — `pipeline/canonicalize.py`: LLM normalisation of well-known entity
+  names + faction localization, wired into the pipeline after clustering.
+- **Local multilingual embeddings** — `llm/embeddings.py` (`fastembed`, `intfloat/multilingual-e5-large`,
+  1024-dim) powering Pass-3 candidate blocking.
+- **Migrations 0002 + 0003** — widen `pass_runs.pass_num` to 1–10; add narrative-time / dedup
+  columns to `chunks`/`edges`/`glucose_facts`; add (reserved, not yet populated) `communities` /
+  `community_members` tables.
+- **Static landing site** — `web/landing/` (vanilla JSX) published to GitHub Pages via `npm run
+  deploy`; Reader · Graph · Timeline · Index · Ask views; 8-locale i18n + per-book entity
+  translations + faction layer; fed by `scripts/{export_book,canonicalize_book,translate_book,
+  build_frontend_data}.py` → `data/exports/*.json`.
+- **Docs** — renamed `docs/7-pass-pipeline.md` → `docs/8-pass-pipeline.md`; corrected pass count
+  (7 → 8), provider/model defaults, and deploy target (static GitHub Pages, not Render/Cloudflare).
 - Initial repository scaffolding: `pyproject.toml`, ruff/pytest config, docker-compose
   (Postgres 17 + pgvector), CI workflow, Apache 2.0 license.
 - Empty `loregraph` Python package with Typer CLI stubs (`init`, `ingest`, `extract`,
   `view`, `status`).
-- `docs/`: architecture, 7-pass-pipeline spec, BibTeX references.
+- `docs/`: architecture, 8-pass-pipeline spec, BibTeX references.
 - `CLAUDE.md` repo conventions for AI-assisted development.
 - **PR #2 — Data models, DB schema, migrations**:
   - Pydantic models: `Book`, `Chunk`, `Mention`, `Entity`, `Edge`,

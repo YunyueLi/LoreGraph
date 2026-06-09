@@ -2,6 +2,8 @@
 
 This guide walks you through deploying a public **LoreGraph demo** that visitors can browse without installing anything.
 
+> **Note — the default public site is static.** The live LoreGraph site is a **static GitHub Pages build** of `web/landing/` (no live API or database at runtime; see [`web/README.md`](../src/loregraph/web/README.md)). The Neon + Render + Cloudflare setup below is the **optional** route for self-hosting the queryable **API backend**; it is not required to publish the demo, and will be refreshed when the frontends are consolidated.
+
 ```
   ┌─────────────────────────┐     ┌──────────────────────────┐     ┌──────────────────┐
   │  Cloudflare Pages       │     │  Render web service       │     │  Neon Postgres   │
@@ -10,8 +12,8 @@ This guide walks you through deploying a public **LoreGraph demo** that visitors
   └─────────────────────────┘     └──────────────────────────┘     └──────────────────┘
                                               │
                                               ▼
-                                       Anthropic API
-                                       (your Claude key)
+                                       LLM provider API
+                                       (your provider key)
 ```
 
 > **What this deployment serves**: a read-only public demo of pre-extracted graphs. Visitors browse; the API key is only used when *you* ingest new books from your shell.
@@ -41,7 +43,7 @@ The repository ships a `render.yaml` blueprint, so you just connect Render to Gi
 1. Go to [render.com](https://render.com) → sign in with GitHub.
 2. **New → Blueprint** → pick `YunyueLi/LoreGraph`.
 3. Render reads `render.yaml` and asks you for two secrets:
-   - **`ANTHROPIC_API_KEY`** — your Claude API key.
+   - **`OPENROUTER_API_KEY`** — your OpenRouter key (the default provider).
    - **`DATABASE_URL`** — paste the Neon URL from step 1.
 4. Click **Apply**. First build takes ~3 min (`pip install -e . && alembic upgrade head`).
 5. When the service shows **Live**, note the URL — something like `https://loregraph-q9f8.onrender.com`. Test:
@@ -77,17 +79,17 @@ Go back to the Render service → **Environment** → set
 
 ## 4. Seed demo data (run locally, once)
 
-The deployed site shows an empty state until you ingest at least one book. Do this from your laptop because extraction needs your Anthropic key.
+The deployed site shows an empty state until you ingest at least one book. Do this from your laptop because extraction needs your LLM provider key.
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
+export OPENROUTER_API_KEY=sk-or-...   # default provider; or ANTHROPIC_API_KEY / OPENAI_API_KEY / …
 export DATABASE_URL="postgresql+asyncpg://USER:PWD@ep-...-pooler.aws.neon.tech/neondb?sslmode=require"
 
 # Public-domain demo book (already in repo):
 loregraph ingest examples/yellow_wallpaper/input.txt \
   --title "The Yellow Wallpaper" --author "Charlotte Perkins Gilman"
 
-# Run the full pipeline. ~$0.20-1.00 in Anthropic spend per short book.
+# Run the full pipeline. ~$0.20-1.00 in LLM spend per short book.
 loregraph extract --book-id 1
 
 # Sanity check:
