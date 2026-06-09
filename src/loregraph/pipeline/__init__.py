@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from loregraph.pipeline.context import PipelineContext
-from loregraph.pipeline.orchestrator import Orchestrator
+from loregraph.pipeline.orchestrator import CostCeilingError, Orchestrator
 from loregraph.pipeline.pass1_chunk import ChunkerConfig, Pass1Chunker
 from loregraph.pipeline.pass2_entity import Pass2EntityExtractor
 from loregraph.pipeline.pass3_cluster import Pass3Clusterer
@@ -20,6 +20,7 @@ __all__ = [
     "ChunkerConfig",
     "CoVeGateError",
     "CoVeStats",
+    "CostCeilingError",
     "Orchestrator",
     "Pass1Chunker",
     "Pass2EntityExtractor",

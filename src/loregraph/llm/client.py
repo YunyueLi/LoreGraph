@@ -236,6 +236,19 @@ class LLMUsage:
             "requests": self.requests,
         }
 
+    def est_cost_usd(self, price_in_per_mtok: float, price_out_per_mtok: float) -> float:
+        """Rough USD estimate for the budget brake — not billing-accurate.
+
+        Counts (fresh input + cache writes) at the input price and output at the
+        output price. `cache_creation` is 0 for OpenAI-compatible providers (where
+        `input_tokens` already covers the whole prompt) and non-zero only for
+        Anthropic; cache-read tokens are billed at a fraction and are omitted.
+        """
+        billable_input = self.input_tokens + self.cache_creation_input_tokens
+        return (
+            billable_input * price_in_per_mtok + self.output_tokens * price_out_per_mtok
+        ) / 1_000_000
+
 
 # ────────────────────────────────────────────────────────────────────
 # Public client protocol + concrete backends

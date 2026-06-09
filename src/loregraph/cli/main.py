@@ -56,7 +56,7 @@ def init() -> None:
     """Print the bootstrap checklist (DB + .env) for a fresh clone."""
     typer.echo(
         "loregraph init — bootstrap checklist:\n"
-        "  1. Copy .env.example to .env and set ANTHROPIC_API_KEY\n"
+        "  1. Copy .env.example to .env and set OPENROUTER_API_KEY (or your provider's key)\n"
         "  2. docker compose up -d\n"
         "  3. alembic upgrade head\n"
         "  4. loregraph ingest <path> --title <name>\n"
@@ -90,7 +90,13 @@ def extract(
     to_pass: int = typer.Option(8, "--to", min=1, max=8, help="Last pass to run."),
 ) -> None:
     """Run the full extraction pipeline (Pass-1..Pass-8)."""
-    asyncio.run(run_extract(book_id=book_id, from_pass=from_pass, to_pass=to_pass))
+    from loregraph.pipeline.orchestrator import CostCeilingError
+
+    try:
+        asyncio.run(run_extract(book_id=book_id, from_pass=from_pass, to_pass=to_pass))
+    except CostCeilingError as exc:
+        console.print(f"[yellow]Stopped on budget[/]: {exc}")
+        raise typer.Exit(1) from exc
     console.print(f"[green]Extraction done[/]: book_id={book_id}, passes={from_pass}-{to_pass}")
 
 
@@ -105,7 +111,7 @@ def view(
         help="Optional: print a direct link to this book's graph.",
     ),
 ) -> None:
-    """Launch the FastAPI + React web UI."""
+    """Launch the FastAPI query API (optional; the public site is static)."""
     import uvicorn
 
     base = f"http://{host}:{port}"

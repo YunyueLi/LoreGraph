@@ -35,7 +35,7 @@ Touch points (in order):
 
 ## Cost discipline
 
-Every LLM call records token usage to `pass_runs.stats`. A per-book budget ceiling is **configured** (`LOREGRAPH_COST_CEILING_USD`, default $20) but **not yet enforced** in `pipeline/orchestrator.py` — enforcement is planned. Always design prompts so the system prompt + shared ontology block stays **stable across chunks** — this lets prompt caching (Anthropic, or `anthropic/*` via OpenRouter) kick in and saves 80%+ on input tokens.
+Every LLM call records token usage to `pass_runs.stats`. A per-book budget ceiling (`LOREGRAPH_COST_CEILING_USD`, default $20; `0` disables) is **enforced** between passes by `pipeline/orchestrator.py`: it estimates spend from token counts × configurable prices (`LOREGRAPH_PRICE_INPUT_PER_MTOK` / `…_OUTPUT_PER_MTOK`, default DeepSeek V4 Pro) and aborts (resumable with `--from`) when exceeded. Always design prompts so the system prompt + shared ontology block stays **stable across chunks** — this lets prompt caching (Anthropic, or `anthropic/*` via OpenRouter) kick in and saves 80%+ on input tokens.
 
 ## Testing tiers
 

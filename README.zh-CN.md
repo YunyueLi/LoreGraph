@@ -187,7 +187,8 @@ LoreGraph 自带 **85 部经典作品** 参考集——小说、戏剧、歌剧�
 | `LOREGRAPH_LLM_MODEL` | 各 provider 预设 | OpenRouter 预设 = `deepseek/deepseek-v4-pro` |
 | `LOREGRAPH_EMBED_MODEL` | `intfloat/multilingual-e5-large` | 本地、1024 维、多语种 |
 | `DATABASE_URL` | 本地 Postgres | 必须用异步 `asyncpg` 驱动 |
-| `LOREGRAPH_COST_CEILING_USD` | `20` | 单本上限（已配置；强制执行待实现）|
+| `LOREGRAPH_COST_CEILING_USD` | `20` | 单本上限，逐步之间强制执行（`0` 关闭）|
+| `LOREGRAPH_PRICE_INPUT_PER_MTOK` · `…_OUTPUT_PER_MTOK` | DeepSeek V4 Pro | 成本估算用的 token 价格 |
 
 ---
 

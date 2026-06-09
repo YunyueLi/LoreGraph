@@ -135,7 +135,7 @@ uv run loregraph view                        # optional local FastAPI dev server
 ```
 
 > **Cost & speed.** Every call's tokens and cost land in `pass_runs.stats`. A mid-size novel runs in minutes,
-> not hours, thanks to concurrency + caching. A per-book budget ceiling is configurable (`LOREGRAPH_COST_CEILING_USD`); enforcement is planned.
+> not hours, thanks to concurrency + caching. A per-book budget ceiling (`LOREGRAPH_COST_CEILING_USD`, default $20) is enforced between passes.
 
 ---
 
@@ -201,7 +201,8 @@ surfaced as graph + analysis only.
 | `LOREGRAPH_LLM_MODEL` | preset per provider | OpenRouter preset = `deepseek/deepseek-v4-pro` |
 | `LOREGRAPH_EMBED_MODEL` | `intfloat/multilingual-e5-large` | local, 1024-dim, multilingual |
 | `DATABASE_URL` | local Postgres | must use the async `asyncpg` driver |
-| `LOREGRAPH_COST_CEILING_USD` | `20` | per-book ceiling (configured; enforcement planned) |
+| `LOREGRAPH_COST_CEILING_USD` | `20` | per-book ceiling, enforced between passes (`0` disables) |
+| `LOREGRAPH_PRICE_INPUT_PER_MTOK` · `…_OUTPUT_PER_MTOK` | DeepSeek V4 Pro | token prices for the cost estimate |
 
 ---
 

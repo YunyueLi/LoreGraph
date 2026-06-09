@@ -112,6 +112,10 @@ async def _gather_bounded(coros: list[Any], limit: int) -> list[Any]:
     return out
 
 
+class CostCeilingError(RuntimeError):
+    """Raised when a book's estimated LLM spend exceeds cost_ceiling_usd."""
+
+
 class Orchestrator:
     """Run a contiguous range of passes against a book."""
 
@@ -128,8 +132,26 @@ class Orchestrator:
 
         for pass_num in range(from_pass, to_pass + 1):
             await self._run_one_pass(pass_num)
+            self._check_cost_ceiling()
 
     # ---- internals ----
+
+    def _check_cost_ceiling(self) -> None:
+        """Abort the run if cumulative estimated spend exceeds the ceiling.
+
+        Called after each pass commits, so finished passes stay durable and the
+        run resumes with `--from <next pass>`. A ceiling <= 0 disables the brake.
+        """
+        s = self.ctx.settings
+        if s.cost_ceiling_usd <= 0:
+            return
+        cost = self.ctx.usage.est_cost_usd(s.price_per_mtok_input, s.price_per_mtok_output)
+        if cost > s.cost_ceiling_usd:
+            raise CostCeilingError(
+                f"estimated spend ${cost:.2f} exceeded the per-book ceiling "
+                f"${s.cost_ceiling_usd:.2f} (LOREGRAPH_COST_CEILING_USD). Raise it or set it "
+                f"to 0 to disable; finished passes are committed (resume with --from)."
+            )
 
     async def _run_one_pass(self, pass_num: int) -> None:
         log.info("Pass-%d starting (book_id=%d)", pass_num, self.ctx.book_id)
@@ -166,6 +188,8 @@ class Orchestrator:
             raise
 
         finished = datetime.now(UTC)
+        s = self.ctx.settings
+        est_cost = self.ctx.usage.est_cost_usd(s.price_per_mtok_input, s.price_per_mtok_output)
         await repo.upsert_pass_run(
             self.ctx.session,
             PassRunCreate(
@@ -177,6 +201,7 @@ class Orchestrator:
                     "started_at": started.isoformat(),
                     "finished_at": finished.isoformat(),
                     "elapsed_sec": (finished - started).total_seconds(),
+                    "est_cost_usd": round(est_cost, 6),
                 },
             ),
         )

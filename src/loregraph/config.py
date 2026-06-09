@@ -85,7 +85,11 @@ class Settings(BaseSettings):
     log_level: str = Field("INFO", alias="LOREGRAPH_LOG_LEVEL")
     cost_ceiling_usd: float = Field(
         20.0, alias="LOREGRAPH_COST_CEILING_USD"
-    )  # configured but NOT yet enforced by the orchestrator (planned)
+    )  # per-book USD ceiling, enforced by the orchestrator between passes (0 disables)
+    # Token prices for the cost-ceiling estimate (USD per 1M tokens); defaults
+    # are DeepSeek V4 Pro. Set to match your provider/model.
+    price_per_mtok_input: float = Field(0.435, alias="LOREGRAPH_PRICE_INPUT_PER_MTOK")
+    price_per_mtok_output: float = Field(0.87, alias="LOREGRAPH_PRICE_OUTPUT_PER_MTOK")
 
     # ── Provider lookup helpers ─────────────────────────────────────
     def resolved_api_key(self, provider: str) -> str | None:
