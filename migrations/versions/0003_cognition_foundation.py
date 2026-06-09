@@ -29,7 +29,9 @@ _VECTOR_DIM = 1024
 
 def upgrade() -> None:
     # ---- chunks: story-time coordinate + incremental hash ----
-    op.add_column("chunks", sa.Column("story_pos", sa.Integer(), nullable=False, server_default="0"))
+    op.add_column(
+        "chunks", sa.Column("story_pos", sa.Integer(), nullable=False, server_default="0")
+    )
     op.add_column("chunks", sa.Column("content_hash", sa.Text(), nullable=True))
 
     # ---- edges: narrative-temporal + dedup grouping ----
@@ -38,12 +40,20 @@ def upgrade() -> None:
     op.add_column("edges", sa.Column("superseded_by_edge_id", sa.BigInteger(), nullable=True))
     op.add_column("edges", sa.Column("canonical_edge_id", sa.BigInteger(), nullable=True))
     op.create_foreign_key(
-        "edges_superseded_by_fk", "edges", "edges",
-        ["superseded_by_edge_id"], ["id"], ondelete="SET NULL",
+        "edges_superseded_by_fk",
+        "edges",
+        "edges",
+        ["superseded_by_edge_id"],
+        ["id"],
+        ondelete="SET NULL",
     )
     op.create_foreign_key(
-        "edges_canonical_fk", "edges", "edges",
-        ["canonical_edge_id"], ["id"], ondelete="SET NULL",
+        "edges_canonical_fk",
+        "edges",
+        "edges",
+        ["canonical_edge_id"],
+        ["id"],
+        ondelete="SET NULL",
     )
     op.create_index("edges_canonical_idx", "edges", ["canonical_edge_id"])
 
@@ -51,17 +61,31 @@ def upgrade() -> None:
     op.add_column("glucose_facts", sa.Column("valid_from_pos", sa.Integer(), nullable=True))
     op.add_column("glucose_facts", sa.Column("canonical_fact_id", sa.BigInteger(), nullable=True))
     op.create_foreign_key(
-        "glucose_canonical_fk", "glucose_facts", "glucose_facts",
-        ["canonical_fact_id"], ["id"], ondelete="SET NULL",
+        "glucose_canonical_fk",
+        "glucose_facts",
+        "glucose_facts",
+        ["canonical_fact_id"],
+        ["id"],
+        ondelete="SET NULL",
     )
 
     # ---- communities (Pass-9) ----
     op.create_table(
         "communities",
         sa.Column("id", sa.BigInteger(), primary_key=True),
-        sa.Column("book_id", sa.BigInteger(), sa.ForeignKey("books.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "book_id",
+            sa.BigInteger(),
+            sa.ForeignKey("books.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("level", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("parent_id", sa.BigInteger(), sa.ForeignKey("communities.id", ondelete="SET NULL"), nullable=True),
+        sa.Column(
+            "parent_id",
+            sa.BigInteger(),
+            sa.ForeignKey("communities.id", ondelete="SET NULL"),
+            nullable=True,
+        ),
         sa.Column("label", sa.Text(), nullable=False, server_default=""),
         sa.Column("summary_md", sa.Text(), nullable=False, server_default=""),
         sa.Column("size", sa.Integer(), nullable=False, server_default="0"),
@@ -72,8 +96,18 @@ def upgrade() -> None:
 
     op.create_table(
         "community_members",
-        sa.Column("community_id", sa.BigInteger(), sa.ForeignKey("communities.id", ondelete="CASCADE"), primary_key=True),
-        sa.Column("entity_id", sa.BigInteger(), sa.ForeignKey("entities.id", ondelete="CASCADE"), primary_key=True),
+        sa.Column(
+            "community_id",
+            sa.BigInteger(),
+            sa.ForeignKey("communities.id", ondelete="CASCADE"),
+            primary_key=True,
+        ),
+        sa.Column(
+            "entity_id",
+            sa.BigInteger(),
+            sa.ForeignKey("entities.id", ondelete="CASCADE"),
+            primary_key=True,
+        ),
     )
     op.create_index("community_members_entity_idx", "community_members", ["entity_id"])
 

@@ -239,7 +239,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--max-entities", type=int, default=0, help="cap to top-N by degree (0 = all)")
     args = ap.parse_args(argv)
     meta = asyncio.run(
-        export_book(args.book_id, args.frontend_id, args.license, ROOT / args.out, args.max_entities)
+        export_book(
+            args.book_id, args.frontend_id, args.license, ROOT / args.out, args.max_entities
+        )
     )
     print(f"exported {args.frontend_id}: {json.dumps(meta['counts'])} -> {args.out}")
     return 0

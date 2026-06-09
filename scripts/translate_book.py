@@ -95,13 +95,19 @@ async def run(frontend_id: str) -> None:
     payload = json.loads((EXPORTS / f"{frontend_id}.json").read_text(encoding="utf-8"))
     title = payload["metadata"]["title"]
     items = [
-        {"id": e["canonical_id"], "name": e["canonical_name"], "gloss": _summary(e.get("note_md", ""))}
+        {
+            "id": e["canonical_id"],
+            "name": e["canonical_name"],
+            "gloss": _summary(e.get("note_md", "")),
+        }
         for e in payload["entities"]
     ]
     llm = make_llm_client_from_env()
 
     # English is the source — store it verbatim.
-    result: dict[str, dict] = {it["id"]: {"en": {"name": it["name"], "gloss": it["gloss"]}} for it in items}
+    result: dict[str, dict] = {
+        it["id"]: {"en": {"name": it["name"], "gloss": it["gloss"]}} for it in items
+    }
 
     batches = [items[i : i + _BATCH] for i in range(0, len(items), _BATCH)]
     sem = asyncio.Semaphore(_CONCURRENCY)
@@ -111,7 +117,9 @@ async def run(frontend_id: str) -> None:
             return lang, await _translate_batch(llm, title, lang, batch)
 
     jobs = [one(lang, b) for lang in LOCALES for b in batches]
-    for done, fut in enumerate(asyncio.as_completed([asyncio.ensure_future(j) for j in jobs]), start=1):
+    for done, fut in enumerate(
+        asyncio.as_completed([asyncio.ensure_future(j) for j in jobs]), start=1
+    ):
         lang, mapping = await fut
         for eid, val in mapping.items():
             if eid in result:

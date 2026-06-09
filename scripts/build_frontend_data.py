@@ -39,8 +39,16 @@ THEMES_MAX = 30
 
 # Catch-all region for social nodes the LLM left without a faction.
 _OTHER_KEY = "other"
-_OTHER_LABEL = {"en": "Other", "zh-CN": "其他", "zh-TW": "其他", "ja": "その他",
-                "ko": "기타", "fr": "Autres", "es": "Otros", "de": "Andere"}
+_OTHER_LABEL = {
+    "en": "Other",
+    "zh-CN": "其他",
+    "zh-TW": "其他",
+    "ja": "その他",
+    "ko": "기타",
+    "fr": "Autres",
+    "es": "Otros",
+    "de": "Andere",
+}
 
 
 def _summary(note_md: str) -> str:
@@ -80,7 +88,9 @@ def _layout(entities: list[dict], degree: Counter, allowed: set[str], cap: int) 
     return _phyllotaxis([e["canonical_id"] for e in ranked])
 
 
-def _communities(node_ids: list[str], edge_pairs: list[tuple[str, str]], max_groups: int = 6) -> list[list[str]]:
+def _communities(
+    node_ids: list[str], edge_pairs: list[tuple[str, str]], max_groups: int = 6
+) -> list[list[str]]:
     """Label-propagation community detection. A protagonist hub connects to
     everyone and would swallow all communities, so hub-incident edges are
     EXCLUDED while detecting — the real sub-groups (court, tea-party, …) emerge
@@ -150,7 +160,9 @@ def _communities(node_ids: list[str], edge_pairs: list[tuple[str, str]], max_gro
     return big
 
 
-def _split_large(group: list[str], edge_pairs: list[tuple[str, str]], max_size: int = 10) -> list[list[str]]:
+def _split_large(
+    group: list[str], edge_pairs: list[tuple[str, str]], max_size: int = 10
+) -> list[list[str]]:
     """Recursively break an over-large community into sub-factions, so the
     densely-connected main cast doesn't end up as one giant region. Re-runs
     detection on the group's internal subgraph (which excludes the group's own
@@ -168,7 +180,9 @@ def _split_large(group: list[str], edge_pairs: list[tuple[str, str]], max_size: 
     return out
 
 
-def _solar_layout(groups: list[list[str]], degree: Counter, cx: float, cy: float) -> tuple[dict, list]:
+def _solar_layout(
+    groups: list[list[str]], degree: Counter, cx: float, cy: float
+) -> tuple[dict, list]:
     """Biggest group centred, the rest orbit it (a protagonist-centric solar
     system). Returns (positions, [(rcx, rcy, spread, members), ...])."""
     pos: dict[str, dict] = {}
@@ -194,7 +208,12 @@ def _solar_layout(groups: list[list[str]], degree: Counter, cx: float, cy: float
 
 
 def _social_clustered(
-    entities: list[dict], edges: list[dict], degree: Counter, cap: int, cx: float = 500, cy: float = 400,
+    entities: list[dict],
+    edges: list[dict],
+    degree: Counter,
+    cap: int,
+    cx: float = 500,
+    cy: float = 400,
     faction_labels: dict | None = None,
 ) -> tuple[dict, list]:
     """Cluster the social graph into separated, labelled regions (soft ellipses).
@@ -205,8 +224,10 @@ def _social_clustered(
     back to label-propagation communities. Generic/collective entities (妖精,
     群妖, …) are dropped so the character graph isn't swamped by non-individuals."""
     pool = [
-        e for e in entities
-        if e["type"].lower() in SOCIAL_TYPES and degree[e["canonical_id"]] > 0
+        e
+        for e in entities
+        if e["type"].lower() in SOCIAL_TYPES
+        and degree[e["canonical_id"]] > 0
         and not (e.get("attributes") or {}).get("generic")
     ]
     ranked = sorted(pool, key=lambda e: -degree[e["canonical_id"]])[:cap]
@@ -215,7 +236,8 @@ def _social_clustered(
 
     # --- faction grouping (preferred) ---
     fac_by_id = {
-        e["canonical_id"]: ((e.get("attributes") or {}).get("faction") or "").strip() for e in ranked
+        e["canonical_id"]: ((e.get("attributes") or {}).get("faction") or "").strip()
+        for e in ranked
     }
     if ids and sum(1 for v in fac_by_id.values() if v) >= max(4, 0.4 * len(ids)):
         fac_groups: dict[str, list[str]] = defaultdict(list)
@@ -224,17 +246,23 @@ def _social_clustered(
         named = sorted(fac_groups.items(), key=lambda kv: -len(kv[1]))
         pos, metas = _solar_layout([m for _, m in named], degree, cx, cy)
         regions = []
-        for gi, ((fac, _members), (rcx, rcy, spread, members)) in enumerate(zip(named, metas, strict=True)):
+        for gi, ((fac, _members), (rcx, rcy, spread, members)) in enumerate(
+            zip(named, metas, strict=True)
+        ):
             label = _OTHER_LABEL if fac == _OTHER_KEY else ((faction_labels or {}).get(fac) or fac)
-            regions.append({
-                "id": f"fac{gi}",
-                "title": _OTHER_LABEL["zh-CN"] if fac == _OTHER_KEY else fac,
-                "label": label,  # localized faction name → region title
-                "entity": members[0],  # click focuses the faction's hub
-                "cx": rcx, "cy": rcy,
-                "rx": round(spread + 44, 1), "ry": round(spread + 36, 1),
-                "members": members,
-            })
+            regions.append(
+                {
+                    "id": f"fac{gi}",
+                    "title": _OTHER_LABEL["zh-CN"] if fac == _OTHER_KEY else fac,
+                    "label": label,  # localized faction name → region title
+                    "entity": members[0],  # click focuses the faction's hub
+                    "cx": rcx,
+                    "cy": rcy,
+                    "rx": round(spread + 44, 1),
+                    "ry": round(spread + 36, 1),
+                    "members": members,
+                }
+            )
         return pos, regions
 
     # --- fallback: topological communities (books without faction tags) ---
@@ -268,33 +296,83 @@ def _social_clustered(
             a = i * 2.39996323
             r = spread * math.sqrt((i + 0.5) / m) if m > 1 else 0
             pos[mid] = {"x": round(rcx + r * math.cos(a), 1), "y": round(rcy + r * math.sin(a), 1)}
-        regions.append({
-            "id": f"grp{gi}",
-            "title": name_by_id.get(members[0], f"Group {gi + 1}"),
-            "entity": members[0],
-            "cx": round(rcx, 1),
-            "cy": round(rcy, 1),
-            "rx": round(spread + 40, 1),
-            "ry": round(spread + 34, 1),
-            "members": members,
-        })
+        regions.append(
+            {
+                "id": f"grp{gi}",
+                "title": name_by_id.get(members[0], f"Group {gi + 1}"),
+                "entity": members[0],
+                "cx": round(rcx, 1),
+                "cy": round(rcy, 1),
+                "rx": round(spread + 40, 1),
+                "ry": round(spread + 34, 1),
+                "members": members,
+            }
+        )
     return pos, regions
 
 
 # Four narrative acts for the generic timeline (matches the view's phase shape).
 _PHASE_META = [
-    ("opening", "#5a6a3f", "I",
-     {"en": "Opening", "zh-CN": "开篇", "zh-TW": "開篇", "ja": "序", "ko": "도입",
-      "fr": "Ouverture", "es": "Apertura", "de": "Eröffnung"}),
-    ("rising", "#8a6e36", "II",
-     {"en": "Rising Action", "zh-CN": "发展", "zh-TW": "發展", "ja": "展開", "ko": "전개",
-      "fr": "Développement", "es": "Desarrollo", "de": "Steigerung"}),
-    ("crisis", "#a04a2a", "III",
-     {"en": "Crisis", "zh-CN": "高潮", "zh-TW": "高潮", "ja": "クライマックス", "ko": "위기",
-      "fr": "Crise", "es": "Crisis", "de": "Krise"}),
-    ("resolution", "#4a6a8a", "IV",
-     {"en": "Resolution", "zh-CN": "终章", "zh-TW": "終章", "ja": "終結", "ko": "결말",
-      "fr": "Résolution", "es": "Resolución", "de": "Auflösung"}),
+    (
+        "opening",
+        "#5a6a3f",
+        "I",
+        {
+            "en": "Opening",
+            "zh-CN": "开篇",
+            "zh-TW": "開篇",
+            "ja": "序",
+            "ko": "도입",
+            "fr": "Ouverture",
+            "es": "Apertura",
+            "de": "Eröffnung",
+        },
+    ),
+    (
+        "rising",
+        "#8a6e36",
+        "II",
+        {
+            "en": "Rising Action",
+            "zh-CN": "发展",
+            "zh-TW": "發展",
+            "ja": "展開",
+            "ko": "전개",
+            "fr": "Développement",
+            "es": "Desarrollo",
+            "de": "Steigerung",
+        },
+    ),
+    (
+        "crisis",
+        "#a04a2a",
+        "III",
+        {
+            "en": "Crisis",
+            "zh-CN": "高潮",
+            "zh-TW": "高潮",
+            "ja": "クライマックス",
+            "ko": "위기",
+            "fr": "Crise",
+            "es": "Crisis",
+            "de": "Krise",
+        },
+    ),
+    (
+        "resolution",
+        "#4a6a8a",
+        "IV",
+        {
+            "en": "Resolution",
+            "zh-CN": "终章",
+            "zh-TW": "終章",
+            "ja": "終結",
+            "ko": "결말",
+            "fr": "Résolution",
+            "es": "Resolución",
+            "de": "Auflösung",
+        },
+    ),
 ]
 _LANES = [-2, 1, -1, 2, 0, -1, 2, -2, 1, 0]
 
@@ -304,7 +382,9 @@ def _atom_chapter(atom: str | None) -> int | None:
     return int(m.group(1)) if m else None
 
 
-def _timeline(entities: list[dict], edge_list: list[dict], degree: Counter, chapters: list[int]) -> dict:
+def _timeline(
+    entities: list[dict], edge_list: list[dict], degree: Counter, chapters: list[int]
+) -> dict:
     chs = sorted(set(chapters))
     if not chs:
         return {"phases": [], "events": []}
@@ -314,8 +394,17 @@ def _timeline(entities: list[dict], edge_list: list[dict], degree: Counter, chap
         sl = chs[i * size : (i + 1) * size]
         if not sl:
             continue
-        phases.append({"id": pid, "start": sl[0], "end": sl[-1], "color": color, "roman": roman,
-                       "label": label, "sub": {k: "" for k in label}})
+        phases.append(
+            {
+                "id": pid,
+                "start": sl[0],
+                "end": sl[-1],
+                "color": color,
+                "roman": roman,
+                "label": label,
+                "sub": {k: "" for k in label},
+            }
+        )
         ranges.append((pid, sl[0], sl[-1]))
 
     def phase_for(ch: int) -> str:
@@ -361,14 +450,16 @@ def _timeline(entities: list[dict], edge_list: list[dict], degree: Counter, chap
     for k, e in enumerate(ranked):
         ch = min(e["chapters"])
         pivot = touch.get(e["canonical_id"]) or by_chapter.get(ch)
-        events.append({
-            "id": e["canonical_id"],
-            "chapter": ch,
-            "phase": phase_for(ch),
-            "lane": _LANES[k % len(_LANES)],
-            "pivotEdge": pivot["id"] if pivot else None,
-            "pivotQuote": None,
-        })
+        events.append(
+            {
+                "id": e["canonical_id"],
+                "chapter": ch,
+                "phase": phase_for(ch),
+                "lane": _LANES[k % len(_LANES)],
+                "pivotEdge": pivot["id"] if pivot else None,
+                "pivotQuote": None,
+            }
+        )
     return {"phases": phases, "events": events}
 
 
@@ -490,14 +581,21 @@ def convert(payload: dict) -> dict:
         "timelineEvents": tl["events"],
     }
 
-    return {"book": book, "entities": entities, "edges": edges, "glucose": glucose, "chunks": chunks}
+    return {
+        "book": book,
+        "entities": entities,
+        "edges": edges,
+        "glucose": glucose,
+        "chunks": chunks,
+    }
 
 
 def main() -> int:
     if not EXPORTS_DIR.exists():
         raise SystemExit(f"no exports dir: {EXPORTS_DIR}")
     files = sorted(
-        f for f in EXPORTS_DIR.glob("*.json")
+        f
+        for f in EXPORTS_DIR.glob("*.json")
         if not (f.name.endswith(".i18n.json") or f.name.endswith(".factions.json"))
     )
     if not files:
@@ -516,7 +614,9 @@ def main() -> int:
         i18n_path = f.with_name(f.stem + ".i18n.json")
         if i18n_path.exists():
             entity_locale.update(json.loads(i18n_path.read_text(encoding="utf-8")))
-        print(f"  {f.name}: {len(conv['entities'])} entities, {len(conv['edges'])} edges, i18n={i18n_path.exists()}")
+        print(
+            f"  {f.name}: {len(conv['entities'])} entities, {len(conv['edges'])} edges, i18n={i18n_path.exists()}"
+        )
 
     def j(x: object) -> str:
         return json.dumps(x, ensure_ascii=False, separators=(",", ":"))
@@ -545,7 +645,9 @@ def main() -> int:
 """
     OUT.write_text(out, encoding="utf-8")
     kb = len(out.encode("utf-8")) / 1024
-    print(f"wrote {OUT.relative_to(ROOT)}  ({kb:.0f} KB, {len(books)} book(s), {len(entity_locale)} localized entities)")
+    print(
+        f"wrote {OUT.relative_to(ROOT)}  ({kb:.0f} KB, {len(books)} book(s), {len(entity_locale)} localized entities)"
+    )
     return 0
 
 

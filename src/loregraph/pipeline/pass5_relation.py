@@ -49,9 +49,9 @@ class _ExtractedEdge(BaseModel):
     confidence: float = Field(ge=0.0, le=1.0)
     inference_depth: InferenceDepth = InferenceDepth.EXPLICIT
     # v1.1 enrichment — all optional, stored in edges.attributes JSONB.
-    predicate: str | None = None        # specific verb, e.g. PROPOSES_TO / INHERITS_FROM
+    predicate: str | None = None  # specific verb, e.g. PROPOSES_TO / INHERITS_FROM
     weight: float | None = Field(default=None, ge=0.0, le=1.0)
-    sentiment: str | None = None        # positive / neutral / negative
+    sentiment: str | None = None  # positive / neutral / negative
 
 
 class _Pass5Response(BaseModel):
@@ -86,9 +86,7 @@ class Pass5RelationExtractor:
         )
         # Entity-dense chunks yield many edges; give the JSON room so it isn't
         # truncated mid-array into invalid JSON (was zeroing out edges).
-        msg = await self.llm.complete(
-            system=self._system_prompt, user=user_prompt, max_tokens=8192
-        )
+        msg = await self.llm.complete(system=self._system_prompt, user=user_prompt, max_tokens=8192)
         self.usage.merge(msg)
         text = self.llm.extract_text(msg)
 

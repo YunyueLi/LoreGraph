@@ -34,9 +34,9 @@ log = logging.getLogger(__name__)
 # Closed enum of subtypes per category (v1.1 schema). Anything else from the
 # LLM falls back to "Other".
 _SUBTYPE_ENUM: dict[EntityType, set[str]] = {
-    EntityType.AGENT:   {"Person", "Clan", "Community", "Organization", "Mythic"},
-    EntityType.OBJECT:  {"Document", "Post", "Asset", "Product", "Place", "Artifact"},
-    EntityType.EVENT:   {"Statement", "Action", "Incident", "Transaction", "Meeting"},
+    EntityType.AGENT: {"Person", "Clan", "Community", "Organization", "Mythic"},
+    EntityType.OBJECT: {"Document", "Post", "Asset", "Product", "Place", "Artifact"},
+    EntityType.EVENT: {"Statement", "Action", "Incident", "Transaction", "Meeting"},
     EntityType.CONCEPT: {"Topic", "Stance", "Theory", "Mechanism", "Prediction", "Symbol"},
 }
 
@@ -50,7 +50,7 @@ def _parse_meta_and_strip(raw: str, entity_type: EntityType) -> tuple[str | None
     if not m:
         return None, raw.strip()
     meta_block = m.group(1)
-    body = (raw[: m.start()] + raw[m.end():]).strip()
+    body = (raw[: m.start()] + raw[m.end() :]).strip()
     sub_match = _SUBTYPE_LINE_RE.search(meta_block)
     if not sub_match:
         return None, body
@@ -66,6 +66,7 @@ def _parse_meta_and_strip(raw: str, entity_type: EntityType) -> tuple[str | None
         entity_type.value,
     )
     return None, body
+
 
 _PROMPTS_DIR = Path(__file__).resolve().parent.parent / "llm" / "prompts"
 _jinja_env = Environment(
@@ -157,9 +158,7 @@ class Pass8NoteSynth:
 
     # ------- context gathering -------
 
-    async def _collect_mentions(
-        self, session: AsyncSession, entity_id: int
-    ) -> list[_MentionCtx]:
+    async def _collect_mentions(self, session: AsyncSession, entity_id: int) -> list[_MentionCtx]:
         stmt = (
             select(orm.Mention, orm.Chunk)
             .join(orm.Chunk, orm.Chunk.id == orm.Mention.chunk_id)
@@ -225,9 +224,7 @@ class Pass8NoteSynth:
         ]
         return outgoing, incoming
 
-    async def _collect_glucose(
-        self, session: AsyncSession, entity_id: int
-    ) -> list[_GlucoseCtx]:
+    async def _collect_glucose(self, session: AsyncSession, entity_id: int) -> list[_GlucoseCtx]:
         stmt = (
             select(orm.GlucoseFact, orm.Chunk)
             .join(orm.Chunk, orm.Chunk.id == orm.GlucoseFact.chunk_id)
@@ -330,9 +327,7 @@ class Pass8NoteSynth:
             "tiers_assigned": tiers_assigned,
         }
 
-    async def _compute_tiers(
-        self, session: AsyncSession, entities: list[Entity]
-    ) -> dict[int, str]:
+    async def _compute_tiers(self, session: AsyncSession, entities: list[Entity]) -> dict[int, str]:
         """Heuristic tier ranking for Agent entities.
 
         Sort agents by mention count desc, then bucket:
