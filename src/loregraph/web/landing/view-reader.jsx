@@ -1,6 +1,19 @@
 // LoreGraph — Reader view
 // Left TOC · center prose with highlighted entities · right chunk info.
 
+// Chapter-heading detector — mirrors pass1_chunk.CHAPTER_HEADER_RE. Pulls the
+// real title (the text after "第N回" / "Chapter N") out of a chapter's first
+// chunk so the TOC can show "靈根育孕源流出 心性修持大道生" instead of a generic
+// "第 N 章". Returns null when the heading carries only a number (no title).
+const _CH_HEADING = /^[ \t]*(?:(?:CHAPTER|Chapter)\s+(?:[IVXLCDM]+|\d+|(?:[Tt]he\s+)?[A-Z][a-z]+)|第\s*[〇零一二三四五六七八九十百千两\d]+\s*[回章卷節节折])\.?(?:[ \t　:：—\-]+(.*))?[ \t]*$/;
+function chapterTitle(text) {
+  if (!text) return null;
+  const first = (text.replace(/^\s+/, "").split("\n", 1)[0] || "");
+  const m = first.match(_CH_HEADING);
+  const title = m && m[1] ? m[1].trim() : "";
+  return title || null;
+}
+
 function ViewReader({ ctx }) {
   const { tt, data, entities, locale, selectedEntityId, setSelectedEntityId, chunks, activeBook } = ctx;
   const { useState, useMemo, useEffect } = React;
@@ -32,16 +45,19 @@ function ViewReader({ ctx }) {
     const byNum = new Map();
     for (const c of chunks) {
       const existing = byNum.get(c.chapter);
+      // Prefer a title carried on the chunk (future pipeline output); otherwise
+      // derive it from the chapter's first chunk, whose text opens with the heading.
+      const title = c.chapterName || chapterTitle(c.text);
       if (!existing) {
         byNum.set(c.chapter, {
           n: c.chapter,
-          name: c.chapterName || tt("rd.chapter", {n: c.chapter}),
-          hasTitle: !!c.chapterName,
+          name: title || tt("rd.chapter", {n: c.chapter}),
+          hasTitle: !!title,
           entities: 0,
           hasFull: !!c.full,
         });
       } else {
-        if (c.chapterName && !existing.hasTitle) { existing.name = c.chapterName; existing.hasTitle = true; }
+        if (title && !existing.hasTitle) { existing.name = title; existing.hasTitle = true; }
         if (c.full) existing.hasFull = true;
       }
     }
