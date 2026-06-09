@@ -11,30 +11,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  frontend-build:
-    name: Frontend build
+  landing-build:
+    name: Landing build
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: src/loregraph/web/frontend
+        working-directory: src/loregraph/web
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-        # No npm cache: package-lock.json is not committed yet (will land
-        # after the first deploy generates one). Re-download is ~30s.
-      - name: Install (ci, fall back to install when lockfile absent)
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install --no-audit --no-fund
-          fi
-      - name: Type check
-        run: npm run typecheck
-      - name: Build
-        run: npm run build
+          cache: "npm"
+          cache-dependency-path: src/loregraph/web/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: Build landing site
+        run: node build-landing.cjs
 
   lint:
     name: Lint & format check

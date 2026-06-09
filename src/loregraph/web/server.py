@@ -3,11 +3,11 @@
 The app exposes:
 - /api/books/                  — list books
 - /api/books/{id}              — book detail
-- /api/books/{id}/graph        — Cytoscape-ready nodes + edges
+- /api/books/{id}/graph        — graph nodes + edges
 - /api/entities/{id}           — entity detail panel
 - /api/chunks/{id}             — chunk detail panel
 - /healthz                     — liveness check
-- /                            — single-page React frontend (when built)
+- /                            — static SPA, if a build is present in ./static
 """
 
 from __future__ import annotations
@@ -64,17 +64,14 @@ def create_app(*, enable_cors: bool = True) -> FastAPI:
     app.include_router(entities.router)
     app.include_router(chunks.router)
 
-    # Serve the built React frontend if it exists. In dev the frontend
-    # is served by Vite on a separate port and CORS handles cross-origin.
+    # Optionally serve a static SPA if one has been built into ./static.
+    # The public site is the separate web/landing GitHub Pages build, so this
+    # is normally empty and the server runs API-only.
     if _STATIC_DIR.exists() and any(_STATIC_DIR.iterdir()):
-        app.mount("/", StaticFiles(directory=str(_STATIC_DIR), html=True), name="frontend")
-        log.info("Mounted built frontend from %s", _STATIC_DIR)
+        app.mount("/", StaticFiles(directory=str(_STATIC_DIR), html=True), name="spa")
+        log.info("Mounted static SPA from %s", _STATIC_DIR)
     else:
-        log.info(
-            "No frontend build found at %s — API-only mode. "
-            "Build the React app under src/loregraph/web/frontend to enable.",
-            _STATIC_DIR,
-        )
+        log.info("No static build at %s — API-only mode.", _STATIC_DIR)
 
     return app
 

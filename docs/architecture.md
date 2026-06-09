@@ -46,7 +46,7 @@ See [`references.bib`](references.bib) for the full bibliography.
 | `src/loregraph/llm/` | Multi-provider LLM client + prompt templates + gleaning |
 | `src/loregraph/pipeline/` | One file per pass + `orchestrator.py` |
 | `src/loregraph/cli/` | Typer commands |
-| `src/loregraph/web/` | FastAPI routes + web frontends (static landing site + React app) |
+| `src/loregraph/web/` | Static landing site (GitHub Pages) + optional FastAPI query API |
 | `src/loregraph/utils/` | Token counting, span matching, logging |
 | `migrations/` | Alembic migrations |
 | `tests/{unit,integration,e2e}/` | Three test tiers |

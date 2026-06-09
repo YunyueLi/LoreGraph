@@ -2,7 +2,7 @@
 // Zero-dependency static file server for the LoreGraph landing site.
 // Used by .claude/launch.json for previews; handy for a quick local look too:
 //   node src/loregraph/web/serve-landing.cjs                 # source → http://localhost:4178
-//   node src/loregraph/web/serve-landing.cjs frontend/dist   # built output
+//   node src/loregraph/web/serve-landing.cjs dist   # built output
 const http = require("http");
 const fs = require("fs");
 const path = require("path");

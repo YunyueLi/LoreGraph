@@ -67,9 +67,7 @@ data/*.tmp
 # Frontend (web UI) — node_modules + build artifacts. Source is tracked.
 node_modules/
 src/loregraph/web/static/
-src/loregraph/web/frontend/dist/
-src/loregraph/web/frontend/.vite/
-src/loregraph/web/frontend/*.local
+src/loregraph/web/dist/
 
 # OS
 .DS_Store

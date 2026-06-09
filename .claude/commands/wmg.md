@@ -92,7 +92,7 @@ After hitting the cap, ScheduleWakeup and stop. Don't try to fit "one more" — 
 - → phase `manifest`.
 
 ### manifest
-- Locate the 85-book list in the frontend (likely `frontend/src/data.js` or sibling). Use `Agent` with `subagent_type=Explore` if not obvious.
+- Locate the 85-book list in `src/loregraph/web/landing/data.js`. Use `Agent` with `subagent_type=Explore` if not obvious.
 - Extract per book: `id`, `title` (in original language), `author`, `lang` ISO code.
 - Seed every entry into `state.books` with `license="unknown"`.
 - → phase `acquire`.
@@ -143,10 +143,10 @@ Add `scripts/export_book.py` if it doesn't exist — a single CLI: `uv run pytho
 Commit `data/exports/*.json` (no copyright concern — derived metadata, evidence spans are short literal substrings under fair-use length).
 
 ### wire
-Modify the frontend to load `data/exports/<frontend_id>.json` instead of the hardcoded demo `data.js`:
-- Add `frontend/src/exports/loader.js`: per-book dynamic import + memoization.
-- Replace the demo-data reads in graph view, reader view, timeline view, index view.
-- Keep `data.js` as a graceful-degradation fallback for any book without an export yet — this matters while we're mid-rollout.
+Make the landing site load every book's export:
+- Run `uv run python scripts/build_frontend_data.py` to (re)generate
+  `src/loregraph/web/landing/data-exports.js` from `data/exports/*.json`.
+- Keep `landing/data.js` as the seed/demo fallback for any book without an export yet.
 - Multi-language pass: ensure `canonical_name` renders in original script. If aliases are needed (Romanization, alt translations), store them in `entity.attributes.aliases` JSONB — no migration.
 - Run dev server. `preview_start`. Walk through at least one PG book + one in-copyright book + one Chinese book. Check console for errors.
 
@@ -172,7 +172,7 @@ When all 85 are `qa_passed=true`:
 1. `uv run ruff format && uv run ruff check && uv run mypy src && uv run pytest -m unit`. Fix anything that fails before proceeding.
 2. Commit any pending changes (conventional commits, one logical feature per commit).
 3. Push to `origin main`.
-4. Identify the deploy target: check `frontend/package.json` for a `deploy` script, look for `.github/workflows/`, look for a Vercel/Cloudflare/Netlify config. Trigger or wait for deploy.
+4. Deploy the static site: `cd src/loregraph/web && npm install && npm run deploy` (builds `landing/` → `dist/`, publishes to the `gh-pages` branch).
 5. Sample-verify 5 random books on the live URL (use `preview_start` with the production URL or fetch + grep critical markers).
 6. Any failure → drop those books back to phase `wire`.
 7. → phase `done`.

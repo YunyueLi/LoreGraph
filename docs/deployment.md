@@ -54,26 +54,19 @@ The repository ships a `render.yaml` blueprint, so you just connect Render to Gi
 
 ---
 
-## 3. Cloudflare Pages — React frontend (3 min)
+## 3. The public UI is separate (static)
 
-1. Go to [dash.cloudflare.com](https://dash.cloudflare.com) → **Workers & Pages → Pages → Connect to Git**.
-2. Pick `YunyueLi/LoreGraph`.
-3. Build settings:
-   - **Framework preset**: None.
-   - **Build command**:
-     `cd src/loregraph/web/frontend && npm install && npm run build`
-   - **Build output directory**: `src/loregraph/web/static`
-   - **Root directory**: leave as repo root.
-   - **Environment variable**:
-     - Name `VITE_API_BASE`, value = your Render URL from step 2
-       (e.g. `https://loregraph-q9f8.onrender.com`).
-4. **Save and Deploy**. First build takes ~2 min.
-5. You will land at `https://loregraph.pages.dev` (or whatever the random subdomain is). Note this URL.
+The browsable LoreGraph site is a **static GitHub Pages** build that does **not**
+use this API — it ships pre-computed `data/exports/*.json`. See
+[`web/README.md`](../src/loregraph/web/README.md) for its one-command deploy
+(`cd src/loregraph/web && npm run deploy`). This Render service is only needed if
+you want the live query API.
 
 ### 3.1 Tighten Render CORS
 
-Go back to the Render service → **Environment** → set
-`LOREGRAPH_CORS_ORIGINS` to your Cloudflare Pages URL (the one you noted in step 5 above). Trigger a redeploy. This prevents random third parties from hitting your API.
+If you expose the API publicly, set `LOREGRAPH_CORS_ORIGINS` on the Render service
+to the origin(s) you allow, then redeploy — this keeps third parties from hitting
+your API.
 
 ---
 
@@ -115,7 +108,6 @@ Now the **About** card on the GitHub repo page links visitors straight to your l
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | `/healthz` 502 from Render | Free service spun down (15 min idle) | First request wakes it up; takes ~30 s |
-| Pages build fails `vite: command not found` | Wrong build command | Ensure `cd src/loregraph/web/frontend && npm install && npm run build` |
-| Graph empty on UI after seed | CORS or wrong `VITE_API_BASE` | Open browser devtools → Network → confirm /api/books reaches the Render host |
+| Landing site shows stale data | `data-exports.js` not regenerated | Run `scripts/build_frontend_data.py`, then redeploy from `src/loregraph/web` |
 | `alembic upgrade head` fails on Render | pgvector extension not enabled in Neon | Run `CREATE EXTENSION vector;` in Neon's SQL editor and retry |
 | API returns 500 with `connection closed` | Used non-pooled Neon URL on a serverless platform | Switch to the Pooled connection string |

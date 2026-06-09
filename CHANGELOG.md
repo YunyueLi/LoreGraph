@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+- The unused React/Vite frontend (`src/loregraph/web/frontend/`). The landing
+  build tooling (esbuild + gh-pages) moved to a small `src/loregraph/web/package.json`;
+  the public site is the static `web/landing/` GitHub Pages build only.
+- Verified-dead code: superseded non-batch Pass-3 cluster prompts,
+  `scripts/_validate_pass2.py`, orphan `assets/demo-graph.svg`, and the unused
+  `utils.estimate_claude_tokens` helper.
+
 ### Added
 - **Default LLM = DeepSeek V4 Pro via OpenRouter.** Provider default switched to `openrouter`,
   default model `deepseek/deepseek-v4-pro`. One key reaches any mainstream model; fully

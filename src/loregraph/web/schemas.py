@@ -1,6 +1,6 @@
 """Response schemas for the LoreGraph web API.
 
-These are the JSON shapes the React frontend consumes. They wrap the
+These are the JSON shapes the web API (`loregraph view`) returns. They wrap the
 underlying Pydantic data models with view-specific aggregations
 (mention counts, edge groupings, etc.).
 """

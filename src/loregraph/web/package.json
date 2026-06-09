@@ -1,0 +1,14 @@
+{
+  "name": "loregraph-landing",
+  "private": true,
+  "description": "Build + publish the static LoreGraph landing site (GitHub Pages).",
+  "scripts": {
+    "build": "node build-landing.cjs",
+    "serve": "node serve-landing.cjs",
+    "deploy": "node build-landing.cjs && gh-pages -d dist -b gh-pages -t -m \"deploy: update landing page\""
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0",
+    "gh-pages": "^6.3.0"
+  }
+}

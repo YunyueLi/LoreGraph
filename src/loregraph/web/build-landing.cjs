@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-// Build the LoreGraph landing site into frontend/dist as a PRODUCTION bundle:
+// Build the LoreGraph landing site into ./dist as a PRODUCTION bundle:
 // JSX is precompiled (no in-browser Babel) and React is loaded from its
 // production CDN build. The editable source stays in ./landing (which still
 // runs via Babel-in-browser for quick local previews).
 //
 // To build AND publish to GitHub Pages in one step, run `npm run deploy` from
-// the frontend/ directory. This script only builds (into frontend/dist):
+// the web/ directory. This script only builds (into ./dist):
 //   node src/loregraph/web/build-landing.cjs
 //
 // Each source file is transformed and wrapped in its OWN IIFE, exactly mirroring
@@ -16,10 +16,10 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
-const esbuild = require(path.join(__dirname, "frontend", "node_modules", "esbuild"));
+const esbuild = require("esbuild");
 
 const SRC = path.join(__dirname, "landing");
-const DEST = path.join(__dirname, "frontend", "dist");
+const DEST = path.join(__dirname, "dist");
 
 // Load order — must match the <script> order in landing/index.html.
 const ORDER = [
