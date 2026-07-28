@@ -436,7 +436,12 @@ function makeSpineCanvas(book, locale) {
 // while the real scan loads. Cloth ground, gold double-rule frame, title/author.
 function makeCoverCanvas(book, locale, scan) {
   const pal = paletteFor(book);
-  const W = 384, H = 512;
+  // The texture has to be the SHAPE OF THE BOARD, or the UVs stretch it. The
+  // front board is BOOK_DEPTH × BOOK_HEIGHT = 0.62 : 1, and this canvas was
+  // 384 × 512 = 0.75 : 1, so every cover was squeezed 17% horizontally on its
+  // way onto the book — the Kells figure came out narrow, and the fallback
+  // covers' italic titles came out condensed.
+  const W = 384, H = Math.round(W / (S3D.BOOK_DEPTH / S3D.BOOK_HEIGHT));
   const canvas = document.createElement("canvas");
   canvas.width = W; canvas.height = H;
   const g = canvas.getContext("2d");
@@ -453,73 +458,48 @@ function makeCoverCanvas(book, locale, scan) {
   g.fillStyle = vg;
   g.fillRect(0, 0, W, H);
 
-  // A real title-page scan is MOUNTED on the board, the way a plate is pasted
-  // onto cloth — it is not stretched to the full face. Stretching it edge to
-  // edge distorted every scan to the board's proportions and, on a scan whose
-  // shape differed from the board, showed only a crop of the middle.
+  // The scan fills the board, cropped to its proportions — the same framing the
+  // 2D card gets from `object-fit: cover`. It used to be MOUNTED with a margin
+  // whenever the scan's shape differed from the board's, which is most scans,
+  // and the margin exposed the pale vellum edge of the plate plus an accent
+  // rule around it. On the Kells folio that band was the pale wash people kept
+  // reporting: a bright frame where the card showed artwork edge to edge.
   if (scan && scan.width && scan.height) {
-    // A plate whose proportions are near the board's is laid full-bleed, the way
-    // a poster or a title page covers the front of a bound volume. Only a scan
-    // of a genuinely different shape gets mounted with a margin.
-    //
-    // The margin used to be 28px on every cover regardless. On a pale binding —
-    // cream cloth is #d4c5a0 — that produced a bright even band around the
-    // artwork that read as a picture frame rather than as cloth. It is now a
-    // narrow reveal, and the vignette closes over it.
-    const faceAR = W / H;
-    const scanAR = scan.width / scan.height;
-    const fullBleed = Math.abs(scanAR - faceAR) / faceAR <= 0.16;
-    const inset = fullBleed ? 0 : 14;
-    let dw, dh, dx, dy;
-    if (fullBleed) {
-      const s = Math.max(W / scan.width, H / scan.height);
-      dw = scan.width * s; dh = scan.height * s;
-      dx = (W - dw) / 2; dy = (H - dh) / 2;
-    } else {
-      const s = Math.min((W - inset * 2) / scan.width, (H - inset * 2) / scan.height);
-      dw = scan.width * s; dh = scan.height * s;
-      // Optical centring: a mounted plate sits slightly above the geometric
-      // middle, as a binder would place it.
-      dx = (W - dw) / 2; dy = (H - dh) / 2 - Math.min(6, (H - dh) / 4);
-      g.save();
-      g.shadowColor = "rgba(0,0,0,0.5)";
-      g.shadowBlur = 10;
-      g.shadowOffsetY = 3;
-      g.fillStyle = "#00000030";
-      g.fillRect(dx, dy, dw, dh);
-      g.restore();
-    }
+    const s = Math.max(W / scan.width, H / scan.height);
+    const dw = scan.width * s, dh = scan.height * s;
+    const dx = (W - dw) / 2, dy = (H - dh) / 2;
     g.save();
     g.beginPath();
     g.rect(0, 0, W, H);
     g.clip();
+    // Graded with LG_COVER_TREATMENT.filter, the same grade the card applies in
+    // CSS. Two hand-tuned washes on one JPEG is how the card and the shelf drifted
+    // apart in the first place.
+    const tr = window.LG_COVER_TREATMENT;
+    if (tr && "filter" in g) g.filter = tr.filter;
     g.drawImage(scan, dx, dy, dw, dh);
+    g.filter = "none";
     g.restore();
-    // A trace of sepia, so the shelf reads as one collection rather than a
-    // scrapbook of differently-lit photographs. 0.16 was a film over the
-    // artwork: on Bell's cream title page it turned the paper grey-brown.
-    g.save();
-    g.globalCompositeOperation = "multiply";
-    g.globalAlpha = 0.07;
-    g.fillStyle = "#8a6e36";
-    g.fillRect(Math.max(0, dx), Math.max(0, dy), Math.min(W, dw), Math.min(H, dh));
-    g.restore();
-    if (!fullBleed) {
-      g.strokeStyle = "rgba(0,0,0,0.55)";
-      g.lineWidth = 1;
-      g.strokeRect(dx - 0.5, dy - 0.5, dw + 1, dh + 1);
-      g.strokeStyle = pal.accent;
-      g.globalAlpha = 0.8;
-      g.lineWidth = 1.2;
-      g.strokeRect(dx - 5, dy - 5, dw + 10, dh + 10);
-      g.globalAlpha = 1;
+    // The card's multiply scrim, rebuilt as a canvas gradient. 160deg in CSS is
+    // measured clockwise from "up", so it runs down-and-right across the board.
+    if (tr && tr.scrim) {
+      const a = ((tr.scrimAngle - 90) * Math.PI) / 180;
+      const L = Math.abs(W * Math.cos(a)) + Math.abs(H * Math.sin(a));
+      const sc = g.createLinearGradient(
+        W / 2 - (Math.cos(a) * L) / 2, H / 2 - (Math.sin(a) * L) / 2,
+        W / 2 + (Math.cos(a) * L) / 2, H / 2 + (Math.sin(a) * L) / 2,
+      );
+      tr.scrim.forEach(([stop, color]) => sc.addColorStop(stop, color));
+      g.save();
+      g.globalCompositeOperation = "multiply";
+      g.fillStyle = sc;
+      g.fillRect(0, 0, W, H);
+      g.restore();
     }
-    // No baked falloff. The scene already lights this face — key, fill and a
-    // lamp per row — so a gradient painted into the texture darkens it a second
-    // time, and that read as a veil over the whole cover. The one thing the
-    // lighting cannot infer is the hinge: the board turns down into the joint,
-    // and that groove is geometry the shading model never sees. Narrow and
-    // light, along the spine edge only.
+    // No baked falloff beyond that scrim. The scene already lights this face —
+    // key, fill and a lamp per row — so a second painted ramp darkens it twice.
+    // The one thing the lighting cannot infer is the hinge: the board turns down
+    // into the joint, and that groove is geometry the shading model never sees.
     const hinge = g.createLinearGradient(0, 0, W * 0.075, 0);
     hinge.addColorStop(0, "rgba(0,0,0,0.26)");
     hinge.addColorStop(1, "rgba(0,0,0,0)");
@@ -1133,7 +1113,6 @@ function BookShelf3D({ books, activeId, ctx, onOpen }) {
         book,
         group,
         mesh,
-        coverMat,
         spineMat,
         coverTex,
         coverCanvas,
@@ -1410,11 +1389,21 @@ function BookShelf3D({ books, activeId, ctx, onOpen }) {
           e.group.scale.setScalar(damp(e.group.scale.x, 1, 18, dt));
         }
 
-        // active book glows faintly gold; hovered brightens; selected full
+        // The spine glows faintly gold when the book is active or under the
+        // cursor: on a spine that reads as gilt catching the lamp, and a spine
+        // has to advertise that it is clickable.
+        //
+        // The COVER gets none of it. Emissive is ADDITIVE, so a value like
+        // (0.16, 0.12, 0.05) does not "brighten" artwork — it raises its black
+        // point. A shadow at 0.02 linear becomes 0.18, which is sRGB 0.15 → 0.46,
+        // while the highlights barely move. That is arithmetically identical to
+        // compositing a translucent grey over the image, and it is why the volume
+        // in the hand looked veiled and washed out while its neighbours on the
+        // shelf, which never reach fly > 0, looked rich. The held volume needs no
+        // glow to be found: it is centre-frame at 1.28× with the case behind it.
         const isActive = e.book.id === activeIdRef.current;
         const emphasis = Math.max(e.lift * 0.5, e.fly, isActive ? 0.28 : 0);
         e.spineMat.emissive.setRGB(emphasis * 0.32, emphasis * 0.24, emphasis * 0.09);
-        e.coverMat.emissive.setRGB(emphasis * 0.16, emphasis * 0.12, emphasis * 0.05);
         // render flown book on top of neighbours
         e.mesh.renderOrder = e.fly > 0.02 ? 10 : 0;
       }

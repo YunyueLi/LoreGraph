@@ -3,7 +3,26 @@
 // unified visually via a sepia/warm filter so the shelf reads as one collection.
 // Fallback: hand-designed SVG cover (for books without a reliable PD scan).
 
-const COVER_FILTER = "sepia(0.18) saturate(0.92) contrast(1.05) brightness(0.96)";
+// ONE definition of how a scan is graded, shared by every surface that shows a
+// cover. The 2D card and the 3D shelf used to grade the same JPEG separately —
+// the card ran this filter plus a multiply scrim, the shelf ran a 7% sepia wash
+// and nothing else — so the same volume came out rich on the card and bleached
+// in the hand. Anything that renders a cover reads these values; nothing
+// re-invents them.
+window.LG_COVER_TREATMENT = {
+  filter: "sepia(0.18) saturate(0.92) contrast(1.05) brightness(0.96)",
+  // Warm-to-dark scrim, multiplied over the graded scan. Darkens; never lifts.
+  scrimAngle: 160,
+  scrim: [
+    [0.0, "rgba(184,149,74,0.04)"],
+    [0.7, "rgba(60,40,10,0.10)"],
+    [1.0, "rgba(26,23,20,0.18)"],
+  ],
+};
+const COVER_FILTER = window.LG_COVER_TREATMENT.filter;
+const COVER_SCRIM =
+  "linear-gradient(" + window.LG_COVER_TREATMENT.scrimAngle + "deg, " +
+  window.LG_COVER_TREATMENT.scrim.map(([s, c]) => c + " " + Math.round(s * 100) + "%").join(", ") + ")";
 
 function CoverImage({ src, alt, fallback }) {
   const [errored, setErrored] = React.useState(false);
@@ -34,7 +53,7 @@ function CoverImage({ src, alt, fallback }) {
       {/* warm gold overlay to unify shelves */}
       <div style={{
         position: "absolute", inset: 0,
-        background: "linear-gradient(160deg, rgba(184,149,74,0.04), rgba(60,40,10,0.10) 70%, rgba(26,23,20,0.18))",
+        background: COVER_SCRIM,
         mixBlendMode: "multiply",
         pointerEvents: "none",
       }} />
