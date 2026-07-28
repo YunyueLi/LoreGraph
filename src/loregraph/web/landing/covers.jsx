@@ -7,6 +7,10 @@ const COVER_FILTER = "sepia(0.18) saturate(0.92) contrast(1.05) brightness(0.96)
 
 function CoverImage({ src, alt, fallback }) {
   const [errored, setErrored] = React.useState(false);
+  // A scan is a real network fetch, so it has a real wait. Until it lands the
+  // board shows a skeleton and the image fades in over it; before this it was a
+  // flat dark rectangle that the scan replaced in one visible jump.
+  const [loaded, setLoaded] = React.useState(false);
   if (errored) return fallback;
   return (
     <div style={{
@@ -15,13 +19,17 @@ function CoverImage({ src, alt, fallback }) {
       overflow: "hidden",
       background: "#1a1714",
     }}>
+      {!loaded && <div className="cover-skeleton" aria-hidden="true" />}
       <img src={src} alt={alt}
         onError={() => setErrored(true)}
+        onLoad={() => setLoaded(true)}
         style={{
           width: "100%", height: "100%",
           objectFit: "cover", objectPosition: "center",
           display: "block",
           filter: COVER_FILTER,
+          opacity: loaded ? 1 : 0,
+          transition: "opacity 0.32s ease-out",
         }} />
       {/* warm gold overlay to unify shelves */}
       <div style={{

@@ -1234,19 +1234,29 @@ a { color: inherit; }
 }
 .lib-shelf3d-canvas { position: absolute; inset: 0; }
 .lib-shelf3d-canvas canvas { display: block; }
+/* A single line in the lower left, in the reading face rather than tracked mono
+   caps — an aside, not a control-panel legend. It fades itself out. */
+@keyframes lg-hint-life {
+  0%   { opacity: 0; transform: translateY(4px); }
+  8%   { opacity: 1; transform: translateY(0); }
+  84%  { opacity: 1; }
+  100% { opacity: 0; }
+}
 .lib-shelf3d-hint {
   position: absolute;
-  left: 50%; bottom: 14px; transform: translateX(-50%);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: var(--fs-label); letter-spacing: var(--track-m); text-transform: uppercase;
-  color: rgba(240,232,212,0.55);
+  left: 22px; bottom: 18px;
+  max-width: 60%;
+  font-family: 'Spectral', serif;
+  font-style: italic;
+  font-size: 14px;
+  color: rgba(240,232,212,0.62);
   pointer-events: none;
-  background: rgba(20,16,12,0.42);
-  padding: 5px 13px; border-radius: 999px;
-  backdrop-filter: blur(3px);
-  transition: opacity 0.3s;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.7);
+  animation: lg-hint-life 6s ease-out forwards;
 }
-.lib-shelf3d-hint.dim { opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .lib-shelf3d-hint { animation: none; opacity: 0.62; }
+}
 
 .shelf3d-panel {
   position: absolute;
@@ -6956,3 +6966,48 @@ a { color: inherit; }
 }
 .rd-legend-rows .ent { cursor: default; }
 .rd-legend-type { color: var(--paper-text-mute); margin-left: 6px; }
+
+/* ===================================================================== */
+/* =================== LOADING SKELETONS =============================== */
+/* ===================================================================== */
+/* Only where there is a real wait: a scan is fetched over the network, and the
+   3D shelf builds 85 volumes and five material textures before its first frame.
+   Nothing here stands in for data that is already in memory.
+
+   The sweep is a slow gilt highlight over board-coloured paper rather than the
+   usual grey pulse — a book that has not arrived yet, not a missing widget. */
+@keyframes lg-skeleton-sweep {
+  0%   { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
+}
+.cover-skeleton,
+.shelf-skeleton {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background:
+    linear-gradient(150deg, #2a241d, #1e1a15 60%, #17130f);
+}
+.cover-skeleton::after,
+.shelf-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg,
+    transparent 30%,
+    rgba(184,149,74,0.14) 50%,
+    transparent 70%);
+  animation: lg-skeleton-sweep 1.9s ease-in-out infinite;
+}
+/* A double gilt rule, so the placeholder already has the shape of a bound board. */
+.cover-skeleton::before {
+  content: "";
+  position: absolute;
+  inset: 9% 8%;
+  border: 1px solid rgba(184,149,74,0.16);
+  box-shadow: inset 0 0 0 3px rgba(0,0,0,0.18), inset 0 0 0 4px rgba(184,149,74,0.10);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cover-skeleton::after,
+  .shelf-skeleton::after { animation: none; opacity: 0.5; }
+}

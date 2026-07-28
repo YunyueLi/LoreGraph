@@ -458,34 +458,73 @@ function makeCoverCanvas(book, locale, scan) {
   // edge distorted every scan to the board's proportions and, on a scan whose
   // shape differed from the board, showed only a crop of the middle.
   if (scan && scan.width && scan.height) {
-    const boxW = W - 56, boxH = H - 56;
-    const s = Math.min(boxW / scan.width, boxH / scan.height);
-    const dw = scan.width * s, dh = scan.height * s;
-    const dx = (W - dw) / 2, dy = (H - dh) / 2;
+    // A plate whose proportions are near the board's is laid full-bleed, the way
+    // a poster or a title page covers the front of a bound volume. Only a scan
+    // of a genuinely different shape gets mounted with a margin.
+    //
+    // The margin used to be 28px on every cover regardless. On a pale binding —
+    // cream cloth is #d4c5a0 — that produced a bright even band around the
+    // artwork that read as a picture frame rather than as cloth. It is now a
+    // narrow reveal, and the vignette closes over it.
+    const faceAR = W / H;
+    const scanAR = scan.width / scan.height;
+    const fullBleed = Math.abs(scanAR - faceAR) / faceAR <= 0.16;
+    const inset = fullBleed ? 0 : 14;
+    let dw, dh, dx, dy;
+    if (fullBleed) {
+      const s = Math.max(W / scan.width, H / scan.height);
+      dw = scan.width * s; dh = scan.height * s;
+      dx = (W - dw) / 2; dy = (H - dh) / 2;
+    } else {
+      const s = Math.min((W - inset * 2) / scan.width, (H - inset * 2) / scan.height);
+      dw = scan.width * s; dh = scan.height * s;
+      // Optical centring: a mounted plate sits slightly above the geometric
+      // middle, as a binder would place it.
+      dx = (W - dw) / 2; dy = (H - dh) / 2 - Math.min(6, (H - dh) / 4);
+      g.save();
+      g.shadowColor = "rgba(0,0,0,0.5)";
+      g.shadowBlur = 10;
+      g.shadowOffsetY = 3;
+      g.fillStyle = "#00000030";
+      g.fillRect(dx, dy, dw, dh);
+      g.restore();
+    }
     g.save();
-    g.shadowColor = "rgba(0,0,0,0.5)";
-    g.shadowBlur = 10;
-    g.shadowOffsetY = 3;
-    g.fillStyle = "#00000030";
-    g.fillRect(dx, dy, dw, dh);
-    g.restore();
+    g.beginPath();
+    g.rect(0, 0, W, H);
+    g.clip();
     g.drawImage(scan, dx, dy, dw, dh);
-    // sepia unification + a gilt fillet around the mounted plate, matching the
-    // treatment the 2-D covers already use so the shelf reads as one collection
+    g.restore();
+    // A trace of sepia, so the shelf reads as one collection rather than a
+    // scrapbook of differently-lit photographs. 0.16 was a film over the
+    // artwork: on Bell's cream title page it turned the paper grey-brown.
     g.save();
     g.globalCompositeOperation = "multiply";
-    g.globalAlpha = 0.16;
+    g.globalAlpha = 0.07;
     g.fillStyle = "#8a6e36";
-    g.fillRect(dx, dy, dw, dh);
+    g.fillRect(Math.max(0, dx), Math.max(0, dy), Math.min(W, dw), Math.min(H, dh));
     g.restore();
-    g.strokeStyle = "rgba(0,0,0,0.55)";
-    g.lineWidth = 1;
-    g.strokeRect(dx - 0.5, dy - 0.5, dw + 1, dh + 1);
-    g.strokeStyle = pal.accent;
-    g.globalAlpha = 0.8;
-    g.lineWidth = 1.2;
-    g.strokeRect(dx - 5, dy - 5, dw + 10, dh + 10);
-    g.globalAlpha = 1;
+    if (!fullBleed) {
+      g.strokeStyle = "rgba(0,0,0,0.55)";
+      g.lineWidth = 1;
+      g.strokeRect(dx - 0.5, dy - 0.5, dw + 1, dh + 1);
+      g.strokeStyle = pal.accent;
+      g.globalAlpha = 0.8;
+      g.lineWidth = 1.2;
+      g.strokeRect(dx - 5, dy - 5, dw + 10, dh + 10);
+      g.globalAlpha = 1;
+    }
+    // No baked falloff. The scene already lights this face — key, fill and a
+    // lamp per row — so a gradient painted into the texture darkens it a second
+    // time, and that read as a veil over the whole cover. The one thing the
+    // lighting cannot infer is the hinge: the board turns down into the joint,
+    // and that groove is geometry the shading model never sees. Narrow and
+    // light, along the spine edge only.
+    const hinge = g.createLinearGradient(0, 0, W * 0.075, 0);
+    hinge.addColorStop(0, "rgba(0,0,0,0.26)");
+    hinge.addColorStop(1, "rgba(0,0,0,0)");
+    g.fillStyle = hinge;
+    g.fillRect(0, 0, W * 0.075, H);
     return canvas;
   }
 
@@ -651,10 +690,15 @@ function makeBookGeometry(THREE, w, h, d, rounded) {
     ringStart.push(pos.length / 3);
     P.forEach((p) => {
       pos.push(p.x * r.k, r.y, p.z * r.kz);
-      // u runs with +x on the spine and fore-edge, with z elsewhere; v up Y.
-      const u = (p.mat === 4 || p.mat === 5)
-        ? (p.x + w / 2) / w
-        : (p.z + d / 2) / d;
+      // u has to increase left-to-right AS SEEN FROM OUTSIDE each face. The two
+      // boards face opposite ways along x and the spine and fore-edge opposite
+      // ways along z, so one formula mirrors half of them. The front board is
+      // the only face carrying readable artwork, which is why a mirrored cover
+      // was the visible symptom: "BOHÈME" came out as "EMÈHOB".
+      const u = p.mat === 4 ? (p.x + w / 2) / w      // +Z spine: +x is screen-right
+              : p.mat === 5 ? (w / 2 - p.x) / w      // -Z fore-edge: +x is screen-left
+              : p.mat === 0 ? (d / 2 - p.z) / d      // +X front board: +z is screen-left
+              :               (p.z + d / 2) / d;     // -X back board: +z is screen-right
       uv.push(u, (r.y + h / 2) / h);
     });
   });
@@ -780,6 +824,26 @@ function BookShelf3D({ books, activeId, ctx, onOpen }) {
   const onOpenRef = useRef(onOpen);
   onOpenRef.current = onOpen;
   const [selected, setSelected] = useState(null);   // book object flown out
+  // Shown on a first visit only, and only until the reader has had time to read
+  // it. Remembered so it never appears again.
+  const [showHint, setShowHint] = useState(() => {
+    try { return !localStorage.getItem("lg_shelf_seen"); } catch { return false; }
+  });
+  useEffect(() => {
+    if (!showHint) return;
+    const t = setTimeout(() => {
+      setShowHint(false);
+      try { localStorage.setItem("lg_shelf_seen", "1"); } catch {}
+    }, 6000);
+    return () => clearTimeout(t);
+  }, [showHint]);
+  // A volume held out of the row is a modal state, so Escape puts it back.
+  useEffect(() => {
+    if (!selected) return;
+    const onKey = (e) => { if (e.key === "Escape") { e.stopPropagation(); setSelected(null); } };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selected]);
 
   // `books` (a filtered/sorted copy) is a fresh array on every render, so we
   // rebuild the scene only when the actual set/order of volumes changes — not
@@ -815,6 +879,7 @@ function BookShelf3D({ books, activeId, ctx, onOpen }) {
     mount.appendChild(renderer.domElement);
     renderer.domElement.style.display = "block";
     renderer.domElement.style.touchAction = "none";
+
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color("#141110");
@@ -1370,6 +1435,8 @@ function BookShelf3D({ books, activeId, ctx, onOpen }) {
       width = mount.clientWidth || width;
       height = mount.clientHeight || height;
       renderer.setSize(width, height);
+      // The scene buffer already holds tone-mapped, sRGB-encoded pixels, so the
+    // blit must not encode them a second time.
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
       // Re-solve the framing for the new viewport; if the reader hasn't zoomed
@@ -1414,9 +1481,14 @@ function BookShelf3D({ books, activeId, ctx, onOpen }) {
   return (
     <div className="lib-shelf3d">
       <div className="lib-shelf3d-canvas" ref={mountRef} />
-      <div className={"lib-shelf3d-hint " + (selected ? "dim" : "")}>
-        {T("lib.shelf3d.hint", "Drag to pan · scroll to zoom · click a volume")}
-      </div>
+      {/* The shelf explains itself: the cursor switches between grab and pointer,
+          and a volume under the pointer eases out of the row and catches the
+          light. A permanent strip listing three gestures was a manual bolted to
+          a bookcase — so this says the one thing that is not self-evident, once,
+          and then leaves. */}
+      {showHint && !selected && (
+        <p className="lib-shelf3d-hint">{T("lib.shelf3d.hint", "Click a book to take it off the shelf.")}</p>
+      )}
 
       {selected && (
         <div className="shelf3d-panel" onClick={(e) => e.stopPropagation()}>
