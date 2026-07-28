@@ -241,7 +241,9 @@ function EvidenceBlock({ edge, data, locale, tt, dense, big }) {
       {open && chunk && (
         <div className="tl2-evid-passage">
           <div className="tl2-evid-passage-meta">
-            <span className="mono">CH {chunk.chapter} · ¶{chunk.seq} · {chunk.tokens} tok</span>
+            {/* Was "CH 2 · ¶0 · 142 tok" — an English abbreviation, a paragraph
+                index counted from zero, and a clipped unit. */}
+            <span className="mono">{window.friendlyChunkId(chunk.id, locale)} · {chunk.tokens} {tt("rd.tokens")}</span>
             <span className="mono dim">{chunk.id}</span>
           </div>
           <div className="tl2-evid-passage-body">
@@ -835,7 +837,7 @@ function RibbonMode({ ctx, tt, data, entities, locale, visibleEvents, selectedEv
                 <span className="tl2-ribbon-conn" style={connStyle} />
                 <span className="tl2-ribbon-dot" />
                 <div className="tl2-ribbon-card" style={cardStyle}>
-                  <div className="tl2-ribbon-card-ch">CH {ev.chapter}</div>
+                  <div className="tl2-ribbon-card-ch">{window.t("rd.chapter", locale, {n: ev.chapter})}</div>
                   <div className="tl2-ribbon-card-title"><em>{name}</em></div>
                 </div>
               </div>

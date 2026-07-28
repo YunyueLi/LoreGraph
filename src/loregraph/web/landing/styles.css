@@ -1403,13 +1403,18 @@ a { color: inherit; }
   opacity: 0.65;
 }
 
+/* Three equal columns rather than a flex row: the figures differ in width, so
+   flex put each card's labels at its own x and the grid of cards read as
+   parallax. Aligned columns let the eye compare across cards. */
 .lib-card-stats {
-  display: flex;
-  gap: 18px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
   padding: 12px 4px 0;
   margin-top: 12px;
   position: relative;
 }
+.lib-card-stat-num.none { color: var(--paper-text-faint); cursor: help; }
 .lib-card-stats::before {
   content: "";
   position: absolute;
@@ -5292,14 +5297,16 @@ a { color: inherit; }
 }
 @keyframes tl2-fade { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 
+/* No uppercasing here: the row carries a chunk key an auditor copies verbatim
+   (ch02_p000, not CH02_P000) and a localized chapter reference. */
 .tl2-evid-passage-meta {
-  display: flex; gap: 14px;
+  display: flex; gap: 14px; flex-wrap: wrap;
   font-family: 'JetBrains Mono', monospace;
-  font-size: var(--fs-micro); letter-spacing: var(--track-l); text-transform: uppercase;
+  font-size: var(--fs-micro); letter-spacing: 0.05em;
   color: var(--gold-deep);
   margin-bottom: 10px;
 }
-.tl2-evid-passage-meta .dim { color: var(--paper-text-faint); }
+.tl2-evid-passage-meta .dim { color: var(--paper-text-faint); user-select: all; }
 .tl2-evid-passage-body {
   font-family: 'Spectral', serif;
   font-size: 14px;
@@ -5534,9 +5541,8 @@ a { color: inherit; }
   display: inline-flex; align-items: center; gap: 6px;
   font-family: 'JetBrains Mono', monospace;
   font-size: var(--fs-micro);
-  letter-spacing: var(--track-l);
+  letter-spacing: 0.05em;
   color: var(--gold-deep);
-  text-transform: uppercase;
 }
 .tl2-folio-gutter-cite .dot {
   width: 5px; height: 5px; border-radius: 50%;
@@ -5944,7 +5950,7 @@ a { color: inherit; }
 .tl2-stage-attr {
   display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 10px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: var(--fs-label); letter-spacing: var(--track-l); text-transform: uppercase;
+  font-size: var(--fs-label); letter-spacing: 0.05em;
   color: var(--paper-text-faint);
   margin-bottom: 28px;
 }
@@ -6247,11 +6253,14 @@ a { color: inherit; }
   background: #fbf7ea;
   box-shadow: 0 0 0 1px var(--phase-color), 0 12px 30px -12px rgba(60,40,10,0.34);
 }
+/* Carries a localized "Chapter N" now, so it drops the mono face and the wide
+   tracking that pulls ideographs apart. */
 .tl2-ribbon-card-ch {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: var(--fs-micro);
+  font-family: 'Spectral', serif;
+  font-style: italic;
+  font-size: 11.5px;
   color: var(--phase-color);
-  letter-spacing: var(--track-l); text-transform: uppercase;
+  letter-spacing: 0.01em;
   margin-bottom: 5px;
 }
 .tl2-ribbon-card-title {
