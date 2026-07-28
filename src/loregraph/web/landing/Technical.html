@@ -181,7 +181,9 @@
     color: var(--ink-text-mute);
     line-height: 1.5;
     margin-bottom: 48px;
-    max-width: 540px;
+    /* 540px held only 24 ideographs at 22px, so the explicit line breaks landed
+       mid-compound — 分/镜本, 知识图/谱. */
+    max-width: 640px;
   }
   .hero-slogan span {
     color: var(--gold-bright);
@@ -253,12 +255,18 @@
   }
 
   /* hero right — node demo */
+  /* A fanned deck of evidence cards. Absolute offsets inside a fixed 520px box
+     put card 3 across the middle of card 2's quote, cutting a sentence in half —
+     and any change of locale or column width moved the cut. Stacking them in
+     flow with a negative margin overlaps each card by a fixed 14px, which lands
+     in the card's own bottom padding whatever the text does. */
   .hero-visual {
     position: relative;
-    height: 520px;
+    display: flex;
+    flex-direction: column;
   }
   .hero-card {
-    position: absolute;
+    position: relative;
     background: var(--ink-soft);
     border: 1px solid var(--ink-line);
     padding: 18px 20px;
@@ -301,9 +309,9 @@
   }
   .hero-card .hc-meta span:first-child::before { content: "▸ "; color: var(--gold); }
 
-  .hc-1 { top: 0; left: 0; width: 310px; }
-  .hc-2 { top: 200px; right: 0; width: 320px; }
-  .hc-3 { bottom: 0; left: 40px; width: 290px; }
+  .hc-1 { width: 310px; align-self: flex-start; }
+  .hc-2 { width: 320px; align-self: flex-end;   margin-top: -14px; }
+  .hc-3 { width: 290px; align-self: flex-start; margin: -14px 0 0 40px; }
 
   .hero-bg-lines {
     position: absolute;
@@ -644,7 +652,7 @@
   }
   .pipeline-steps {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(8, 1fr);
     gap: 8px;
     position: relative;
     z-index: 2;
@@ -1305,7 +1313,31 @@
     letter-spacing: 0.16em;
     text-transform: uppercase;
   }
+
+  /* ================= EMBEDDED IN THE APP SHELL =================
+     The app opens this document in an iframe under its own header and rail.
+     Standalone, the page needs a masthead, a wordmark and a sign-off; inside
+     the app all three are duplicates — two LoreGraph logos, two navigations,
+     and a "get started" CTA aimed at someone already inside the product. In
+     embed mode the masthead becomes a plain section rail, the marketing
+     sign-off goes, and the hero shrinks to a document title block. */
+  html.embed .nav { position: static; justify-content: center; padding: 0 28px; min-height: 52px; }
+  html.embed .nav-brand,
+  html.embed .nav-cta,
+  html.embed .footer-cta { display: none; }
+  html.embed .hero { min-height: 0; padding: 56px 48px 72px; }
+  html.embed .hero-title { font-size: 60px; margin-bottom: 26px; }
+  html.embed .hero-eyebrow { margin-bottom: 26px; }
+  html.embed .hero-grid { align-items: start; gap: 56px; }
 </style>
+<script>
+  // Set before first paint so the embedded layout never flashes the standalone
+  // masthead. Kept inline for the same reason the rest of this file is: it is a
+  // single self-contained document with no build step.
+  if (new URLSearchParams(location.search).has("embed")) {
+    document.documentElement.className += " embed";
+  }
+</script>
 </head>
 <body>
 
@@ -1323,7 +1355,7 @@
     <a href="#demo">证据</a>
     <a href="#roadmap">路线</a>
   </div>
-  <a class="nav-cta" href="#">View on GitHub →</a>
+  <a class="nav-cta" href="https://github.com/YunyueLi/LoreGraph" target="_blank" rel="noopener">View on GitHub →</a>
 </nav>
 
 <!-- ============ HERO ============ -->
@@ -1355,18 +1387,21 @@
         让<em>图谱</em><br/>
         替自己<em>作证。</em>
       </h1>
+      <!-- The hard break was measured against the standalone column width; in the
+           app shell the column is 100px narrower, so it left 「镜本，」 alone on a
+           line. Chinese wraps between any two characters, so letting the
+           paragraph flow gives an even block at any width. -->
       <p class="hero-slogan">
-        一条 7-Pass LLM 流水线，把一部小说、剧本或电影分镜本，<br/>
-        变成每条主张都引用原文字面片段的可查询知识图谱。
+        一条 8-Pass LLM 流水线，把一部小说、剧本或电影分镜本，变成每条主张都引用原文字面片段的可查询知识图谱。
         <span>every node cites the page it came from.</span>
       </p>
       <div class="hero-cta-row">
         <a href="#demo" class="btn-primary">Try the demo →</a>
-        <a href="#pipeline" class="btn-ghost">Read the 7-pass spec</a>
+        <a href="#pipeline" class="btn-ghost">Read the 8-pass spec</a>
       </div>
       <div class="hero-stats">
         <div>
-          <div class="hero-stat-num">7<small>-pass</small></div>
+          <div class="hero-stat-num">8<small>-pass</small></div>
           <div class="hero-stat-label">Extraction Pipeline</div>
         </div>
         <div>
@@ -1600,9 +1635,9 @@
 <section class="pipeline" id="pipeline" data-screen-label="05 Pipeline">
   <div class="container">
     <div class="pipeline-header">
-      <div class="eyebrow">7-PASS PIPELINE</div>
-      <h2>七<em>道工序</em>，把一部小说<br/>磨成一张可审视的图谱。</h2>
-      <p>每个 Pass 写到自己的表里；Pass-7 是不可逾越的字面匹配闸门。</p>
+      <div class="eyebrow">8-PASS PIPELINE</div>
+      <h2>八<em>道工序</em>，把一部小说<br/>磨成一张可审视的图谱。</h2>
+      <p>每个 Pass 写到自己的表里；Pass-7 是不可逾越的字面匹配闸门，Pass-8 只整理已经过闸的内容。</p>
     </div>
 
     <div class="pipeline-rail">
@@ -1655,6 +1690,13 @@
           <div class="p-step-zh">验证闸门</div>
           <div class="p-step-desc">Chain-of-Verification</div>
           <div class="p-step-tech"><span>match rate ≥ 95%</span><br/>literal substring<br/>hard gate</div>
+        </div>
+        <div class="p-step">
+          <div class="p-step-num">8</div>
+          <div class="p-step-name">Notes</div>
+          <div class="p-step-zh">合成笔记</div>
+          <div class="p-step-desc">按角色与卷次成篇</div>
+          <div class="p-step-tech"><span>per entity · per volume</span><br/>每句保留 chunk_id<br/>只读已过闸内容</div>
         </div>
       </div>
     </div>
@@ -1918,7 +1960,7 @@
         </div>
         <div class="arch-layer">
           <div class="arch-tag">03 / CORE</div>
-          <div class="arch-name">Pipeline<small>7-Pass orchestrator (Pass-1 → Pass-7)</small></div>
+          <div class="arch-name">Pipeline<small>8-Pass orchestrator (Pass-1 → Pass-8)</small></div>
           <div class="arch-version">v0.1 <span>●</span></div>
         </div>
         <div class="arch-layer">
@@ -1950,7 +1992,7 @@
         <div class="roadmap-version">V 0 · 1</div>
         <div class="roadmap-title">抽取与证据基线</div>
         <ul class="roadmap-features">
-          <li>7-Pass 抽取流水线</li>
+          <li>8-Pass 抽取流水线</li>
           <li>CLI · Web UI</li>
           <li>多 provider 配置</li>
           <li>部署模板（Render / Neon / Cloudflare）</li>
@@ -2004,7 +2046,7 @@
       </div>
       <div class="footer-cta-row">
         <a class="btn-primary-light" href="#">克隆仓库 →</a>
-        <a class="btn-ghost-light" href="#">阅读 7-Pass 规格</a>
+        <a class="btn-ghost-light" href="#">阅读 8-Pass 规格</a>
       </div>
     </div>
 
@@ -2019,7 +2061,7 @@
         <h4>Docs</h4>
         <a href="#">README</a>
         <a href="#">Architecture</a>
-        <a href="#">7-Pass Spec</a>
+        <a href="#">8-Pass Spec</a>
         <a href="#">Deployment</a>
       </div>
       <div class="footer-col">

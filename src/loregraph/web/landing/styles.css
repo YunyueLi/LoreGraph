@@ -3959,21 +3959,70 @@ a { color: inherit; }
   position: relative;
 }
 .tech-wrap iframe { width: 100%; height: 100%; border: none; }
-.tech-overlay {
-  position: absolute; top: 18px; right: 18px;
-  display: flex; gap: 8px; align-items: center;
-  background: rgba(245,239,226,0.95);
-  border: 1px solid var(--paper-line);
-  padding: 8px 14px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--paper-text-mute);
-  z-index: 100;
+/* ---- View error boundary ---- */
+.vb-error {
+  padding: 60px 48px;
+  max-width: 68ch;
+  font-family: 'Spectral', serif;
+  color: var(--paper-text);
 }
-.tech-overlay a { color: var(--gold-deep); text-decoration: none; }
-.tech-overlay a:hover { color: var(--gold); }
+.vb-error-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-x);
+  text-transform: uppercase;
+  color: var(--rust);
+  margin-bottom: 14px;
+}
+.vb-error h2 {
+  font-weight: 300;
+  font-size: 32px;
+  line-height: 1.15;
+  font-style: italic;
+  margin-bottom: 12px;
+}
+.vb-error p {
+  font-style: italic;
+  color: var(--paper-text-mute);
+  font-size: 15px;
+  line-height: 1.55;
+  margin-bottom: 24px;
+}
+.vb-error pre {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  padding: 14px 16px;
+  background: rgba(160,74,42,0.06);
+  border-left: 1px solid var(--rust);
+  color: var(--rust);
+  white-space: pre-wrap;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+.vb-error button {
+  padding: 9px 20px;
+  border: 1px solid var(--gold);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--gold-deep);
+  font-family: 'Spectral', serif;
+  font-style: italic;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.vb-error button:hover { background: rgba(184,149,74,0.08); color: var(--ink); }
+
+/* A quiet provenance note in the bar, alongside a view-level action. */
+.bar-note {
+  font-family: 'Spectral', serif;
+  font-style: italic;
+  font-size: 12.5px;
+  color: var(--paper-text-faint);
+  margin-right: 4px;
+  white-space: nowrap;
+}
+@media (max-width: 900px) { .bar-note { display: none; } }
 
 /* =================== UTILITY =================== */
 .empty {
