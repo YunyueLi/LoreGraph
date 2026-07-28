@@ -303,7 +303,41 @@ function ViewReader({ ctx }) {
   );
 }
 
+// Gutenberg marks emphasis with underscores, and an emphasized phrase routinely
+// contains an entity name — "_took a watch out of its waistcoat-pocket_". Doing
+// emphasis after the entity pass lost every such run, because the two
+// underscores ended up in different slices. Resolve emphasis first, then run the
+// entity pass inside each run.
+function emphRuns(text) {
+  if (text.indexOf("_") === -1) return [{ t: text, em: false }];
+  const runs = [];
+  const re = /_([^_\s][^_]*)_/g;
+  let last = 0, m;
+  while ((m = re.exec(text))) {
+    if (m.index > last) runs.push({ t: text.slice(last, m.index), em: false });
+    runs.push({ t: m[1], em: true });
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) runs.push({ t: text.slice(last), em: false });
+  return runs.length ? runs : [{ t: text, em: false }];
+}
+
 function HighlightedText({ text, aliasMap, entities, selectedEntityId, onSelect }) {
+  const runs = emphRuns(text);
+  if (runs.length === 1 && !runs[0].em) {
+    return <MarkedText text={text} aliasMap={aliasMap} entities={entities}
+                       selectedEntityId={selectedEntityId} onSelect={onSelect} />;
+  }
+  return <>{runs.map((r, i) => {
+    const inner = <MarkedText text={r.t} aliasMap={aliasMap} entities={entities}
+                              selectedEntityId={selectedEntityId} onSelect={onSelect} />;
+    return r.em
+      ? <em key={i}>{inner}</em>
+      : <React.Fragment key={i}>{inner}</React.Fragment>;
+  })}</>;
+}
+
+function MarkedText({ text, aliasMap, entities, selectedEntityId, onSelect }) {
   // build a list of matches over the text (non-overlapping)
   const matches = [];
   const lowered = text.toLowerCase();
@@ -357,27 +391,10 @@ function TxtSpan({ text }) {
     <React.Fragment key={i}>
       {i > 0 && <><br/><br/></>}
       {p.split("\n").map((line, j) => (
-        <React.Fragment key={j}>{j > 0 && <br/>}<Emph text={line} /></React.Fragment>
+        <React.Fragment key={j}>{j > 0 && <br/>}{line}</React.Fragment>
       ))}
     </React.Fragment>
   ))}</>;
-}
-
-// Project Gutenberg marks emphasis with underscores — "nothing so _very_
-// remarkable". Printed literally it reads as a rendering fault; it is the
-// source's own italics, so set it as italics.
-function Emph({ text }) {
-  if (text.indexOf("_") === -1) return <>{text}</>;
-  const out = [];
-  const re = /_([^_\s][^_]*)_/g;
-  let last = 0, m;
-  while ((m = re.exec(text))) {
-    if (m.index > last) out.push(text.slice(last, m.index));
-    out.push(<em key={m.index}>{m[1]}</em>);
-    last = m.index + m[0].length;
-  }
-  if (last < text.length) out.push(text.slice(last));
-  return <>{out}</>;
 }
 
 function SelectedEntityCard({ entity, ctx }) {
