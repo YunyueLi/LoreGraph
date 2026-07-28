@@ -950,7 +950,9 @@ a { color: inherit; }
   font-size: 13.5px;
   line-height: 1.55;
   color: var(--paper-text);
-  border-left: 2px solid var(--gold);
+  /* A hairline quotation rule, not a status stripe — the tinted ground and the
+     quote marks already carry the block. */
+  border-left: 1px solid rgba(184,149,74,0.5);
   margin: 6px 0;
 }
 .evid::before { content: "“"; font-size: 18px; color: var(--gold); margin-right: 2px; }
@@ -2773,10 +2775,11 @@ a { color: inherit; }
 }
 .ev-tab {
   flex: 1;
-  padding: 10px 4px;
+  min-width: 0;
+  padding: 10px 2px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.16em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-m);
   text-transform: uppercase;
   color: var(--paper-text-mute);
   cursor: pointer;
@@ -2785,6 +2788,13 @@ a { color: inherit; }
   display: flex; flex-direction: column;
   gap: 4px;
   transition: color 0.2s;
+}
+/* Five labels share one narrow rail; a wrapped 「行动者」 knocks its count out
+   of line with the other four. Let the label shrink rather than wrap. */
+.ev-tab > div:first-child {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .ev-tab::after {
   content: "";
@@ -2932,6 +2942,45 @@ a { color: inherit; }
   padding: 22px 0;
   margin-bottom: 0;
   position: relative;
+}
+/* One line stating the claim: the two entities, the extracted predicate between
+   them, and the category the pipeline filed it under. */
+.ev-claim-triple {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 11px;
+}
+.ev-claim-node {
+  font-family: 'Spectral', serif;
+  font-style: italic;
+  font-size: 15px;
+  color: var(--paper-text);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  border-bottom: 1px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.ev-claim-node:hover { color: var(--gold-deep); border-bottom-color: rgba(184,149,74,0.5); }
+.ev-claim-node:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.ev-claim-pred {
+  font-family: 'Spectral', serif;
+  font-size: 14px;
+  color: var(--gold-deep);
+}
+.ev-claim-cat {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-m);
+  text-transform: uppercase;
+  color: var(--paper-text-faint);
+  border: 1px solid rgba(184,149,74,0.2);
+  border-radius: 2px;
+  padding: 2px 7px;
+  white-space: nowrap;
 }
 .ev-claim-card::after {
   content: "";
@@ -3533,27 +3582,31 @@ a { color: inherit; }
   cursor: pointer;
   transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+/* Evidence is the product, so the peek shows three whole lines rather than
+   guillotining the second one at 58px. The taper is a mask, not a gradient
+   painted in --paper: the quote sits on a tinted ground, so the old overlay
+   left a visible seam that read as broken rather than as "more below". */
 .evid-peek:not(.open) {
-  max-height: 58px;
+  max-height: 78px;
   overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, #000 64%, transparent 100%);
+          mask-image: linear-gradient(to bottom, #000 64%, transparent 100%);
 }
 .evid-peek-fade {
   position: absolute;
   bottom: 0; left: 0; right: 0;
-  height: 28px;
-  background: linear-gradient(to bottom, transparent, var(--paper) 95%);
+  height: 24px;
   pointer-events: none;
   display: flex;
   justify-content: flex-end;
   align-items: flex-end;
-  padding: 0 8px 2px 0;
+  padding: 0 6px 1px 0;
 }
 .evid-peek-fade::after {
   content: "▾";
   color: var(--gold-deep);
   font-size: 12px;
-  background: var(--paper);
-  padding: 0 4px;
+  line-height: 1;
 }
 .evid-peek.open .evid-peek-fade { display: none; }
 .evid-peek.open::after {
