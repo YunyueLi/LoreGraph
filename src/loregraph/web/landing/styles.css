@@ -3679,6 +3679,75 @@ a { color: inherit; }
 .av { display: grid; grid-template-columns: 260px 1fr; height: 100%; }
 @media (max-width: 1080px) { .av { grid-template-columns: 220px 1fr; } }
 @media (max-width: 800px)  { .av { grid-template-columns: 1fr; } .av-history { display: none; } }
+/* With nothing in the history there is no second column to justify: the
+   composer becomes the whole screen. */
+.av-solo { grid-template-columns: 1fr; }
+
+/* ---- Ask: first-run state ---- */
+.av-empty {
+  max-width: 62ch;
+  margin: 0 auto;
+  padding: clamp(48px, 11vh, 104px) 32px 0;
+}
+.av-empty-title {
+  font-family: 'Spectral', serif;
+  font-weight: 400;
+  font-style: italic;
+  font-size: clamp(28px, 3.4vw, 40px);
+  line-height: 1.16;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-wrap: balance;
+  margin-bottom: 18px;
+}
+.av-empty-body {
+  font-family: 'Spectral', serif;
+  font-size: 17px;
+  line-height: 1.66;
+  color: var(--paper-text-mute);
+  text-wrap: pretty;
+  max-width: 54ch;
+}
+.av-empty-start {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-l);
+  text-transform: uppercase;
+  color: var(--gold-deep);
+  margin: 40px 0 14px;
+}
+
+/* Suggestion chips, shared by the empty state and the follow-up row. */
+.av-suggest-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.av-suggest {
+  font-family: 'Spectral', serif;
+  font-style: italic;
+  font-size: 14px;
+  line-height: 1.3;
+  text-align: left;
+  padding: 10px 16px;
+  color: var(--paper-text);
+  background: transparent;
+  border: 1px solid var(--paper-line);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: border-color 160ms cubic-bezier(0.22,1,0.36,1),
+              background-color 160ms cubic-bezier(0.22,1,0.36,1),
+              transform 160ms cubic-bezier(0.22,1,0.36,1);
+}
+.av-suggest:hover {
+  border-color: var(--gold);
+  background: rgba(184,149,74,0.06);
+  transform: translateY(-1px);
+}
+.av-suggest:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .av-suggest { transition: none; }
+  .av-suggest:hover { transform: none; }
+}
 .av-history {
   border-right: 1px solid var(--paper-line);
   background: var(--paper);
@@ -3687,8 +3756,8 @@ a { color: inherit; }
 }
 .av-history h3 {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.22em;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-l);
   text-transform: uppercase;
   color: var(--gold-deep);
   margin: 0 6px 12px;
@@ -3701,17 +3770,25 @@ a { color: inherit; }
   font-size: 13px;
   line-height: 1.4;
   color: var(--paper-text);
-  border-left: 2px solid transparent;
+  /* A full transparent hairline, so the active state below thickens nothing and
+     shifts nothing — the earlier 2px left edge turned into a gold stripe. */
+  border: 1px solid transparent;
   margin-bottom: 2px;
 }
 .av-hist-item:hover { background: rgba(184,149,74,0.06); }
-.av-hist-item.active { background: var(--paper-deep); border-left-color: var(--gold); }
+/* Selected state is carried by the ground and a full hairline, not by a thick
+   coloured stripe down one edge. */
+.av-hist-item.active {
+  background: var(--paper-deep);
+  border-color: var(--gold);
+  box-shadow: inset 0 0 0 1px rgba(184,149,74,0.34);
+}
 .av-hist-item .meta {
   font-family: 'JetBrains Mono', monospace;
   font-style: normal;
-  font-size: 9.5px;
+  font-size: var(--fs-micro);
   color: var(--paper-text-faint);
-  letter-spacing: 0.12em;
+  letter-spacing: var(--track-m);
   margin-top: 4px;
 }
 
@@ -3761,13 +3838,17 @@ a { color: inherit; }
 
 .av-points { max-width: 760px; margin-bottom: 24px; }
 .av-point {
-  padding: 14px 0 14px 18px;
-  border-left: 2px solid var(--paper-line);
+  padding: 14px 16px;
+  border: 1px solid var(--paper-line-soft);
+  background: rgba(184,149,74,0.03);
   margin-bottom: 8px;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, background-color 0.15s;
   cursor: pointer;
 }
-.av-point:hover { border-left-color: var(--gold); }
+.av-point:hover {
+  border-color: var(--gold);
+  background: rgba(184,149,74,0.07);
+}
 .av-point-text {
   font-family: 'Spectral', serif;
   font-size: 15px;
@@ -3800,21 +3881,24 @@ a { color: inherit; }
   max-width: 720px;
   padding: 14px 18px;
   background: rgba(184,149,74,0.07);
-  border-left: 2px solid var(--gold-deep);
+  border: 1px solid rgba(138,110,54,0.28);
   font-family: 'Spectral', serif;
   font-style: italic;
   font-size: 13.5px;
   line-height: 1.55;
   color: var(--paper-text);
 }
-.av-caveat::before {
-  content: "Caveat — ";
+/* The label used to be a CSS `content: "Caveat — "`, which meant it stayed in
+   English in all eight locales. It is a translated string, so it belongs in the
+   markup. */
+.av-caveat-label {
   font-family: 'JetBrains Mono', monospace;
   font-style: normal;
-  font-size: 10px;
-  letter-spacing: 0.18em;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-l);
   color: var(--gold-deep);
   text-transform: uppercase;
+  margin-right: 6px;
 }
 
 .av-input-area {
@@ -3858,9 +3942,9 @@ a { color: inherit; }
 .av-input-hint {
   margin-top: 8px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: var(--fs-label);
   color: var(--paper-text-faint);
-  letter-spacing: 0.1em;
+  letter-spacing: var(--track-m);
   text-transform: uppercase;
 }
 .av-input-hint span.k {
