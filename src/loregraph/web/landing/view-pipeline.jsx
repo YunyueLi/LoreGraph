@@ -53,11 +53,14 @@ function ViewPipeline({ ctx }) {
           </div>
         </div>
         <div style={{display:"flex", gap:8}}>
+          {/* Titles were cut at 18 characters with no ellipsis, so the picker
+              read "The Name of the Ro". CSS ellipsises instead. */}
           {data.runs.map((r, i) => (
             <button key={i}
-              className={"bar-btn " + (i === runIdx ? "primary" : "")}
+              className={"bar-btn bar-btn-book " + (i === runIdx ? "primary" : "")}
+              title={window.bookTitle(data.books.find(b => b.id === r.bookId) || {}, locale)}
               onClick={() => setRunIdx(i)}>
-              {(data.books.find(b => b.id === r.bookId)?.title || "").slice(0, 18)}
+              {window.bookTitle(data.books.find(b => b.id === r.bookId) || {}, locale)}
             </button>
           ))}
         </div>
@@ -67,20 +70,17 @@ function ViewPipeline({ ctx }) {
       <div className="pv-summary" style={{gridTemplateColumns: "1.4fr 1fr 1fr"}}>
         <div className="pv-summary-cell">
           <div className="pv-summary-lbl">{tt("pv.matchRate")}</div>
+          {/* A run that hasn't reached the Pass-7 gate has no match rate yet. It
+              used to render as a bare em-dash under a caption asserting that
+              every claim traces back to the text — which read as broken, and
+              claimed something the run has not established. */}
           <div className="pv-summary-val">
             {run.matchRate
               ? <><span className="gold">{(run.matchRate*100).toFixed(1)}</span><small>%</small></>
-              : <span style={{color:"var(--ink-text-mute)"}}>—</span>}
+              : <span className="pv-summary-pending">{tt("pv.matchRate.pending")}</span>}
           </div>
           <div style={{marginTop:10, fontFamily:"'Spectral', serif", fontStyle:"italic", color:"var(--ink-text-mute)", fontSize:12.5, lineHeight:1.4}}>
-            {locale === "en" ? "of every claim traced back to a literal line in the book." :
-             locale === "zh-CN" ? "每条主张都能在书里找到原文。" :
-             locale === "zh-TW" ? "每條主張都能在書裡找到原文。" :
-             locale === "ja" ? "すべての主張が原文に紐づきます。" :
-             locale === "ko" ? "모든 주장이 원문에 묶입니다." :
-             locale === "fr" ? "chaque affirmation est ancrée dans le texte." :
-             locale === "es" ? "cada afirmación está anclada al texto." :
-             "jede Aussage ist im Text verankert."}
+            {run.matchRate ? tt("pv.matchRate.caption") : tt("pv.matchRate.await")}
           </div>
         </div>
         <div className="pv-summary-cell">
@@ -96,9 +96,11 @@ function ViewPipeline({ ctx }) {
       {/* Passes */}
       <div>
         {run.passes.map((p, i) => {
-          const stage = window.LG_STAGES[p.n - 1];
-          const friendlyName = stage[locale] || stage.en;
-          const friendlySub = stage.sub[locale] || stage.sub.en;
+          // Fall back rather than crash if the run data ever carries a pass the
+          // stage table doesn't describe yet.
+          const stage = window.LG_STAGES[p.n - 1] || { en: p.name, sub: { en: "" } };
+          const friendlyName = stage[locale] || stage.en || p.name;
+          const friendlySub = (stage.sub && (stage.sub[locale] || stage.sub.en)) || "";
           return (
             <div key={p.n} className={"pv-pass " + p.status + (p.n === 7 ? " gate" : "")}
                  style={{gridTemplateColumns: "60px 110px 1fr 110px"}}>
@@ -106,7 +108,7 @@ function ViewPipeline({ ctx }) {
               <div>
                 <div className={"pv-pass-status " + p.status}>{tt("status." + p.status)}</div>
                 {p.durationS > 0 && (
-                  <div style={{fontFamily:"'JetBrains Mono', monospace", fontSize:10, color:"var(--paper-text-mute)", marginTop:4, letterSpacing:".06em"}}>
+                  <div style={{fontFamily:"'JetBrains Mono', monospace", fontSize:"var(--fs-label)", color:"var(--paper-text-mute)", marginTop:4, letterSpacing:".06em"}}>
                     {fmtDuration(p.durationS)}
                   </div>
                 )}
@@ -132,12 +134,12 @@ function ViewPipeline({ ctx }) {
         <button onClick={() => setShowDetails(v => !v)}
           style={{
             fontFamily:"'JetBrains Mono', monospace",
-            fontSize: 10.5, letterSpacing: ".22em", textTransform:"uppercase",
+            fontSize: "var(--fs-label)", letterSpacing: "var(--track-l)", textTransform:"uppercase",
             color:"var(--gold-deep)",
             padding: "6px 0",
           }}>
           {showDetails ? "▾ " : "▸ "}
-          {tt("pv.behindScenes")}}
+          {tt("pv.behindScenes")}
           <span style={{marginLeft: 12, color:"var(--paper-text-mute)", letterSpacing:".08em"}}>
             {fmtTokens(totalTokensIn + totalTokensOut)} tokens · {(cacheRate*100).toFixed(0)}% cache hit · {run.logs.length} log lines
           </span>
@@ -148,7 +150,7 @@ function ViewPipeline({ ctx }) {
         <div className="pv-section">
           <div className="pv-logs">
             <div style={{display:"flex", justifyContent:"space-between", marginBottom: 16, paddingBottom: 10, borderBottom: "1px solid var(--ink-line)"}}>
-              <span style={{color:"var(--gold)", letterSpacing:".18em", fontSize:10}}>{tt("pv.logs")}</span>
+              <span style={{color:"var(--gold)", letterSpacing:"var(--track-l)", fontSize:"var(--fs-label)"}}>{tt("pv.logs")}</span>
               <span style={{color:"var(--ink-text-mute)"}}>{run.logs.length} entries</span>
             </div>
             {run.logs.map((l, i) => (
@@ -184,7 +186,7 @@ function ViewPipeline({ ctx }) {
             </div>
 
             <div style={{marginTop:24, padding:"14px 16px", background:"rgba(184,149,74,.08)", borderLeft:"2px solid var(--gold)"}}>
-              <div style={{fontFamily:"'JetBrains Mono', monospace", fontSize:10, color:"var(--gold-deep)", letterSpacing:".18em", marginBottom:6}}>
+              <div style={{fontFamily:"'JetBrains Mono', monospace", fontSize:"var(--fs-label)", color:"var(--gold-deep)", letterSpacing:"var(--track-l)", marginBottom:6}}>
                 {tt("pv.cacheSavings")}
               </div>
               <div style={{fontFamily:"'Spectral', serif", fontSize:16, lineHeight:1.4}}>
