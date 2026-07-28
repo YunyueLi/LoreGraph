@@ -4060,15 +4060,6 @@ a { color: inherit; }
   width: 1px;
   background: linear-gradient(to bottom, transparent, rgba(184,149,74,0.2) 12%, rgba(184,149,74,0.2) 88%, transparent);
 }
-.sv-nav-title {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.26em;
-  text-transform: uppercase;
-  color: var(--gold-deep);
-  margin-bottom: 22px;
-  padding-left: 14px;
-}
 .sv-nav-item {
   display: block;
   width: 100%;
@@ -4113,8 +4104,8 @@ a { color: inherit; }
 }
 .sv-h3 {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.26em;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-x);
   text-transform: uppercase;
   color: var(--gold-deep);
   margin: 36px 0 16px;
@@ -4127,19 +4118,31 @@ a { color: inherit; }
   margin-bottom: 32px;
 }
 .sv-provider-card {
-  padding: 14px 16px;
+  position: relative;
+  padding: 14px 40px 14px 16px;
   background: transparent;
   border: 1px solid rgba(184,149,74,0.18);
-  border-radius: 8px;
+  border-radius: 3px;
   cursor: pointer;
-  transition: all 0.18s;
+  transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
   text-align: left;
 }
 .sv-provider-card:hover { border-color: rgba(184,149,74,0.4); }
+.sv-provider-card:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .sv-provider-card.active {
   border-color: var(--gold);
   background: rgba(184,149,74,0.06);
-  box-shadow: 0 0 0 3px rgba(184,149,74,0.1);
+  box-shadow: inset 0 0 0 1px rgba(184,149,74,0.35);
+}
+/* The selection was carried by a slightly warmer border alone. A mark states it
+   outright, so the choice survives a glance and a colour-blind reader. */
+.sv-provider-mark {
+  position: absolute;
+  top: 13px; right: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--gold-deep);
 }
 .sv-provider-name {
   font-family: 'Spectral', serif;
@@ -4156,37 +4159,163 @@ a { color: inherit; }
   color: var(--paper-text-mute);
 }
 
-.sv-field { margin-bottom: 20px; }
+.sv-field { margin-bottom: 22px; }
+/* ---- Cover style: two options, each shown rather than described ---- */
+.sv-cover-choice {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 18px;
+  max-width: 760px;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+.sv-cover-choice legend {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-l);
+  text-transform: uppercase;
+  color: var(--gold-deep);
+  padding: 0;
+  margin-bottom: 12px;
+}
+.sv-cover-opt {
+  display: block;
+  width: 100%;
+  padding: 16px 16px 13px;
+  background: transparent;
+  border: 1px solid rgba(184,149,74,0.18);
+  border-radius: 3px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
+}
+.sv-cover-opt:hover { border-color: rgba(184,149,74,0.4); }
+.sv-cover-opt:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.sv-cover-opt.active {
+  border-color: var(--gold);
+  background: rgba(184,149,74,0.06);
+  box-shadow: inset 0 0 0 1px rgba(184,149,74,0.35);
+}
+.sv-cover-row { display: flex; gap: 10px; align-items: flex-end; }
+.sv-cover-thumb {
+  flex: 1 1 0;
+  min-width: 0;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  box-shadow: 0 8px 18px -8px rgba(60,40,10,0.32);
+}
+.sv-cover-thumb > * { width: 100%; height: 100%; display: block; }
+.sv-cover-thumb img, .sv-cover-thumb svg { width: 100%; height: 100%; object-fit: cover; }
+.sv-cover-meta {
+  position: relative;
+  margin-top: 14px;
+  padding-right: 22px;
+}
+.sv-cover-label {
+  display: block;
+  font-family: 'Spectral', serif;
+  font-size: 15px;
+  color: var(--paper-text);
+}
+.sv-cover-opt.active .sv-cover-label { color: var(--gold-deep); }
+.sv-cover-note {
+  display: block;
+  margin-top: 2px;
+  font-family: 'Spectral', serif;
+  font-style: italic;
+  font-size: 12.5px;
+  color: var(--paper-text-mute);
+}
+.sv-cover-mark {
+  position: absolute;
+  top: 2px; right: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--gold-deep);
+}
+
+/* The currency sign sits inside the field's own frame, so the frame reads as one
+   control rather than a glyph next to a box. */
+.sv-field-money { position: relative; max-width: 280px; }
+.sv-field-money > span {
+  position: absolute;
+  left: 14px; top: 50%;
+  transform: translateY(-50%);
+  font-family: 'Spectral', serif;
+  font-style: italic;
+  font-size: 14.5px;
+  color: var(--paper-text-mute);
+  pointer-events: none;
+}
+/* Specificity has to clear `.sv-field input`, which sets the padding shorthand
+   and would otherwise put the value underneath the "$". */
+.sv-field .sv-field-money input { padding-left: 31px; }
+.sv-field-hint {
+  margin-top: 7px;
+  max-width: 460px;
+  font-family: 'Spectral', serif;
+  font-style: italic;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--paper-text-faint);
+}
 .sv-field label {
   display: block;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.18em;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-l);
   text-transform: uppercase;
   color: var(--gold-deep);
   margin-bottom: 8px;
 }
+/* The <select> arrived with the platform's own chrome — a bevelled rounded box
+   with a system chevron — which read as a foreign control dropped into a paper
+   surface. appearance:none takes the paint but keeps the native popup and its
+   keyboard behaviour; the chevron is drawn to match the rest of the type. */
 .sv-field select,
 .sv-field input {
   width: 100%;
   max-width: 460px;
-  padding: 10px 12px;
+  padding: 11px 14px;
   background: #fbf7ea;
   border: 1px solid rgba(184,149,74,0.22);
-  border-radius: 6px;
+  border-radius: 2px;
   font-family: 'Spectral', serif;
-  font-size: 14px;
+  font-size: 14.5px;
   color: var(--paper-text);
   outline: none;
-  transition: border 0.18s;
+  transition: border-color 0.18s, box-shadow 0.18s;
+  box-shadow: inset 0 1px 2px rgba(120,96,48,0.05);
 }
-.sv-field select:focus,
-.sv-field input:focus { border-color: var(--gold); }
+.sv-field select {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 38px;
+  cursor: pointer;
+  /* A drawn chevron, in gold, at the hairline weight the rest of the page uses. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7' viewBox='0 0 11 7'%3E%3Cpath d='M1.2 1.3 L5.5 5.5 L9.8 1.3' fill='none' stroke='%238a6e36' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-position: right 14px center;
+  background-size: 11px 7px;
+  background-repeat: no-repeat;
+}
+.sv-field input::placeholder { color: var(--paper-text-faint); font-style: italic; }
+.sv-field select:hover { border-color: rgba(184,149,74,0.42); }
+.sv-field select:focus-visible,
+.sv-field input:focus-visible {
+  border-color: var(--gold);
+  box-shadow: inset 0 1px 2px rgba(120,96,48,0.05), 0 0 0 3px rgba(184,149,74,0.16);
+}
+/* The number input's spinner is another piece of platform chrome. */
+.sv-field input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+.sv-field input[type="number"]::-webkit-outer-spin-button,
+.sv-field input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
 .sv-budget-display {
   background: linear-gradient(135deg, rgba(184,149,74,0.07), rgba(184,149,74,0.02));
   padding: 26px 28px;
-  border-radius: 10px;
+  border-radius: 3px;
   border: 1px solid rgba(184,149,74,0.2);
   margin-bottom: 28px;
   max-width: 460px;
@@ -4213,8 +4342,8 @@ a { color: inherit; }
 }
 .sv-budget-label {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px;
-  letter-spacing: 0.18em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-l);
   text-transform: uppercase;
   color: var(--paper-text-mute);
 }
@@ -4229,15 +4358,27 @@ a { color: inherit; }
   align-items: center;
 }
 .sv-cost-name { font-family: 'Spectral', serif; font-size: 14.5px; color: var(--paper-text); }
-.sv-cost-provider { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--paper-text-mute); letter-spacing: 0.04em; }
+.sv-cost-provider { font-family: 'Spectral', serif; font-style: italic; font-size: 12.5px; color: var(--paper-text-mute); letter-spacing: 0.005em; }
 .sv-cost-val { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--gold-deep); text-align: right; }
 
 .sv-cache-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; max-width: 540px; }
-.sv-stat-card { padding: 24px 26px; background: #fbf7ea; border: 1px solid rgba(184,149,74,0.18); border-radius: 8px; }
+/* Running explanatory prose in a settings section — set at reading measure, not
+   as a caption. */
+.sv-note {
+  margin-top: 26px;
+  max-width: 58ch;
+  font-family: 'Spectral', serif;
+  font-size: 14.5px;
+  line-height: 1.72;
+  color: var(--paper-text-mute);
+  text-indent: 0;
+}
+.sv-note + .sv-note { margin-top: 14px; }
+.sv-stat-card { padding: 24px 26px; background: #fbf7ea; border: 1px solid rgba(184,149,74,0.18); border-radius: 3px; }
 .sv-stat-num { font-family: 'Spectral', serif; font-size: 40px; font-weight: 300; color: var(--paper-text); line-height: 1; margin-bottom: 12px; }
 .sv-stat-num.gold { color: var(--gold-deep); }
 .sv-stat-num small { font-size: 17px; color: var(--paper-text-mute); }
-.sv-stat-lbl { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--paper-text-mute); }
+.sv-stat-lbl { font-family: 'JetBrains Mono', monospace; font-size: var(--fs-micro); letter-spacing: var(--track-l); text-transform: uppercase; color: var(--paper-text-mute); }
 
 .sv-segmented { display: inline-flex; border: 1px solid rgba(184,149,74,0.22); border-radius: 999px; padding: 3px; background: rgba(184,149,74,0.04); }
 .sv-segmented button {
@@ -4260,50 +4401,80 @@ a { color: inherit; }
   padding: 12px 14px;
   background: transparent;
   border: 1px solid rgba(184,149,74,0.18);
-  border-radius: 8px;
+  border-radius: 3px;
   cursor: pointer;
-  transition: all 0.18s;
+  transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
   text-align: left;
 }
 .sv-lang-card:hover { border-color: rgba(184,149,74,0.4); }
-.sv-lang-card.active { border-color: var(--gold); background: rgba(184,149,74,0.06); }
-.sv-lang-code { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.14em; color: var(--gold-deep); background: rgba(184,149,74,0.08); padding: 3px 9px; border-radius: 4px; }
+.sv-lang-card:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.sv-lang-card.active { border-color: var(--gold); background: rgba(184,149,74,0.06); box-shadow: inset 0 0 0 1px rgba(184,149,74,0.35); }
+.sv-lang-code { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: var(--track-m); color: var(--gold-deep); background: rgba(184,149,74,0.08); padding: 3px 9px; border-radius: 2px; }
 .sv-lang-name { font-family: 'Spectral', serif; font-size: 14.5px; color: var(--paper-text); }
+.sv-lang-mark { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--gold-deep); }
 
 .sv-acct-card {
   display: flex; align-items: center; gap: 20px;
   padding: 24px 26px;
   background: linear-gradient(135deg, rgba(184,149,74,0.07), rgba(184,149,74,0.02));
   border: 1px solid rgba(184,149,74,0.2);
-  border-radius: 10px;
+  border-radius: 3px;
   max-width: 540px;
 }
 .sv-acct-avatar { width: 64px; height: 64px; border: 1px solid var(--gold); color: var(--gold); font-family: 'Spectral', serif; font-style: italic; font-weight: 500; display: grid; place-items: center; font-size: 24px; border-radius: 50%; flex-shrink: 0; }
 .sv-acct-name { font-family: 'Spectral', serif; font-size: 19px; font-weight: 500; color: var(--paper-text); }
 .sv-acct-handle { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--paper-text-mute); letter-spacing: 0.04em; margin-top: 2px; }
-.sv-acct-plan { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold-deep); margin-top: 10px; }
+.sv-acct-plan { font-family: 'JetBrains Mono', monospace; font-size: var(--fs-micro); letter-spacing: var(--track-l); text-transform: uppercase; color: var(--gold-deep); margin-top: 10px; }
 
-.sv-acct-actions { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 8px; }
+/* These were five identical pills, which read as a tag cloud rather than as the
+   account destinations they are — and every one of them is inert in a demo with
+   no account backend. Set as a list of destinations, hairline-ruled, with the
+   section saying plainly that they lead nowhere here. */
+.sv-acct-actions {
+  margin-top: 26px;
+  max-width: 540px;
+  border-top: 1px solid rgba(184,149,74,0.15);
+}
 .sv-btn-ghost {
-  padding: 9px 18px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 12px 2px;
   background: transparent;
-  border: 1px solid rgba(184,149,74,0.22);
-  border-radius: 999px;
-  cursor: pointer;
+  border: none;
+  border-bottom: 1px solid rgba(184,149,74,0.15);
+  cursor: default;
+  text-align: left;
   font-family: 'Spectral', serif;
+  font-size: 14px;
+  color: var(--paper-text-mute);
+}
+.sv-btn-ghost::after {
+  content: "→";
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--paper-text-faint);
+}
+.sv-signout {
+  margin-top: 4px;
+  padding: 10px 20px;
+  border: 1px solid rgba(160,74,42,0.3);
+  border-radius: 3px;
+  color: #b06a48;
   font-style: italic;
   font-size: 13.5px;
-  color: var(--paper-text);
-  transition: all 0.18s;
+  justify-content: center;
+  width: auto;
+  transition: border-color 0.18s, color 0.18s, background 0.18s;
 }
-.sv-btn-ghost:hover { border-color: var(--gold); color: var(--gold-deep); background: rgba(184,149,74,0.04); }
-.sv-signout { color: #c87c5a; border-color: rgba(160,74,42,0.3); }
-.sv-signout:hover { color: #e09075; background: rgba(160,74,42,0.06); border-color: rgba(160,74,42,0.5); }
+.sv-signout::after { content: none; }
+.sv-signout:hover { color: #8f5236; background: rgba(160,74,42,0.05); border-color: rgba(160,74,42,0.5); }
 
 @media (max-width: 800px) {
   .sv { grid-template-columns: 1fr; }
   .sv-nav { padding: 16px 20px; display: flex; gap: 4px; overflow-x: auto; }
-  .sv-nav-title { display: none; }
   .sv-nav-item { white-space: nowrap; }
   .sv-nav::after { display: none; }
   .sv-body { padding: 28px 22px 60px; }
