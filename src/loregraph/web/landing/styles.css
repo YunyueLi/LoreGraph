@@ -2271,39 +2271,72 @@ a { color: inherit; }
   border-bottom: 1px solid var(--paper-line-soft);
 }
 
+/* A claim is a quotable unit, so it reads as a panel with a hairline on all
+   four sides and a faint ground — not as text with a coloured bar bolted to
+   its left edge. */
 .claim {
-  margin-bottom: 18px;
-  padding-left: 14px;
-  border-left: 2px solid var(--paper-line);
-  transition: border 0.15s;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--paper-line-soft);
+  background: rgba(184,149,74,0.035);
+  transition: border-color 0.15s, background-color 0.15s;
   cursor: pointer;
 }
-.claim:hover { border-left-color: var(--gold); }
-.claim-rel {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--gold-deep);
-  margin-bottom: 6px;
+.claim:hover {
+  border-color: var(--gold);
+  background: rgba(184,149,74,0.075);
 }
-.claim-rel .src, .claim-rel .dst { color: var(--paper-text); letter-spacing: 0.04em; text-transform: none; font-family: 'Spectral', serif; font-style: italic; font-size: 12px; }
-.claim-rel .arrow { color: var(--paper-text-mute); margin: 0 4px; }
+/* Selection thickens no edge and shifts no text — a full hairline plus ground,
+   as everywhere else in this interface. */
+.claim.selected {
+  border-color: var(--gold);
+  background: rgba(184,149,74,0.10);
+  box-shadow: inset 0 0 0 1px rgba(184,149,74,0.32);
+}
+.claim-rel {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 5px;
+  font-family: 'Spectral', serif;
+  font-size: 13px;
+  color: var(--gold-deep);
+  margin-bottom: 8px;
+}
+.claim-rel .src, .claim-rel .dst { color: var(--paper-text); font-style: italic; font-size: 13px; cursor: pointer; }
+.claim-rel .src:hover, .claim-rel .dst:hover { color: var(--gold-deep); }
+.claim-rel .pred { color: var(--gold-deep); }
+.claim-rel .arrow { color: var(--paper-text-mute); }
+.claim-rel .cat {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-m);
+  text-transform: uppercase;
+  color: var(--paper-text-faint);
+  border: 1px solid rgba(184,149,74,0.2);
+  border-radius: 2px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+/* Still used for the GLUCOSE inferences, whose text is content in its own right
+   rather than a restatement of the relation line above it. */
 .claim-text {
   font-family: 'Spectral', serif;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.55;
   color: var(--paper-text);
-  margin-bottom: 7px;
+  margin-bottom: 8px;
 }
 
 /* =================== READER VIEW =================== */
 .rd { display: grid; grid-template-columns: 240px 1fr 320px; height: 100%; }
-@media (max-width: 1280px) { .rd { grid-template-columns: 200px 1fr 280px; } }
+/* A 七言 couplet hemistich needs ~91px at 13px; 200px left the title column at
+   74px and broke every chapter of 西游记 onto four lines. */
+@media (max-width: 1280px) { .rd { grid-template-columns: 216px 1fr 280px; } }
 @media (max-width: 1080px) { .rd { grid-template-columns: 1fr 280px; } .rd-toc { display: none; } }
 @media (max-width: 800px)  { .rd { grid-template-columns: 1fr; } .rd-panel { display: none; } }
 .rd-toc {
-  padding: 28px 22px;
+  padding: 28px 16px 28px 20px;
   background: var(--paper);
   overflow: auto;
   position: relative;
@@ -2321,8 +2354,8 @@ a { color: inherit; }
 }
 .rd-toc h3 {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.26em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-x);
   text-transform: uppercase;
   color: var(--gold-deep);
   margin-bottom: 22px;
@@ -2331,9 +2364,16 @@ a { color: inherit; }
 .rd-toc h3::before {
   content: ""; width: 14px; height: 1px; background: var(--gold-deep); opacity: 0.5;
 }
+/* A chapter entry is a three-column TOC line: ordinal, title, density. A flex
+   row let the ordinal and the count float against the middle of a title that
+   wrapped to four lines; the grid pins all three to the first line's box, the
+   way a printed table of contents sets them. */
 .rd-ch {
-  padding: 7px 0 7px 18px;
-  display: flex; gap: 10px;
+  padding: 7px 0 8px 14px;
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  align-items: start;
+  column-gap: 8px;
   cursor: pointer;
   font-size: 13px;
   position: relative;
@@ -2343,9 +2383,8 @@ a { color: inherit; }
 .rd-ch::before {
   content: "";
   position: absolute;
-  left: 0; top: 50%;
+  left: 0; top: 14px;
   width: 4px; height: 4px;
-  transform: translateY(-50%);
   background: transparent;
   border-radius: 50%;
   transition: background 0.2s;
@@ -2353,10 +2392,13 @@ a { color: inherit; }
 .rd-ch:hover::before { background: rgba(184,149,74,0.4); }
 .rd-ch.active::before { background: var(--gold); }
 .rd-ch.active { color: var(--gold-deep); }
-.rd-ch-num { font-family: 'JetBrains Mono', monospace; color: var(--paper-text-mute); width: 24px; font-size: 10.5px; letter-spacing: 0.04em; }
+.rd-ch-num { font-family: 'JetBrains Mono', monospace; color: var(--paper-text-mute); font-size: var(--fs-label); letter-spacing: 0.04em; line-height: 20px; }
 .rd-ch.active .rd-ch-num { color: var(--gold-deep); }
-.rd-ch-name { font-family: 'Spectral', serif; font-style: italic; flex: 1; }
-.rd-ch-ent { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: var(--paper-text-mute); opacity: 0.6; }
+.rd-ch-name { font-family: 'Spectral', serif; font-style: italic; min-width: 0; }
+/* Couplet hemistichs are set as their own lines — the break a typesetter would
+   make, instead of CSS breaking 心性修持大道生 between 心 and 性. */
+.rd-ch-line { display: block; line-height: 20px; }
+.rd-ch-ent { font-family: 'JetBrains Mono', monospace; font-size: var(--fs-micro); color: var(--paper-text-mute); opacity: 0.6; line-height: 20px; font-variant-numeric: tabular-nums; }
 
 .rd-text {
   overflow: auto;
@@ -2364,7 +2406,7 @@ a { color: inherit; }
   background: #fbf7ea;
 }
 @media (max-width: 1080px) { .rd-text { padding: 40px 48px 80px; } }
-@media (max-width: 720px) { .rd-text { padding: 28px 22px 60px; } .rd-text-head h1 { font-size: 28px; } .rd-prose { font-size: 16px; } .rd-prose .chunk-block .atom-id { display: none; } .rd-prose .chunk-block { padding-left: 0; } }
+@media (max-width: 720px) { .rd-text { padding: 28px 22px 60px; } .rd-text-head h1 { font-size: 28px; } .rd-prose { font-size: 16px; } .rd-prose .chunk-block .atom-id { display: none; } .rd-prose .chunk-block::before { display: none; } }
 .rd-text-head { margin-bottom: 40px; max-width: 640px; }
 .rd-text-head h1 {
   font-family: 'Spectral', serif;
@@ -2374,10 +2416,14 @@ a { color: inherit; }
   margin-bottom: 6px;
 }
 .rd-text-head h1 em { font-style: italic; }
+/* Same reason as the TOC: give each hemistich its own line rather than letting
+   the 36px setting break a compound mid-word. */
+.rd-title-line { display: block; }
+.rd-title-line + .rd-title-line { margin-top: 2px; }
 .rd-text-head .ch-meta {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  letter-spacing: 0.18em;
+  letter-spacing: var(--track-l);
   text-transform: uppercase;
   color: var(--gold-deep);
   margin-bottom: 8px;
@@ -2396,18 +2442,39 @@ a { color: inherit; }
   line-height: 1.75;
   color: var(--paper-text);
 }
-.rd-prose .chunk-block { position: relative; margin-bottom: 22px; padding-left: 24px; border-left: 1px dashed transparent; transition: border-color 0.2s; }
-.rd-prose .chunk-block:hover { border-left-color: var(--paper-line); }
+/* A passage reads flush with the chapter title above it. Its provenance — the
+   extent of the chunk, its citation key, its token and claim counts — surfaces
+   on hover, in the outer margin, instead of printing an internal id and three
+   raw counts beside every paragraph of the novel. */
+.rd-prose .chunk-block { position: relative; margin-bottom: 26px; }
+.rd-prose .chunk-block::before {
+  content: "";
+  position: absolute;
+  left: -20px; top: 3px; bottom: 3px;
+  border-left: 1px dashed var(--paper-line);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.rd-prose .chunk-block:hover::before { opacity: 1; }
 .rd-prose .chunk-block .atom-id {
   position: absolute;
-  left: -64px; top: 4px;
+  right: 0; top: -16px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px;
-  letter-spacing: 0.14em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-m);
   color: var(--paper-text-faint);
-  width: 56px; text-align: right;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.2s;
 }
-.rd-prose .chunk-block .atom-id::before { content: "▾ "; color: var(--gold-deep); }
+.rd-prose .chunk-block .atom-id::before { content: "¶ "; color: var(--gold-deep); }
+.rd-prose .chunk-block:hover .atom-id,
+.rd-prose .chunk-block:hover .rd-chunk-meta { opacity: 1; }
+/* Without a pointer there is no hover to reveal it, so keep it visible. */
+@media (hover: none) {
+  .rd-prose .chunk-block .atom-id,
+  .rd-prose .chunk-block .rd-chunk-meta { opacity: 1; }
+}
 .rd-prose p { margin-bottom: 14px; }
 
 .rd-prose .ent {
@@ -2451,8 +2518,8 @@ a { color: inherit; }
 }
 .rd-panel h4 {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.26em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-x);
   text-transform: uppercase;
   color: var(--gold-deep);
   margin-bottom: 16px;
@@ -2482,19 +2549,67 @@ a { color: inherit; }
   font-style: italic;
   font-size: 15px;
   color: var(--gold-deep);
-  margin-bottom: 10px;
+  margin-bottom: 3px;
   letter-spacing: 0.005em;
 }
+/* The chunk key, subordinate to the human label above it — present because a
+   reader auditing a claim needs to quote it, not because it is a heading. */
+.rd-chunk-card-key {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--fs-micro);
+  letter-spacing: 0.06em;
+  color: var(--paper-text-faint);
+  margin-bottom: 11px;
+  user-select: all;
+}
 .rd-chunk-stat-row {
-  display: flex; gap: 18px;
+  display: flex; gap: 13px;
   font-family: 'Spectral', serif;
   font-style: italic;
-  font-size: 13px;
+  font-size: 12.5px;
   color: var(--paper-text-mute);
   letter-spacing: 0.005em;
 }
 .rd-chunk-stat-row strong { color: var(--paper-text); font-weight: 500; font-style: normal; font-family: 'JetBrains Mono', monospace; font-size: 12px; margin-right: 3px; }
-.rd-chunk-entities { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 6px; }
+.rd-chunk-entities { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.rd-ent-more {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-m);
+  padding: 3px 9px;
+  color: var(--gold-deep);
+  background: transparent;
+  border: 1px dashed var(--paper-line);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.rd-ent-more:hover { border-color: var(--gold); color: var(--ink); }
+.rd-ent-more:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+/* An empty result states itself rather than leaving the heading over a void. */
+.rd-panel-empty {
+  margin-top: 12px;
+  font-family: 'Spectral', serif;
+  font-style: italic;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--paper-text-faint);
+  max-width: 26em;
+}
+.rd-panel-sel { margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--paper-line); }
+
+/* Per-passage provenance under the prose: token count, mentions, edges. */
+.rd-chunk-meta {
+  margin-top: 10px;
+  display: flex; flex-wrap: wrap; gap: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--fs-micro);
+  letter-spacing: 0.05em;
+  color: var(--paper-text-faint);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.rd-chunk-meta .gold { color: var(--gold-deep); }
 
 .rd-ent-mini {
   font-family: 'Spectral', serif;
@@ -2504,13 +2619,110 @@ a { color: inherit; }
   background: transparent;
   cursor: pointer;
   transition: all 0.15s;
-  border-left: 2px solid transparent;
+  /* inline-block, not inline-flex: text-overflow has no effect on a flex
+     container's anonymous item, so event entities — whose names are whole
+     clauses — ran off the edge of the rail instead of ellipsising. */
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+/* Entity type was carried by the colour of a left-edge stripe: a banned shape,
+   and hue-only encoding on a gold/rust/moss palette — exactly the range red-green
+   colour vision compresses. It is now a marker whose SHAPE differs per type, so
+   the glyph carries the meaning and the colour merely reinforces it. */
+.rd-ent-mini::before {
+  content: "";
+  display: inline-block;
+  width: 6px; height: 6px;
+  margin-right: 6px;
+  vertical-align: 0.08em;
+  background: currentColor;
 }
 .rd-ent-mini:hover { color: var(--gold-deep); }
-.rd-ent-mini.agent   { border-left-color: var(--gold); }
-.rd-ent-mini.object  { border-left-color: var(--gold-deep); }
-.rd-ent-mini.event   { border-left-color: var(--rust); }
-.rd-ent-mini.concept { border-left-color: var(--moss); }
+.rd-ent-mini.agent   { color: var(--gold-deep); }
+.rd-ent-mini.agent::before   { border-radius: 50%; }                    /* circle */
+.rd-ent-mini.object  { color: var(--paper-text-mute); }
+.rd-ent-mini.object::before  { border-radius: 1px; }                    /* square */
+.rd-ent-mini.event   { color: var(--rust); }
+.rd-ent-mini.event::before   { transform: translateY(-1px) rotate(45deg); } /* diamond */
+.rd-ent-mini.concept { color: var(--moss); }
+.rd-ent-mini.concept::before { clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); background: none; box-shadow: inset 0 0 0 3px currentColor; }
+
+/* Book picker in the pipeline bar: ellipsise long titles instead of slicing
+   them mid-word, and keep the pending match-rate legible rather than muted. */
+.bar-btn-book {
+  max-width: 22ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pv-summary-pending {
+  font-family: 'Spectral', serif;
+  font-style: italic;
+  font-size: 21px;
+  color: var(--ink-text-mute);
+}
+
+/* ---- Aliases as countable chips ----
+   Some entities carry 600+ aliases. Rendered inline they became a wall of
+   quoted strings that filled the detail pane and pushed the entity's own
+   content below the fold. */
+.ev-alias { margin-top: 16px; }
+.ev-alias-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-l);
+  text-transform: uppercase;
+  color: var(--gold-deep);
+  margin-right: 8px;
+}
+.ev-alias-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--fs-micro);
+  color: var(--paper-text-faint);
+}
+.ev-alias-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 9px;
+}
+.ev-alias-chips.open {
+  max-height: 168px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.ev-alias-chip {
+  font-family: 'Spectral', serif;
+  font-size: 12.5px;
+  line-height: 1.2;
+  padding: 4px 9px;
+  color: var(--paper-text-mute);
+  background: var(--paper-deep);
+  border: 1px solid var(--paper-line-soft);
+  border-radius: 2px;
+  white-space: nowrap;
+  max-width: 22ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ev-alias-more {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-m);
+  padding: 4px 10px;
+  color: var(--gold-deep);
+  background: transparent;
+  border: 1px dashed var(--paper-line);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.ev-alias-more:hover { border-color: var(--gold); color: var(--ink); }
+.ev-alias-more:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 
 /* =================== ENTITIES VIEW =================== */
 .ev { display: grid; grid-template-columns: 320px 1fr; height: 100%; }
@@ -5694,9 +5906,9 @@ a { color: inherit; }
 }
 .tl2-ribbon-card-ch {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
+  font-size: var(--fs-micro);
   color: var(--phase-color);
-  letter-spacing: 0.22em; text-transform: uppercase;
+  letter-spacing: var(--track-l); text-transform: uppercase;
   margin-bottom: 5px;
 }
 .tl2-ribbon-card-title {
