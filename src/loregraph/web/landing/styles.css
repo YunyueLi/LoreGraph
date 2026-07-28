@@ -10,17 +10,24 @@
   --paper-line-soft: #e5dbc1;
   --gold: #b8954a;
   --gold-bright: #d1ac5e;
-  --gold-deep: #8a6e36;
+  /* Text colours are set to clear WCGA AA (4.5:1) against every ground they are
+     actually painted on — the three papers (#f5efe2, #fbf7ea, #ece4cf) for these,
+     the inks for the scoped overrides further down. Measured, not estimated:
+     --gold-deep was 3.80:1 on paper, --paper-text-faint 2.55:1, and the faint
+     token carries 11px running text (chunk keys, hints, empty states). The
+     hairlines and washes are unaffected: they are rgba() literals, not tokens,
+     and decoration has no contrast floor. */
+  --gold-deep: #7b6230;
   --rust: #a04a2a;
   --moss: #5a6a3f;
   --paper-text: #1f1c17;
   --ink-text: #f0e8d4;
   --ink-text-mute: #a89c80;
   --paper-text-mute: #6b6253;
-  --paper-text-faint: #9a8e75;
-  --green: #5a7a3f;
+  --paper-text-faint: #6d6553;
+  --green: #516e39;
   --red: #a04a2a;
-  --blue: #4a6a8a;
+  --blue: #496989;
 
   /* ---- Tracking scale ----
      Wide letter-spacing is a Latin small-caps device: it is what gives the
@@ -87,6 +94,18 @@ a { color: inherit; }
   transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .app.sb-collapsed { --sb-w: 64px; }
+
+/* Gold and green need opposite corrections on the two grounds — darker on paper,
+   lighter on ink — so one value cannot serve both. The dark containers remap the
+   two tokens for everything inside them, which is cheaper and harder to get
+   wrong than correcting each rule that happens to sit on ink.
+   On #1a1714 / #1a1a1a / #232220: 4.54:1 and 4.53:1. */
+.sb,
+.pv-logs,
+.ink {
+  --gold-deep: #a68441;
+  --green: #6d944c;
+}
 
 /* ---- sidebar (dark ink, expandable) ---- */
 .sb {
@@ -1338,7 +1357,10 @@ a { color: inherit; }
 .lib-card.import .plus {
   font-family: 'Spectral', serif;
   font-size: 48px;
-  color: var(--gold);
+  /* --gold is a line-and-wash colour: 2.64:1, below the 3:1 floor for large
+     text. This glyph is the affordance for "add a book", not decoration, so it
+     takes the darkest gold that still reads as gold rather than as brown. */
+  color: #9c7f3f;
   font-weight: 300;
   line-height: 1;
 }

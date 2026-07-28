@@ -278,7 +278,9 @@ function Topbar({ ctx }) {
         <span className="cur">{viewLabel}</span>
         {showBook && (
           <>
-            <span className="sep">/</span>
+            {/* A drawn separator, not content — hidden from screen readers, and
+                exempt from the contrast floor for the same reason. */}
+            <span className="sep" aria-hidden="true">/</span>
             <em>{activeBook.title}</em>
             <span style={{fontSize:11, opacity:.5}}>· {activeBook.author}</span>
           </>
