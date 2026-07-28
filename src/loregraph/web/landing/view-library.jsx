@@ -168,7 +168,9 @@ function BookCard({ book, active, onClick, ctx }) {
   };
 
   return (
-    <div className={"lib-card " + (active ? "active" : "")} onClick={onClick}>
+    <div className={"lib-card " + (active ? "active" : "")}
+         {...window.clickable(onClick)}
+         aria-current={active ? "true" : undefined}>
       <div className="lib-card-top">
         {window.bookCover(book, coverStyle)}
       </div>

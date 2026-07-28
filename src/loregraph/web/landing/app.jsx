@@ -3,6 +3,56 @@
 
 const { useState, useEffect, useMemo, useRef } = React;
 
+// Most of this interface's controls are <div onClick> — rows, cards, chips,
+// tabs, TOC entries. They work with a mouse and are unreachable by keyboard,
+// which made the whole app unusable without one: even the sidebar that switches
+// views could not be focused. Spreading `clickable(fn)` onto such an element
+// gives it the three things a button has — a role, a tab stop, and Enter/Space —
+// without restructuring markup that legitimately cannot be a <button> (several
+// of these contain buttons of their own).
+window.clickable = function (onActivate, opts) {
+  const o = opts || {};
+  return {
+    role: o.role || "button",
+    // `roving` keeps a long list to one tab stop: 477 index rows must not be 477
+    // presses of Tab. The active row is tabbable, the rest are reachable with
+    // the Arrow keys via listNav below — the listbox pattern.
+    tabIndex: o.disabled || o.roving ? -1 : 0,
+    "aria-disabled": o.disabled || undefined,
+    onClick: o.disabled ? undefined : onActivate,
+    onKeyDown: o.disabled ? undefined : (e) => {
+      if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
+        // Space scrolls the page by default; a control must not.
+        e.preventDefault();
+        e.stopPropagation();
+        onActivate(e);
+      }
+    },
+  };
+};
+
+// Arrow-key movement inside a roving list. Moves focus only — Enter or Space
+// still does the selecting, so arrowing through a hundred chapters does not load
+// a hundred chapters.
+window.listNav = function (itemSelector) {
+  const STEP = { ArrowDown: 1, ArrowUp: -1, ArrowRight: 1, ArrowLeft: -1 };
+  return (e) => {
+    if (!(e.key in STEP) && e.key !== "Home" && e.key !== "End") return;
+    const items = [...e.currentTarget.querySelectorAll(itemSelector)]
+      .filter((el) => el.getAttribute("aria-disabled") !== "true");
+    if (!items.length) return;
+    e.preventDefault();
+    const cur = items.indexOf(document.activeElement);
+    let next;
+    if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = items.length - 1;
+    else if (cur < 0) next = 0;
+    else next = Math.min(items.length - 1, Math.max(0, cur + STEP[e.key]));
+    items[next].focus();
+    if (items[next].scrollIntoView) items[next].scrollIntoView({ block: "nearest" });
+  };
+};
+
 /* =================== ERROR BOUNDARY =================== */
 // Wraps each view so a render error in one view doesn't white-screen the entire app.
 class ViewErrorBoundary extends React.Component {
@@ -111,12 +161,15 @@ function App() {
 
   return (
     <div className={"app" + (sbCollapsed ? " sb-collapsed" : "")}>
+      {/* First tab stop on the page: nine rail items stand between the keyboard
+          and the content otherwise. Visible only when focused. */}
+      <a className="skip-link" href="#lg-main">{tt("a11y.skipToContent")}</a>
       <Sidebar ctx={ctx}
         collapsed={sbCollapsed} setCollapsed={setSbCollapsed}
         goToSettings={(section) => { setSettingsSection(section || "provider"); setActiveView("settings"); }} />
       <div className="main">
         <Topbar ctx={ctx} />
-        <div className="main-content">
+        <div className="main-content" id="lg-main" tabIndex={-1} role="main">
           <ViewErrorBoundary viewKey={activeView}>
             {activeView === "library"   && <ViewLibrary ctx={ctx} />}
             {activeView === "graph"     && <ViewGraph ctx={ctx} />}
@@ -150,9 +203,10 @@ function Sidebar({ ctx, collapsed, setCollapsed, goToSettings }) {
 
   const NavItem = ({ id, icon, label, count, dot }) => (
     <div className={"sb-item " + (activeView === id ? "active" : "")}
-         onClick={() => setActiveView(id)}
+         {...window.clickable(() => setActiveView(id))}
+         aria-current={activeView === id ? "page" : undefined}
          data-tip={label}>
-      <span className="sb-item-icon">{icon}</span>
+      <span className="sb-item-icon" aria-hidden="true">{icon}</span>
       <span className="sb-item-label">{label}</span>
       {dot && <span className="sb-item-dot" />}
       {count !== undefined && count !== null && <span className="sb-item-count">{count}</span>}

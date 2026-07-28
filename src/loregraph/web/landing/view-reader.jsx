@@ -172,7 +172,7 @@ function ViewReader({ ctx }) {
   return (
     <div className="rd">
       {/* TOC */}
-      <aside className="rd-toc">
+      <aside className="rd-toc" onKeyDown={window.listNav(".rd-ch")}>
         <h3>{tt("rd.toc")}</h3>
         {chapters.map(c => {
           const target = chunkForChapter(c.n);
@@ -181,7 +181,9 @@ function ViewReader({ ctx }) {
             <div
               key={c.n}
               className={"rd-ch " + (active ? "active" : "")}
-              onClick={() => { if (target) setSelectedChunkId(target.id); }}
+              {...window.clickable(() => { if (target) setSelectedChunkId(target.id); },
+                                   {role: "option", disabled: !target, roving: !active})}
+              aria-selected={active}
               style={{opacity: target ? 1 : 0.5}}
             >
               {/* The ordinal is only useful alongside a real title; when the

@@ -6722,3 +6722,56 @@ a { color: inherit; }
   .bs-switcher-active-title { font-size: 15px; }
   .bs-switcher-active-meta { font-size: 11px; }
 }
+
+/* ===================================================================== */
+/* =================== FOCUS VISIBILITY (floor) ======================== */
+/* ===================================================================== */
+/* Every control must show where the keyboard is. This is the baseline; the
+   controls with their own :focus-visible rule (higher specificity) keep it.
+   :focus-visible rather than :focus, so a mouse click does not leave a ring. */
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+/* The paper-side gold does not carry on ink. */
+.sb :focus-visible,
+.pv-logs :focus-visible,
+.ink :focus-visible {
+  outline-color: var(--gold-bright);
+}
+/* Rows and cards are flush with their neighbours, so an offset ring would sit
+   under the next one. Inset it instead. */
+.sb-item:focus-visible,
+.rd-ch:focus-visible,
+.ev-row:focus-visible,
+.ev-tab:focus-visible,
+.lib-card:focus-visible,
+.claim:focus-visible,
+.av-hist-item:focus-visible,
+.sv-nav-item:focus-visible {
+  outline-offset: -2px;
+}
+
+/* Skip link — off-screen until focused, then a plain paper chip at top left. */
+.skip-link {
+  position: absolute;
+  left: 12px; top: -60px;
+  z-index: 999;
+  padding: 9px 16px;
+  background: var(--paper);
+  color: var(--paper-text);
+  border: 1px solid var(--gold);
+  border-radius: 3px;
+  font-family: 'Spectral', serif;
+  font-size: 14px;
+  text-decoration: none;
+  box-shadow: 0 10px 30px -10px rgba(60,40,10,0.35);
+  transition: top 0.15s ease-out;
+}
+/* :focus, not :focus-visible — a skip link has no mouse path, so any focus
+   at all must reveal it. */
+.skip-link:focus { top: 12px; }
+/* The content region takes focus programmatically from the skip link; it must
+   not draw a ring of its own for that. */
+.main-content:focus { outline: none; }

@@ -48,35 +48,48 @@ function ViewEntities({ ctx }) {
             onChange={e => setSearch(e.target.value)}
           />
         </div>
-        <div className="ev-tabs">
-          <div className={"ev-tab " + (typeTab === "all" ? "active" : "")} onClick={() => setTypeTab("all")}>
+        <div className="ev-tabs" role="radiogroup" aria-label={tt("a11y.filterByType")}>
+          <div className={"ev-tab " + (typeTab === "all" ? "active" : "")}
+               {...window.clickable(() => setTypeTab("all"), {role: "radio"})}
+               aria-checked={typeTab === "all"}>
             <div>{tt("common.all").toUpperCase()}</div>
             <div className="ct">{counts.all}</div>
           </div>
-          <div className={"ev-tab " + (typeTab === "agent" ? "active" : "")} onClick={() => setTypeTab("agent")}>
+          <div className={"ev-tab " + (typeTab === "agent" ? "active" : "")}
+               {...window.clickable(() => setTypeTab("agent"), {role: "radio"})}
+               aria-checked={typeTab === "agent"}>
             <div>○ {tt("type.agent").toUpperCase()}</div>
             <div className="ct">{counts.agent}</div>
           </div>
-          <div className={"ev-tab " + (typeTab === "object" ? "active" : "")} onClick={() => setTypeTab("object")}>
+          <div className={"ev-tab " + (typeTab === "object" ? "active" : "")}
+               {...window.clickable(() => setTypeTab("object"), {role: "radio"})}
+               aria-checked={typeTab === "object"}>
             <div>▢ {tt("type.object").toUpperCase()}</div>
             <div className="ct">{counts.object}</div>
           </div>
-          <div className={"ev-tab " + (typeTab === "event" ? "active" : "")} onClick={() => setTypeTab("event")}>
+          <div className={"ev-tab " + (typeTab === "event" ? "active" : "")}
+               {...window.clickable(() => setTypeTab("event"), {role: "radio"})}
+               aria-checked={typeTab === "event"}>
             <div>◇ {tt("type.event").toUpperCase()}</div>
             <div className="ct">{counts.event}</div>
           </div>
-          <div className={"ev-tab " + (typeTab === "concept" ? "active" : "")} onClick={() => setTypeTab("concept")}>
+          <div className={"ev-tab " + (typeTab === "concept" ? "active" : "")}
+               {...window.clickable(() => setTypeTab("concept"), {role: "radio"})}
+               aria-checked={typeTab === "concept"}>
             <div>⬡ {tt("type.concept").toUpperCase()}</div>
             <div className="ct">{counts.concept}</div>
           </div>
         </div>
-        <div className="ev-rows">
+        <div className="ev-rows" role="listbox" aria-label={tt("nav.entities")}
+             onKeyDown={window.listNav(".ev-row")}>
           {filtered.map(e => {
             const l = window.entityLocale(e.id, locale);
             return (
               <div key={e.id}
                    className={"ev-row " + (selected.id === e.id ? "active" : "")}
-                   onClick={() => setSelectedEntityId(e.id)}>
+                   {...window.clickable(() => setSelectedEntityId(e.id),
+                                       {role: "option", roving: selected.id !== e.id})}
+                   aria-selected={selected.id === e.id}>
                 <div className="ev-row-shape" style={{width: 40, height: 40}}>
                   <svg viewBox="-22 -22 44 44" width="40" height="40">
                     {e.type === "agent"   && <circle cx="0" cy="0" r="20" fill="#fbf7ea" stroke="#8a6e36" strokeWidth="1" />}

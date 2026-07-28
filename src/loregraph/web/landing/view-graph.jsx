@@ -1327,7 +1327,9 @@ function ClaimItem({ edge, ctx, selected, onClick, dir }) {
   const predicate = edge.label || window.t("rel." + edge.rel);
   const arrow = dir === "out" ? "→" : "←";
   return (
-    <div className={"claim " + (selected ? "selected" : "")} onClick={onClick}>
+    <div className={"claim " + (selected ? "selected" : "")}
+         {...window.clickable(onClick)}
+         aria-pressed={selected}>
       <div className="claim-rel">
         <span className="src" onClick={(e) => { e.stopPropagation(); gotoEntity(edge.src); }}>{sLoc}</span>
         <span className="arrow">{arrow}</span>
