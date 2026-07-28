@@ -38,7 +38,19 @@ http
         res.writeHead(404, { "Content-Type": "text/plain" });
         return res.end("Not found: " + rel);
       }
-      res.writeHead(200, { "Content-Type": MIME[path.extname(fp)] || "application/octet-stream" });
+      // The source tree is served with unversioned filenames — index.html asks
+      // for "view-shelf3d.jsx", not "view-shelf3d.a1b2c3.jsx". With no
+      // Cache-Control at all, browsers apply heuristic caching and keep serving
+      // the file they already have, so an edit lands on disk, the server has it,
+      // and the page still runs the old code. That turns every "fixed it" into a
+      // question of whose copy you are looking at. Never cache the dev tree; the
+      // built output in dist/ is content-hashed and needs no such rule.
+      res.writeHead(200, {
+        "Content-Type": MIME[path.extname(fp)] || "application/octet-stream",
+        "Cache-Control": "no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
+      });
       res.end(data);
     });
   })
