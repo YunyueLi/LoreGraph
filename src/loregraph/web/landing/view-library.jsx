@@ -148,7 +148,12 @@ function BookCard({ book, active, onClick, ctx }) {
   const title = window.bookTitle(book, locale);
   const author = window.bookAuthor(book, locale);
   const typeLabel = tt("work.type." + (book.type || "novel"));
+  // An em dash is the printing convention for "no figure available", but on its
+  // own it reads as a rendering fault — and as zero. Label it.
   const fmt = (n) => (n == null ? "—" : Number(n).toLocaleString());
+  const statProps = (n) => (n == null
+    ? { className: "lib-card-stat-num none", title: tt("lib.card.noData"), "aria-label": tt("lib.card.noData") }
+    : { className: "lib-card-stat-num" });
   // Localized BC year for ancient works (Greek tragedies etc.).
   const fmtYear = (y) => {
     if (y >= 0) return y;
@@ -178,15 +183,15 @@ function BookCard({ book, active, onClick, ctx }) {
 
       <div className="lib-card-stats">
         <div className="lib-card-stat">
-          <div className="lib-card-stat-num">{fmt(book.entities)}</div>
+          <div {...statProps(book.entities)}>{fmt(book.entities)}</div>
           <div className="lib-card-stat-lbl">{tt("lib.card.characters")}</div>
         </div>
         <div className="lib-card-stat">
-          <div className="lib-card-stat-num">{fmt(book.edges)}</div>
+          <div {...statProps(book.edges)}>{fmt(book.edges)}</div>
           <div className="lib-card-stat-lbl">{tt("lib.card.relations")}</div>
         </div>
         <div className="lib-card-stat">
-          <div className="lib-card-stat-num">{fmt(book.tokens)}</div>
+          <div {...statProps(book.tokens)}>{fmt(book.tokens)}</div>
           <div className="lib-card-stat-lbl">{tt("lib.card.words")}</div>
         </div>
       </div>

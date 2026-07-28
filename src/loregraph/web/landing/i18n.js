@@ -88,6 +88,7 @@ window.LG_I18N = {
   "lib.card.characters": { "en": "characters","zh-CN": "角色",   "zh-TW": "角色",   "ja": "登場人物", "ko": "인물",    "fr": "personnages","es": "personajes","de": "Figuren" },
   "lib.card.relations":  { "en": "relations", "zh-CN": "关系",   "zh-TW": "關係",   "ja": "関係",     "ko": "관계",    "fr": "relations",  "es": "relaciones","de": "Beziehungen" },
   "lib.card.words":      { "en": "words",     "zh-CN": "字数",   "zh-TW": "字數",   "ja": "文字数",   "ko": "글자 수", "fr": "mots",       "es": "palabras",  "de": "Wörter" },
+  "lib.card.noData":     { "en": "Not extracted yet", "zh-CN": "尚未抽取", "zh-TW": "尚未抽取", "ja": "未抽出", "ko": "아직 추출되지 않음", "fr": "Pas encore extrait", "es": "Aún no extraído", "de": "Noch nicht extrahiert" },
   "work.type.novel":      { "en": "novel",      "zh-CN": "小说",    "zh-TW": "小說",    "ja": "小説",       "ko": "소설",      "fr": "roman",       "es": "novela",      "de": "Roman" },
   "work.type.play":       { "en": "play",       "zh-CN": "戏剧",    "zh-TW": "戲劇",    "ja": "戯曲",       "ko": "희곡",      "fr": "pièce",       "es": "obra de teatro","de": "Bühnenstück" },
   "work.type.musical":    { "en": "musical",    "zh-CN": "音乐剧",  "zh-TW": "音樂劇",  "ja": "ミュージカル","ko": "뮤지컬",    "fr": "comédie musicale","es": "musical",  "de": "Musical" },
