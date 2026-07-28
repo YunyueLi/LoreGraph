@@ -12,25 +12,16 @@ class ViewErrorBoundary extends React.Component {
   componentDidUpdate(prevProps) { if (prevProps.viewKey !== this.props.viewKey && this.state.error) this.setState({ error: null }); }
   render() {
     if (this.state.error) {
+      // The heading and eyebrow were English while the body text was Chinese,
+      // whatever the reader's locale. All four strings are localized now, and
+      // the stack trace's rule is a hairline like every other rule here.
       return (
-        <div style={{padding:"60px 48px", maxWidth: 720, fontFamily:"'Spectral', serif", color:"var(--paper-text)"}}>
-          <div style={{fontFamily:"'JetBrains Mono', monospace", fontSize:10, letterSpacing:".26em", color:"var(--rust)", textTransform:"uppercase", marginBottom: 14}}>
-            ▲ View error
-          </div>
-          <h2 style={{fontWeight:300, fontSize:32, lineHeight:1.15, marginBottom: 12, fontStyle:"italic", color:"var(--paper-text)"}}>
-            Something went wrong rendering this view.
-          </h2>
-          <p style={{fontStyle:"italic", color:"var(--paper-text-mute)", fontSize:15, lineHeight:1.55, marginBottom: 24}}>
-            其他视图仍可正常使用。点击下方按钮重试，或切换到其他视图。
-          </p>
-          <pre style={{fontFamily:"'JetBrains Mono', monospace", fontSize: 11, padding:"14px 16px", background:"rgba(160,74,42,.06)", borderLeft:"2px solid var(--rust)", color:"var(--rust)", whiteSpace:"pre-wrap", marginBottom: 20, lineHeight: 1.5}}>
-            {String(this.state.error?.message || this.state.error)}
-          </pre>
-          <button
-            onClick={() => this.setState({ error: null })}
-            style={{padding:"8px 18px", border:"1px solid var(--gold)", background:"transparent", color:"var(--gold-deep)", fontFamily:"'Spectral', serif", fontStyle:"italic", fontSize: 13, cursor:"pointer"}}>
-            重试
-          </button>
+        <div className="vb-error">
+          <div className="vb-error-eyebrow">▲ {window.t("err.view.label")}</div>
+          <h2>{window.t("err.view.title")}</h2>
+          <p>{window.t("err.view.body")}</p>
+          <pre>{String(this.state.error?.message || this.state.error)}</pre>
+          <button onClick={() => this.setState({ error: null })}>{window.t("err.view.retry")}</button>
         </div>
       );
     }
@@ -67,11 +58,23 @@ function App() {
   const [graphRightHidden, setGraphRightHidden] = useState(false);
   // Timeline mode — lifted so topbar can render the pill
   const [tlMode, setTlMode] = useState(() => localStorage.getItem("lg_tl_mode") || "folio");
+  // Cover style. Settings owned this state privately and wrote it to
+  // localStorage, but the library hard-coded "photo" — so the control did
+  // nothing. Lifted here so the views that draw covers actually read it.
+  const [coverStyle, setCoverStyle] = useState(() => localStorage.getItem("lg_cover_style") || "photo");
 
-  useEffect(() => { window.__lg_locale = locale; localStorage.setItem("lg_locale", locale); }, [locale]);
+  // Mirror the locale onto <html lang>. Besides being correct for screen readers
+  // and line-breaking, the stylesheet keys its letter-spacing tokens off this:
+  // wide Latin small-caps tracking would otherwise blow CJK labels apart.
+  useEffect(() => {
+    window.__lg_locale = locale;
+    localStorage.setItem("lg_locale", locale);
+    document.documentElement.lang = locale;
+  }, [locale]);
   useEffect(() => { localStorage.setItem("lg_view", activeView); }, [activeView]);
   useEffect(() => { localStorage.setItem("lg_sb_collapsed", sbCollapsed ? "1" : "0"); }, [sbCollapsed]);
   useEffect(() => { localStorage.setItem("lg_tl_mode", tlMode); }, [tlMode]);
+  useEffect(() => { localStorage.setItem("lg_cover_style", coverStyle); }, [coverStyle]);
   // Promote the active book to the head of the MRU list whenever it changes.
   useEffect(() => {
     if (!activeBookId) return;
@@ -104,7 +107,7 @@ function App() {
     if (view) setActiveView(view);
   };
 
-  const ctx = { data, locale, setLocale, tt, activeView, setActiveView, activeBook, setActiveBookId, bookMru, entities, edges, chunks, glucose, conversations, selectedEntityId, setSelectedEntityId, gotoEntity, selectedConvId, setSelectedConvId, settingsSection, setSettingsSection, graphViewMode, setGraphViewMode, graphLeftHidden, setGraphLeftHidden, graphRightHidden, setGraphRightHidden, tlMode, setTlMode };
+  const ctx = { data, locale, setLocale, tt, activeView, setActiveView, activeBook, setActiveBookId, bookMru, entities, edges, chunks, glucose, conversations, selectedEntityId, setSelectedEntityId, gotoEntity, selectedConvId, setSelectedConvId, settingsSection, setSettingsSection, coverStyle, setCoverStyle, graphViewMode, setGraphViewMode, graphLeftHidden, setGraphLeftHidden, graphRightHidden, setGraphRightHidden, tlMode, setTlMode };
 
   return (
     <div className={"app" + (sbCollapsed ? " sb-collapsed" : "")}>
@@ -254,6 +257,8 @@ function Topbar({ ctx }) {
     pipeline: tt("nav.pipeline"),
     ask: tt("nav.ask"),
     technical: tt("nav.technical"),
+    // Settings was the one view with no breadcrumb, so its bar read as empty.
+    settings: tt("nav.settings"),
   }[activeView];
 
   const showBook = ["graph","reader","entities","timeline","ask","pipeline"].includes(activeView) && activeBook;
@@ -317,6 +322,17 @@ function Topbar({ ctx }) {
         <div className="bar-pill running"><span className="dot" />running</div>
       )}
 
+      {/* The technical doc's provenance and its full-page link used to float over
+          the embedded document. The document scrolls from a dark hero onto paper,
+          so a chip tuned for one ground vanished against the other; the app's own
+          bar is a stable place for a view-level action. */}
+      {activeView === "technical" && (
+        <>
+          <span className="bar-note">{tt("tech.overlay")}</span>
+          <a className="bar-btn" href="Technical.html" target="_blank" rel="noopener">{tt("tech.openFull")}</a>
+        </>
+      )}
+
       {/* language switcher */}
       <div style={{position:"relative"}} ref={langRef}>
         <button
@@ -325,7 +341,7 @@ function Topbar({ ctx }) {
           style={{display:"inline-flex", alignItems:"center", gap: 6}}
         >
           <span style={{fontFamily: "'Spectral', serif", fontStyle:"italic", color:"var(--gold-deep)"}}>{currentLoc.label}</span>
-          <span style={{opacity:.5, fontSize:9}}>▾</span>
+          <span style={{opacity:.5, fontSize:"var(--fs-micro)"}}>▾</span>
         </button>
         {langOpen && (
           <div style={{
@@ -348,7 +364,7 @@ function Topbar({ ctx }) {
                 }}
               >
                 <span style={{fontFamily:"'Spectral', serif", fontSize: 14}}>{l.name}</span>
-                <span style={{fontFamily:"'JetBrains Mono', monospace", fontSize:10, letterSpacing:".16em", color: locale === l.code ? "var(--gold)" : "var(--paper-text-mute)"}}>{l.label}</span>
+                <span style={{fontFamily:"'JetBrains Mono', monospace", fontSize:"var(--fs-label)", letterSpacing:"var(--track-l)", color: locale === l.code ? "var(--gold)" : "var(--paper-text-mute)"}}>{l.label}</span>
               </button>
             ))}
           </div>

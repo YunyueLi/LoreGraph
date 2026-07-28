@@ -95,10 +95,14 @@ window.LG_I18N = {
   "work.type.screenplay": { "en": "screenplay", "zh-CN": "电影剧本","zh-TW": "電影劇本","ja": "脚本",       "ko": "각본",      "fr": "scénario",    "es": "guion",       "de": "Drehbuch" },
   "lib.view.grid":        { "en": "Grid",       "zh-CN": "网格",    "zh-TW": "網格",    "ja": "グリッド",   "ko": "그리드",    "fr": "Grille",      "es": "Cuadrícula",  "de": "Raster" },
   "lib.view.shelf":       { "en": "Bookshelf",  "zh-CN": "书架",    "zh-TW": "書架",    "ja": "本棚",       "ko": "책장",      "fr": "Étagère",     "es": "Estantería",  "de": "Bücherregal" },
+  "lib.shelf3d.hint":  { "en": "Drag to pan · scroll to zoom · click a volume", "zh-CN": "拖动平移 · 滚轮缩放 · 点击书籍", "zh-TW": "拖曳平移 · 滾輪縮放 · 點擊書籍", "ja": "ドラッグで移動 · ホイールで拡大 · 本をクリック", "ko": "드래그로 이동 · 스크롤로 확대 · 책 클릭", "fr": "Glisser pour déplacer · molette pour zoomer · cliquer un volume", "es": "Arrastra para mover · rueda para zoom · clic en un volumen", "de": "Ziehen zum Schwenken · Scrollen zum Zoomen · Band anklicken" },
+  "lib.shelf3d.open":  { "en": "Open", "zh-CN": "打开", "zh-TW": "開啟", "ja": "開く", "ko": "열기", "fr": "Ouvrir", "es": "Abrir", "de": "Öffnen" },
+  "lib.shelf3d.back":  { "en": "Back to shelf", "zh-CN": "放回书架", "zh-TW": "放回書架", "ja": "本棚に戻す", "ko": "책장으로", "fr": "Remettre en rayon", "es": "Volver al estante", "de": "Zurück ins Regal" },
+  "lib.shelf3d.nowebgl": { "en": "3D unavailable — showing the flat shelf", "zh-CN": "当前环境不支持 3D，已回退到平面书架", "zh-TW": "當前環境不支援 3D，已回退到平面書架", "ja": "3D 非対応のため平面本棚を表示", "ko": "3D 미지원 — 평면 책장 표시", "fr": "3D indisponible — étagère à plat affichée", "es": "3D no disponible — estantería plana", "de": "3D nicht verfügbar — flaches Regal" },
   "lib.card.match":    { "en": "match",    "zh-CN": "匹配率",  "zh-TW": "匹配率",  "ja": "一致率",   "ko": "일치율",   "fr": "corresp.",  "es": "coincid.", "de": "Treffer" },
   "lib.card.cost":     { "en": "cost",     "zh-CN": "成本",    "zh-TW": "成本",    "ja": "コスト",   "ko": "비용",     "fr": "coût",      "es": "coste",    "de": "Kosten" },
   "lib.card.lastRun":  { "en": "Last run", "zh-CN": "上次运行","zh-TW": "上次執行","ja": "前回実行", "ko": "마지막 실행","fr": "Dern. exéc.","es": "Última ejec.","de": "Letzter Lauf" },
-  "lib.card.progress": { "en": "Pass {n} of 7 · {p}%", "zh-CN": "第 {n} / 7 阶段 · {p}%", "zh-TW": "第 {n} / 7 階段 · {p}%", "ja": "パス {n} / 7 · {p}%", "ko": "{n} / 7 단계 · {p}%", "fr": "Passe {n} / 7 · {p}%", "es": "Pase {n} / 7 · {p}%", "de": "Phase {n} / 7 · {p}%" },
+  "lib.card.progress": { "en": "Pass {n} of 8 · {p}%", "zh-CN": "第 {n} / 8 阶段 · {p}%", "zh-TW": "第 {n} / 8 階段 · {p}%", "ja": "パス {n} / 8 · {p}%", "ko": "{n} / 8 단계 · {p}%", "fr": "Passe {n} / 8 · {p}%", "es": "Pase {n} / 8 · {p}%", "de": "Phase {n} / 8 · {p}%" },
   "lib.card.never":    { "en": "Not yet extracted", "zh-CN": "尚未抽取", "zh-TW": "尚未抽取", "ja": "未抽出", "ko": "추출 전", "fr": "Pas encore extrait", "es": "Sin extraer", "de": "Noch nicht extrahiert" },
   "lib.card.failedAt": { "en": "Failed at", "zh-CN": "失败于", "zh-TW": "失敗於", "ja": "失敗", "ko": "실패 지점", "fr": "Échoué à", "es": "Falló en", "de": "Fehler bei" },
   "lib.import.plus":   { "en": "+", "zh-CN": "+", "zh-TW": "+", "ja": "+", "ko": "+", "fr": "+", "es": "+", "de": "+" },
@@ -126,6 +130,20 @@ window.LG_I18N = {
   "gv.status.selected":{ "en": "selected",     "zh-CN": "已选中",  "zh-TW": "已選中",  "ja": "選択",         "ko": "선택됨",      "fr": "sélectionné","es": "selecc.",   "de": "ausgewählt" },
   "gv.click":          { "en": "Click a node to inspect", "zh-CN": "点击节点查看证据", "zh-TW": "點擊節點查看證據", "ja": "ノードをクリックして確認", "ko": "노드를 클릭하여 확인", "fr": "Cliquez sur un nœud", "es": "Haz clic en un nodo", "de": "Knoten anklicken" },
   "gv.verifiedBy":     { "en": "Cited",   "zh-CN": "已对照原文", "zh-TW": "已對照原文", "ja": "原文照合済", "ko": "원문 대조됨", "fr": "Cité",   "es": "Citado",  "de": "Belegt" },
+  // These five empty states were hardcoded English, so they stayed English in
+  // every other locale — including "No GLUCOSE facts", an internal term.
+  "gv.empty.noEntity": { "en": "Pick a node to read its claims.", "zh-CN": "选中一个节点，查看它的主张。", "zh-TW": "選中一個節點，查看它的主張。", "ja": "ノードを選ぶと、その主張が読めます。", "ko": "노드를 선택하면 해당 주장을 볼 수 있습니다.", "fr": "Choisissez un nœud pour lire ses assertions.", "es": "Elige un nodo para leer sus afirmaciones.", "de": "Wähle einen Knoten, um seine Aussagen zu lesen." },
+  "gv.empty.outgoing": { "en": "Nothing in the text has this one acting on another.", "zh-CN": "原文中没有它作用于其他实体的记载。", "zh-TW": "原文中沒有它作用於其他實體的記載。", "ja": "この実体が他に働きかける記述は原文にありません。", "ko": "이 엔티티가 다른 대상에 작용하는 서술이 원문에 없습니다.", "fr": "Rien dans le texte ne le montre agir sur un autre.", "es": "Nada en el texto lo muestra actuando sobre otro.", "de": "Im Text handelt dieses Element auf kein anderes ein." },
+  "gv.empty.incoming": { "en": "Nothing in the text acts on this one.", "zh-CN": "原文中没有其他实体作用于它的记载。", "zh-TW": "原文中沒有其他實體作用於它的記載。", "ja": "他の実体がこれに働きかける記述は原文にありません。", "ko": "다른 엔티티가 이것에 작용하는 서술이 원문에 없습니다.", "fr": "Rien dans le texte n'agit sur lui.", "es": "Nada en el texto actúa sobre él.", "de": "Im Text handelt nichts auf dieses Element ein." },
+  "gv.empty.glucose":  { "en": "Nothing was inferred beyond what the text states outright.", "zh-CN": "除了原文明说的内容，没有推断出别的。", "zh-TW": "除了原文明說的內容，沒有推斷出別的。", "ja": "原文が明言した以上のことは推論されていません。", "ko": "원문이 명시한 것 외에 추론된 내용이 없습니다.", "fr": "Rien n'a été déduit au-delà de ce que le texte dit.", "es": "No se infirió nada más allá de lo que el texto dice.", "de": "Über das im Text Gesagte hinaus wurde nichts erschlossen." },
+  "tl.empty.events":   { "en": "No events on this timeline yet.", "zh-CN": "这条时间线上还没有事件。", "zh-TW": "這條時間線上還沒有事件。", "ja": "この年表にはまだ出来事がありません。", "ko": "이 연표에는 아직 사건이 없습니다.", "fr": "Aucun événement sur cette chronologie.", "es": "Aún no hay eventos en esta cronología.", "de": "Noch keine Ereignisse auf dieser Zeitleiste." },
+  "tl.empty.phase":    { "en": "No events in this phase", "zh-CN": "本阶段暂无事件", "zh-TW": "本階段暫無事件", "ja": "この段階に出来事はありません", "ko": "이 단계에 사건이 없습니다", "fr": "Aucun événement dans cette phase", "es": "Sin eventos en esta fase", "de": "Keine Ereignisse in dieser Phase" },
+
+  // ===== View error boundary =====
+  "err.view.label": { "en": "View error", "zh-CN": "视图出错", "zh-TW": "視圖出錯", "ja": "表示エラー", "ko": "보기 오류", "fr": "Erreur de vue", "es": "Error de vista", "de": "Ansichtsfehler" },
+  "err.view.title": { "en": "This view could not be drawn.", "zh-CN": "这个视图没能渲染出来。", "zh-TW": "這個視圖沒能渲染出來。", "ja": "この画面を描画できませんでした。", "ko": "이 화면을 그릴 수 없었습니다.", "fr": "Cette vue n'a pas pu être affichée.", "es": "Esta vista no pudo dibujarse.", "de": "Diese Ansicht konnte nicht gezeichnet werden." },
+  "err.view.body":  { "en": "Every other view still works. Retry below, or move to another one.", "zh-CN": "其他视图仍可正常使用。可以点下面重试，也可以换到别的视图。", "zh-TW": "其他視圖仍可正常使用。可以點下面重試，也可以換到別的視圖。", "ja": "他の画面は問題なく使えます。下から再試行するか、別の画面へ移ってください。", "ko": "다른 화면은 정상입니다. 아래에서 다시 시도하거나 다른 화면으로 이동하세요.", "fr": "Toutes les autres vues fonctionnent. Réessayez ci-dessous, ou passez à une autre.", "es": "Las demás vistas siguen funcionando. Reinténtalo abajo o pasa a otra.", "de": "Alle anderen Ansichten funktionieren. Unten erneut versuchen oder zu einer anderen wechseln." },
+  "err.view.retry": { "en": "Retry", "zh-CN": "重试", "zh-TW": "重試", "ja": "再試行", "ko": "다시 시도", "fr": "Réessayer", "es": "Reintentar", "de": "Erneut versuchen" },
   "gv.conf":           { "en": "confidence", "zh-CN": "可信度",  "zh-TW": "可信度",   "ja": "確度",       "ko": "신뢰도",     "fr": "fiabilité","es": "fiabilidad","de": "Sicherheit" },
 
   // ===== Node / Edge types =====
@@ -143,6 +161,8 @@ window.LG_I18N = {
   "rd.tokens":         { "en": "tokens", "zh-CN": "tokens", "zh-TW": "tokens", "ja": "tokens", "ko": "tokens", "fr": "tokens", "es": "tokens", "de": "Tokens" },
   "rd.legend":         { "en": "READING LEGEND", "zh-CN": "高亮说明", "zh-TW": "高亮說明", "ja": "凡例", "ko": "범례", "fr": "LÉGENDE", "es": "LEYENDA", "de": "LEGENDE" },
   "rd.entHere":        { "en": "entities", "zh-CN": "实体", "zh-TW": "實體", "ja": "実体", "ko": "엔티티", "fr": "entités", "es": "entidades", "de": "Entitäten" },
+  "rd.passage":        { "en": "Passage {n}", "zh-CN": "第 {n} 段", "zh-TW": "第 {n} 段", "ja": "第 {n} 段落", "ko": "{n}번째 단락", "fr": "Passage {n}", "es": "Pasaje {n}", "de": "Abschnitt {n}" },
+  "rd.noEntities":     { "en": "No entity was extracted from this passage.", "zh-CN": "这一段没有抽取到实体。", "zh-TW": "這一段沒有抽取到實體。", "ja": "この段落から実体は抽出されていません。", "ko": "이 단락에서 추출된 엔티티가 없습니다.", "fr": "Aucune entité n’a été extraite de ce passage.", "es": "No se extrajo ninguna entidad de este pasaje.", "de": "Aus diesem Abschnitt wurde keine Entität extrahiert." },
 
   // ===== Entities view =====
   "ev.search":         { "en": "Search entities…", "zh-CN": "搜索实体…", "zh-TW": "搜尋實體…", "ja": "実体を検索…", "ko": "엔티티 검색…", "fr": "Rechercher des entités…", "es": "Buscar entidades…", "de": "Entitäten suchen…" },
@@ -181,16 +201,22 @@ window.LG_I18N = {
   "ask.caveat":        { "en": "Caveat", "zh-CN": "说明", "zh-TW": "說明", "ja": "注", "ko": "주의", "fr": "Note", "es": "Aviso", "de": "Hinweis" },
 
   // ===== Technical =====
-  "tech.overlay":      { "en": "Technical reference · same content as README", "zh-CN": "技术参考 · 与 README 同源", "zh-TW": "技術參考 · 與 README 同源", "ja": "技術参考 · README と同一", "ko": "기술 참고 · README와 동일", "fr": "Référence technique · contenu README", "es": "Referencia técnica · contenido README", "de": "Technische Referenz · README-Inhalt" },
+  // "Technical reference" duplicated the view's own header, so the chip states
+  // only what the header does not: where this document comes from.
+  "tech.overlay":      { "en": "Same content as the README", "zh-CN": "与 README 同源", "zh-TW": "與 README 同源", "ja": "README と同一の内容", "ko": "README와 동일한 내용", "fr": "Même contenu que le README", "es": "Mismo contenido que el README", "de": "Gleicher Inhalt wie die README" },
   "tech.openFull":     { "en": "Open full page ↗", "zh-CN": "全页打开 ↗", "zh-TW": "全頁開啟 ↗", "ja": "全画面で開く ↗", "ko": "전체 페이지 열기 ↗", "fr": "Ouvrir page entière ↗", "es": "Abrir página completa ↗", "de": "Ganze Seite ↗" },
 
   // ===== Edge relations (friendly labels) =====
-  "rel.STRUCTURAL": { "en": "belongs to",    "zh-CN": "从属于",  "zh-TW": "從屬於",  "ja": "属する",     "ko": "속함",       "fr": "appartient à", "es": "pertenece a",  "de": "gehört zu" },
-  "rel.INTERACTS":  { "en": "interacts",     "zh-CN": "互动",      "zh-TW": "互動",      "ja": "交わる",     "ko": "교류",       "fr": "interagit",   "es": "interactúa",   "de": "interagiert" },
-  "rel.ASSERTS":    { "en": "asserts",       "zh-CN": "断言",      "zh-TW": "斷言",      "ja": "断言する",   "ko": "단언",       "fr": "affirme",     "es": "afirma",       "de": "behauptet" },
-  "rel.INFLUENCES": { "en": "influences",    "zh-CN": "影响",      "zh-TW": "影響",      "ja": "影響する",   "ko": "영향",       "fr": "influence",   "es": "influye",      "de": "beeinflusst" },
-  "rel.PREDICTS":   { "en": "foreshadows",   "zh-CN": "预示",      "zh-TW": "預示",      "ja": "伏線となる", "ko": "예고",       "fr": "présage",     "es": "presagia",     "de": "deutet voraus" },
-  "rel.SYMBOLIZES": { "en": "symbolizes",    "zh-CN": "象征",      "zh-TW": "象徵",      "ja": "象徴する",   "ko": "상징",       "fr": "symbolise",   "es": "simboliza",    "de": "symbolisiert" },
+  // These name the six relation *categories* the pipeline sorts an edge into,
+  // not the predicate. "belongs to" / 从属于 read as a predicate and produced
+  // "Alice — belongs to — her sister" where the edge's own label says "sibling
+  // of". The predicate is edge.label, shown verbatim beside the category.
+  "rel.STRUCTURAL": { "en": "structural",    "zh-CN": "结构关系",  "zh-TW": "結構關係",  "ja": "構造関係",     "ko": "구조 관계",       "fr": "structurel", "es": "estructural",  "de": "strukturell" },
+  "rel.INTERACTS":  { "en": "interaction",   "zh-CN": "互动关系",  "zh-TW": "互動關係",  "ja": "相互作用",   "ko": "상호작용",   "fr": "interaction", "es": "interacción",  "de": "Interaktion" },
+  "rel.ASSERTS":    { "en": "assertion",     "zh-CN": "断言",      "zh-TW": "斷言",      "ja": "言明",       "ko": "단언",       "fr": "assertion",   "es": "aserción",     "de": "Behauptung" },
+  "rel.INFLUENCES": { "en": "influence",     "zh-CN": "影响",      "zh-TW": "影響",      "ja": "影響",       "ko": "영향",       "fr": "influence",   "es": "influencia",   "de": "Einfluss" },
+  "rel.PREDICTS":   { "en": "foreshadowing", "zh-CN": "预示",      "zh-TW": "預示",      "ja": "伏線",       "ko": "예고",       "fr": "présage",     "es": "presagio",     "de": "Vorausdeutung" },
+  "rel.SYMBOLIZES": { "en": "symbolism",     "zh-CN": "象征",      "zh-TW": "象徵",      "ja": "象徴",       "ko": "상징",       "fr": "symbolisme",  "es": "simbolismo",   "de": "Symbolik" },
 
   // ===== Graph controls (tooltips) =====
   "gv.zoomIn":   { "en": "Zoom in",      "zh-CN": "放大",     "zh-TW": "放大",     "ja": "拡大",        "ko": "확대",        "fr": "Agrandir",  "es": "Ampliar",   "de": "Vergrößern" },
@@ -216,6 +242,13 @@ window.LG_I18N = {
 
   // ===== Ask suggestions =====
   "ask.suggested":   { "en": "Suggested follow-ups", "zh-CN": "建议追问", "zh-TW": "建議追問", "ja": "おすすめの追加質問", "ko": "추천 후속 질문", "fr": "Suggestions de suivi", "es": "Preguntas sugeridas", "de": "Folgefragen" },
+  "ask.hist.points": { "en": "{n} cited points", "zh-CN": "{n} 条引证要点", "zh-TW": "{n} 條引證要點", "ja": "引用付き {n} 点", "ko": "인용 근거 {n}개", "fr": "{n} points cités", "es": "{n} puntos citados", "de": "{n} belegte Punkte" },
+  "ask.empty.title": { "en": "Ask this book a question", "zh-CN": "向这本书提问", "zh-TW": "向這本書提問", "ja": "この本に問いかける", "ko": "이 책에 질문하기", "fr": "Interrogez ce livre", "es": "Pregunta a este libro", "de": "Stellen Sie diesem Buch eine Frage" },
+  "ask.empty.body":  { "en": "No conversations yet for this work. Every answer cites the chapter and paragraph it came from, so you can open the passage and check it against the text.", "zh-CN": "这部作品还没有对话记录。每条回答都会标出它出自的章节与段落，你可以点开原文逐句核对。", "zh-TW": "這部作品還沒有對話紀錄。每條回答都會標出它出自的章節與段落，你可以點開原文逐句核對。", "ja": "この作品にはまだ会話がありません。回答は必ず出典の章と段落を示すので、原文を開いて確認できます。", "ko": "이 작품에는 아직 대화가 없습니다. 모든 답변은 출처가 된 장과 단락을 인용하므로 원문을 열어 대조할 수 있습니다.", "fr": "Aucune conversation pour cette œuvre. Chaque réponse cite le chapitre et le paragraphe dont elle provient, à vérifier dans le texte.", "es": "Aún no hay conversaciones sobre esta obra. Cada respuesta cita el capítulo y el párrafo de origen, para que puedas comprobarlo en el texto.", "de": "Noch keine Konversationen zu diesem Werk. Jede Antwort nennt Kapitel und Absatz ihrer Herkunft, sodass Sie sie am Text prüfen können." },
+  "ask.empty.start": { "en": "Start with", "zh-CN": "不妨先问", "zh-TW": "不妨先問", "ja": "まずはこの辺りから", "ko": "이렇게 시작해 보세요", "fr": "Pour commencer", "es": "Empieza por", "de": "Fangen Sie hier an" },
+  "ask.sug.role":    { "en": "What part does {n} play in the story?", "zh-CN": "{n}在故事里起什么作用？", "zh-TW": "{n}在故事裡起什麼作用？", "ja": "{n}は物語でどんな役割を担うか？", "ko": "{n}은 이야기에서 어떤 역할을 하는가?", "fr": "Quel rôle {n} joue-t-il dans le récit ?", "es": "¿Qué papel cumple {n} en la historia?", "de": "Welche Rolle spielt {n} in der Geschichte?" },
+  "ask.sug.relation":{ "en": "How does the relationship between {a} and {b} change?", "zh-CN": "{a}与{b}的关系如何变化？", "zh-TW": "{a}與{b}的關係如何變化？", "ja": "{a}と{b}の関係はどう変わるか？", "ko": "{a}와 {b}의 관계는 어떻게 변하는가?", "fr": "Comment évolue la relation entre {a} et {b} ?", "es": "¿Cómo cambia la relación entre {a} y {b}?", "de": "Wie verändert sich das Verhältnis von {a} und {b}?" },
+  "ask.sug.turning": { "en": "Where does the story turn, and on what evidence?", "zh-CN": "故事的转折出现在哪里，依据是什么？", "zh-TW": "故事的轉折出現在哪裡，依據是什麼？", "ja": "物語の転回点はどこで、根拠は何か？", "ko": "이야기의 전환점은 어디이며 근거는 무엇인가?", "fr": "Où le récit bascule-t-il, et sur quelles preuves ?", "es": "¿Dónde gira la historia, y con qué pruebas?", "de": "Wo wendet sich die Geschichte, und woran zeigt sich das?" },
 
   // ===== Pipeline =====
   "pv.behindScenes": { "en": "Behind the scenes", "zh-CN": "技术细节", "zh-TW": "技術細節", "ja": "技術的詳細", "ko": "기술 세부", "fr": "Détails techniques", "es": "Detalles técnicos", "de": "Technische Details" },
@@ -225,6 +258,20 @@ window.LG_I18N = {
   // ===== Reader =====
   "rd.suggested":    { "en": "Suggested follow-ups", "zh-CN": "建议追问", "zh-TW": "建議追問", "ja": "おすすめの追加質問", "ko": "추천 후속 질문", "fr": "Suggestions de suivi", "es": "Preguntas sugeridas", "de": "Folgefragen" },
   "common.mentions": { "en": "mentions", "zh-CN": "提及", "zh-TW": "提及", "ja": "言及", "ko": "언급", "fr": "mentions", "es": "menciones", "de": "Erwähnungen" },
+  "common.chapters": { "en": "chapters", "zh-CN": "章节", "zh-TW": "章節", "ja": "章", "ko": "장", "fr": "chapitres", "es": "capítulos", "de": "Kapitel" },
+  "ev.metric.outgoing": { "en": "claims made", "zh-CN": "主动关系", "zh-TW": "主動關係", "ja": "発信関係", "ko": "발신 관계", "fr": "liens émis", "es": "vínculos emitidos", "de": "ausgehende Aussagen" },
+  "ev.metric.incoming": { "en": "claims received", "zh-CN": "被动关系", "zh-TW": "被動關係", "ja": "被言及関係", "ko": "피언급 관계", "fr": "liens reçus", "es": "vínculos recibidos", "de": "eingehende Aussagen" },
+  "ev.metric.implicit": { "en": "read between the lines", "zh-CN": "言下之意", "zh-TW": "言下之意", "ja": "行間の含意", "ko": "행간의 의미", "fr": "sous-entendus", "es": "implícitos", "de": "Zwischenzeilen" },
+  "ev.alias.more":  { "en": "{n} more", "zh-CN": "还有 {n} 个", "zh-TW": "還有 {n} 個", "ja": "他 {n} 件", "ko": "{n}개 더", "fr": "{n} de plus", "es": "{n} más", "de": "{n} weitere" },
+  "ev.row.range":   { "en": "ch. {a}–{b}", "zh-CN": "第 {a}–{b} 章", "zh-TW": "第 {a}–{b} 章", "ja": "第{a}–{b}章", "ko": "{a}–{b}장", "fr": "ch. {a}–{b}", "es": "cap. {a}–{b}", "de": "Kap. {a}–{b}" },
+  "pv.matchRate.pending": { "en": "Not yet verified", "zh-CN": "尚未核验", "zh-TW": "尚未核驗", "ja": "検証前", "ko": "검증 전", "fr": "Pas encore vérifié", "es": "Sin verificar", "de": "Noch nicht geprüft" },
+  "pv.matchRate.await":   { "en": "The literal-match gate runs at Pass-7, once extraction finishes.", "zh-CN": "字面核验是第 7 阶段的关卡，要等抽取跑完才会有结果。", "zh-TW": "字面核驗是第 7 階段的關卡，要等抽取跑完才會有結果。", "ja": "字句照合はパス7の関門で、抽出の完了後に走ります。", "ko": "원문 대조는 추출이 끝난 뒤 7단계 관문에서 수행됩니다.", "fr": "Le contrôle littéral s'exécute à la passe 7, après l'extraction.", "es": "El control literal se ejecuta en el pase 7, tras la extracción.", "de": "Die Wortlaut-Prüfung läuft in Phase 7, nach der Extraktion." },
+  "pv.matchRate.caption": { "en": "of every claim traced back to a literal line in the book.", "zh-CN": "每条主张都能在书里找到原文。", "zh-TW": "每條主張都能在書裡找到原文。", "ja": "すべての主張が原文に紐づきます。", "ko": "모든 주장이 원문에 묶입니다.", "fr": "chaque affirmation est ancrée dans le texte.", "es": "cada afirmación está anclada al texto.", "de": "jede Aussage ist im Text verankert." },
+  "ev.empty.search":{ "en": "No entity matches that search.", "zh-CN": "没有实体匹配该搜索。", "zh-TW": "沒有實體符合該搜尋。", "ja": "該当する実体はありません。", "ko": "검색과 일치하는 엔티티가 없습니다.", "fr": "Aucune entité ne correspond.", "es": "Ninguna entidad coincide.", "de": "Keine Entität passt zur Suche." },
+  "ev.alias.less":  { "en": "Show fewer", "zh-CN": "收起", "zh-TW": "收起", "ja": "折りたたむ", "ko": "접기", "fr": "Réduire", "es": "Mostrar menos", "de": "Weniger zeigen" },
+  "ev.empty.outgoing": { "en": "This entity makes no claims about anything else.", "zh-CN": "该实体没有指向其他实体的关系。", "zh-TW": "該實體沒有指向其他實體的關係。", "ja": "この実体から他への関係はありません。", "ko": "이 엔티티에서 나가는 관계가 없습니다.", "fr": "Cette entité n'énonce aucun lien.", "es": "Esta entidad no emite vínculos.", "de": "Diese Entität stellt keine Aussagen auf." },
+  "ev.empty.incoming": { "en": "Nothing else in the book points here.", "zh-CN": "书中没有其他实体指向这里。", "zh-TW": "書中沒有其他實體指向這裡。", "ja": "本書の他の実体からの参照はありません。", "ko": "책의 다른 어떤 것도 이곳을 가리키지 않습니다.", "fr": "Rien d'autre dans le livre ne renvoie ici.", "es": "Nada más en el libro apunta aquí.", "de": "Nichts anderes im Buch verweist hierher." },
+  "ev.empty.glucose":  { "en": "No implicit facts were inferred for this entity.", "zh-CN": "没有为该实体推断出言下之意。", "zh-TW": "沒有為該實體推斷出言下之意。", "ja": "この実体について含意は推論されていません。", "ko": "이 엔티티에 대해 추론된 함의가 없습니다.", "fr": "Aucun fait implicite n'a été déduit.", "es": "No se infirieron hechos implícitos.", "de": "Keine impliziten Fakten abgeleitet." },
   "common.chapters": { "en": "chapters", "zh-CN": "章节", "zh-TW": "章節", "ja": "章", "ko": "장", "fr": "chapitres", "es": "capítulos", "de": "Kapitel" },
   "common.outgoing": { "en": "outgoing", "zh-CN": "出说", "zh-TW": "出說", "ja": "外向", "ko": "발신", "fr": "sortantes", "es": "salientes", "de": "ausgehend" },
   "common.incoming": { "en": "incoming", "zh-CN": "被说", "zh-TW": "被說", "ja": "内向", "ko": "수신", "fr": "entrantes", "es": "entrantes", "de": "eingehend" },
@@ -671,15 +718,19 @@ window.LG_STAGES = [
     sub: { en: "Infers the unspoken: how a character feels, what they possess, where they end up — with footnotes.", "zh-CN": "推断未言明的：角色的情绪、所属、最终位置 —— 都附脚注。", "zh-TW": "推斷未言明的：角色的情緒、所屬、最終位置 —— 都附腳註。", "ja": "明示されないもの——感情・所有・最終地——を脚注付きで推論します。", "ko": "명시되지 않은 것 — 감정·소유·도달지 — 을 각주와 함께 추론합니다.", "fr": "Déduit le non-dit : émotion, possession, destination — avec notes.", "es": "Infiere lo no dicho: emoción, posesión, destino — con notas.", "de": "Erschließt das Ungesagte — Gefühl, Besitz, Verbleib — mit Fußnoten." } },
   { n: 7, key: "verify",    en: "Cross-check with source",  "zh-CN": "原文核验",       "zh-TW": "原文核驗",       "ja": "原文との突き合わせ", "ko": "원문 대조",       "fr": "Recouper avec la source","es": "Cotejar con la fuente","de": "Mit dem Original abgleichen",
     sub: { en: "Every claim must trace back to a literal line in the book. If it doesn't, it's thrown out.", "zh-CN": "每条主张都必须能在书里找到原文。找不到的丢掉。", "zh-TW": "每條主張都必須能在書裡找到原文。找不到的丟掉。", "ja": "すべての主張は本文中の一文に紐づく必要があり、紐づかなければ捨てます。", "ko": "모든 주장은 본문 한 줄에 묶여야 하며, 묶이지 않으면 폐기.", "fr": "Toute affirmation doit pointer vers une ligne réelle ; sinon elle est rejetée.", "es": "Toda afirmación debe apuntar a una línea real; si no, se descarta.", "de": "Jede Aussage muss auf eine echte Zeile zeigen; sonst raus." } },
+  { n: 8, key: "notes",     en: "Write the notes",          "zh-CN": "合成笔记",       "zh-TW": "合成筆記",       "ja": "ノートの生成",        "ko": "노트 작성",       "fr": "Rédiger les notes",    "es": "Redactar las notas",   "de": "Notizen schreiben",
+    sub: { en: "Gathers the verified graph into readable notes — one per character, one per volume — with every line still citing its page.", "zh-CN": "把核验过的图谱汇成可读的笔记：每个角色一篇、每卷一篇，每句仍标出处。", "zh-TW": "把核驗過的圖譜彙成可讀的筆記：每個角色一篇、每卷一篇，每句仍標出處。", "ja": "検証済みのグラフを読めるノートにまとめます。人物ごと・巻ごとに、各文は出典付き。", "ko": "검증된 그래프를 읽을 수 있는 노트로 정리합니다. 인물별·권별로, 각 문장은 출처를 유지합니다.", "fr": "Rassemble le graphe vérifié en notes lisibles — par personnage, par volume — chaque ligne citée.", "es": "Reúne el grafo verificado en notas legibles — por personaje y por volumen — cada línea citada.", "de": "Fasst den geprüften Graphen zu lesbaren Notizen zusammen – je Figur, je Band – jede Zeile belegt." } },
 ];
 
 // ===== Friendly chunk-id =====
-// converts "ch36_p04" → "Chapter 36 · ¶4" / "第 36 章 · 第 4 段" / etc.
+// converts "ch36_p04" → "Chapter 36 · ¶5" / "第 36 章 · 第 5 段" / etc.
 window.friendlyChunkId = function(chunkId, locale) {
   if (!chunkId) return "";
   const m = /^ch(\d+)_p(\d+)$/i.exec(chunkId);
   if (!m) return chunkId;
-  const ch = parseInt(m[1], 10), pa = parseInt(m[2], 10);
+  // The chunk key numbers paragraphs from zero; a citation counts from one, so
+  // the first passage of a chapter read as "第 0 段".
+  const ch = parseInt(m[1], 10), pa = parseInt(m[2], 10) + 1;
   const L = locale || window.__lg_locale || "zh-CN";
   switch (L) {
     case "en":    return `Chapter ${ch} · ¶${pa}`;
