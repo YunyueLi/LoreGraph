@@ -8,6 +8,10 @@ function ViewEntities({ ctx }) {
   const [typeTab, setTypeTab] = useState("all");
   const [detailTab, setDetailTab] = useState("outgoing");
   const [aliasOpen, setAliasOpen] = useState(false);
+  // Phone layout only: below 800px the list and the detail cannot share the
+  // screen, so they take turns. Picking an entity moves to the detail, and the
+  // detail carries a way back. Wider screens ignore this entirely.
+  const [pane, setPane] = useState("list");
 
   const counts = {
     all:     entities.length,
@@ -37,7 +41,7 @@ function ViewEntities({ ctx }) {
   const glucose = bookGlucose.filter(g => g.entity === selected.id);
 
   return (
-    <div className="ev">
+    <div className={"ev ev-pane-" + pane}>
       {/* LIST */}
       <aside className="ev-list">
         <div className="ev-search">
@@ -87,7 +91,7 @@ function ViewEntities({ ctx }) {
             return (
               <div key={e.id}
                    className={"ev-row " + (selected.id === e.id ? "active" : "")}
-                   {...window.clickable(() => setSelectedEntityId(e.id),
+                   {...window.clickable(() => { setSelectedEntityId(e.id); setPane("detail"); },
                                        {role: "option", roving: selected.id !== e.id})}
                    aria-selected={selected.id === e.id}>
                 <div className="ev-row-shape" style={{width: 40, height: 40}}>
@@ -118,6 +122,9 @@ function ViewEntities({ ctx }) {
 
       {/* DETAIL */}
       <main className="ev-detail">
+        <button className="pane-back" onClick={() => setPane("list")}>
+          <span aria-hidden="true">←</span> {tt("a11y.backToList")}
+        </button>
         <div className="ev-detail-head">
           <div style={{display:"flex", alignItems:"center", gap:18, marginBottom:14}}>
             <svg viewBox="-22 -22 44 44" width="76" height="76" style={{flexShrink:0}}>

@@ -90,6 +90,8 @@ window.LG_I18N = {
   "lib.card.words":      { "en": "words",     "zh-CN": "字数",   "zh-TW": "字數",   "ja": "文字数",   "ko": "글자 수", "fr": "mots",       "es": "palabras",  "de": "Wörter" },
   // ===== Accessibility =====
   "a11y.skipToContent": { "en": "Skip to content", "zh-CN": "跳到正文", "zh-TW": "跳到正文", "ja": "本文へスキップ", "ko": "본문으로 건너뛰기", "fr": "Aller au contenu", "es": "Ir al contenido", "de": "Zum Inhalt springen" },
+  "a11y.backToList":    { "en": "All entities", "zh-CN": "返回索引", "zh-TW": "返回索引", "ja": "一覧へ戻る", "ko": "목록으로", "fr": "Toutes les entités", "es": "Todas las entidades", "de": "Alle Entitäten" },
+  "a11y.openNav":       { "en": "Open navigation", "zh-CN": "打开导航", "zh-TW": "開啟導覽", "ja": "ナビゲーションを開く", "ko": "내비게이션 열기", "fr": "Ouvrir la navigation", "es": "Abrir navegación", "de": "Navigation öffnen" },
   "a11y.filterByType":  { "en": "Filter by type", "zh-CN": "按类型筛选", "zh-TW": "按類型篩選", "ja": "種類で絞り込む", "ko": "유형으로 필터", "fr": "Filtrer par type", "es": "Filtrar por tipo", "de": "Nach Typ filtern" },
   "lib.card.noData":     { "en": "Not extracted yet", "zh-CN": "尚未抽取", "zh-TW": "尚未抽取", "ja": "未抽出", "ko": "아직 추출되지 않음", "fr": "Pas encore extrait", "es": "Aún no extraído", "de": "Noch nicht extrahiert" },
   "work.type.novel":      { "en": "novel",      "zh-CN": "小说",    "zh-TW": "小說",    "ja": "小説",       "ko": "소설",      "fr": "roman",       "es": "novela",      "de": "Roman" },

@@ -6775,3 +6775,184 @@ a { color: inherit; }
 /* The content region takes focus programmatically from the skip link; it must
    not draw a ring of its own for that. */
 .main-content:focus { outline: none; }
+
+/* ===================================================================== */
+/* =================== PHONE: RAIL AS A DRAWER ========================= */
+/* ===================================================================== */
+/* Above this width the rail is a column in the grid and none of the rules below
+   apply. At 375px a 224px rail eats 60% of the screen and the content overflows
+   sideways — entity names were setting one character per line. */
+.nav-toggle { display: none; }
+.nav-scrim { display: none; }
+
+@media (max-width: 700px) {
+  .app,
+  .app.sb-collapsed { grid-template-columns: 1fr; }
+
+  .sb {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(280px, 84vw);
+    z-index: 200;
+    transform: translateX(-100%);
+    transition: transform 0.26s cubic-bezier(0.4, 0, 0.2, 1);
+    /* The rail draws a decorative bleed to its right that would show through. */
+    clip-path: none;
+    box-shadow: 0 0 40px -8px rgba(0,0,0,0.5);
+  }
+  .app.nav-open .sb { transform: translateX(0); }
+  /* Collapsed-rail rules must not apply to a drawer: it is always full width. */
+  .app.sb-collapsed .sb-item-label,
+  .app.sb-collapsed .sb-item-count { opacity: 1; max-width: none; }
+  .app.sb-collapsed .sb-name { display: revert; }
+
+  .nav-scrim {
+    display: block;
+    position: fixed; inset: 0;
+    z-index: 199;
+    background: rgba(20,16,10,0.5);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.26s;
+  }
+  .app.nav-open .nav-scrim { opacity: 1; pointer-events: auto; }
+
+  .nav-toggle {
+    display: grid; place-items: center;
+    width: 40px; height: 40px;
+    flex: 0 0 auto;
+    margin-right: 2px;
+    background: transparent;
+    border: none;
+    border-radius: 3px;
+    color: var(--paper-text-mute);
+    cursor: pointer;
+  }
+  .nav-toggle:hover { background: rgba(184,149,74,0.10); color: var(--paper-text); }
+
+  /* The bar has to fit a toggle, a breadcrumb and the language menu at 375px. */
+  .main-bar { padding-left: 8px; padding-right: 8px; gap: 4px; }
+  .crumbs { min-width: 0; overflow: hidden; }
+  .crumbs .cur { white-space: nowrap; }
+  .crumbs em,
+  .crumbs .sep,
+  .crumbs > span:last-child { display: none; }
+  .bar-note { display: none; }
+}
+
+/* Nothing animates for a reader who asked for no animation. */
+@media (prefers-reduced-motion: reduce) {
+  .sb, .nav-scrim { transition: none; }
+}
+
+/* ---- Phone master-detail: the two panes take turns ---- */
+.pane-back { display: none; }
+
+@media (max-width: 800px) {
+  .ev { grid-template-columns: 1fr; }
+  .ev-pane-list .ev-detail   { display: none; }
+  .ev-pane-detail .ev-list   { display: none; }
+  .ev-list { border-right: none; }
+
+  .pane-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    /* 44px of touch target, which is the reason for the vertical padding. */
+    min-height: 44px;
+    padding: 10px 14px 10px 2px;
+    margin-bottom: 4px;
+    background: transparent;
+    border: none;
+    font-family: 'Spectral', serif;
+    font-style: italic;
+    font-size: 14.5px;
+    color: var(--gold-deep);
+    cursor: pointer;
+  }
+  .pane-back:hover { color: var(--paper-text); }
+
+  /* The detail tabs ran off the edge at 375px — let them wrap instead of clip. */
+  .ev-detail-tabs { flex-wrap: wrap; row-gap: 2px; }
+  .ev-detail-meta-row { flex-wrap: wrap; row-gap: 8px; }
+}
+
+/* ---- Phone: the reader's TOC becomes a drawer ---- */
+.rd-toc-trigger { display: none; }
+.rd-toc-scrim { display: none; }
+
+@media (max-width: 1080px) {
+  .rd-toc-trigger {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 44px;
+    margin-bottom: 26px;
+    padding: 10px 12px;
+    background: transparent;
+    border: 1px solid var(--paper-line);
+    border-radius: 3px;
+    cursor: pointer;
+    text-align: left;
+    color: var(--paper-text-mute);
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .rd-toc-trigger:hover { border-color: var(--gold); background: rgba(184,149,74,0.05); }
+  .rd-toc-trigger-icon { font-size: 13px; color: var(--gold-deep); }
+  .rd-toc-trigger-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: var(--fs-label);
+    letter-spacing: var(--track-l);
+    text-transform: uppercase;
+    color: var(--gold-deep);
+  }
+  /* Where you are, so the control is orientation as well as a way out. */
+  .rd-toc-trigger-cur {
+    margin-left: auto;
+    font-family: 'Spectral', serif;
+    font-style: italic;
+    font-size: 13.5px;
+    color: var(--paper-text-mute);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 55%;
+  }
+
+  /* The rail was display:none at this width; it is now off-canvas instead. */
+  .rd .rd-toc {
+    display: block;
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(300px, 86vw);
+    z-index: 150;
+    background: var(--paper);
+    transform: translateX(-100%);
+    transition: transform 0.26s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 40px -8px rgba(60,40,10,0.4);
+  }
+  .rd.toc-open .rd-toc { transform: translateX(0); }
+  .rd-toc-scrim {
+    display: block;
+    position: fixed; inset: 0; z-index: 149;
+    background: rgba(20,16,10,0.42);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.26s;
+  }
+  .rd.toc-open .rd-toc-scrim { opacity: 1; pointer-events: auto; }
+  /* Chapter rows need a thumb-sized target once they are the primary control. */
+  .rd-ch { padding-top: 10px; padding-bottom: 11px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rd .rd-toc, .rd-toc-scrim { transition: none; }
+}
+
+/* The reader's highlight legend — samples drawn from the open book. */
+.rd-legend-rows {
+  font-family: 'Spectral', serif;
+  font-size: 12px;
+  line-height: 2;
+}
+.rd-legend-rows .ent { cursor: default; }
+.rd-legend-type { color: var(--paper-text-mute); margin-left: 6px; }

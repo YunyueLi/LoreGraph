@@ -112,6 +112,9 @@ function App() {
   // localStorage, but the library hard-coded "photo" — so the control did
   // nothing. Lifted here so the views that draw covers actually read it.
   const [coverStyle, setCoverStyle] = useState(() => localStorage.getItem("lg_cover_style") || "photo");
+  // Phone-width navigation drawer. Not the same thing as sbCollapsed, which
+  // narrows the rail in place; here it is off-canvas entirely.
+  const [navOpen, setNavOpen] = useState(false);
 
   // Mirror the locale onto <html lang>. Besides being correct for screen readers
   // and line-breaking, the stylesheet keys its letter-spacing tokens off this:
@@ -125,6 +128,14 @@ function App() {
   useEffect(() => { localStorage.setItem("lg_sb_collapsed", sbCollapsed ? "1" : "0"); }, [sbCollapsed]);
   useEffect(() => { localStorage.setItem("lg_tl_mode", tlMode); }, [tlMode]);
   useEffect(() => { localStorage.setItem("lg_cover_style", coverStyle); }, [coverStyle]);
+  // A drawer must close on Escape, and must not survive a view change.
+  useEffect(() => {
+    if (!navOpen) return;
+    const onKey = (e) => { if (e.key === "Escape") setNavOpen(false); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [navOpen]);
+  useEffect(() => { setNavOpen(false); }, [activeView]);
   // Promote the active book to the head of the MRU list whenever it changes.
   useEffect(() => {
     if (!activeBookId) return;
@@ -160,15 +171,19 @@ function App() {
   const ctx = { data, locale, setLocale, tt, activeView, setActiveView, activeBook, setActiveBookId, bookMru, entities, edges, chunks, glucose, conversations, selectedEntityId, setSelectedEntityId, gotoEntity, selectedConvId, setSelectedConvId, settingsSection, setSettingsSection, coverStyle, setCoverStyle, graphViewMode, setGraphViewMode, graphLeftHidden, setGraphLeftHidden, graphRightHidden, setGraphRightHidden, tlMode, setTlMode };
 
   return (
-    <div className={"app" + (sbCollapsed ? " sb-collapsed" : "")}>
+    <div className={"app" + (sbCollapsed ? " sb-collapsed" : "") + (navOpen ? " nav-open" : "")}>
       {/* First tab stop on the page: nine rail items stand between the keyboard
           and the content otherwise. Visible only when focused. */}
       <a className="skip-link" href="#lg-main">{tt("a11y.skipToContent")}</a>
+      {/* Below 700px the rail becomes an overlay drawer, so it needs a scrim to
+          dismiss and to darken what it covers. Above it, this never paints. */}
+      <div className="nav-scrim" onClick={() => setNavOpen(false)} aria-hidden="true" />
       <Sidebar ctx={ctx}
         collapsed={sbCollapsed} setCollapsed={setSbCollapsed}
-        goToSettings={(section) => { setSettingsSection(section || "provider"); setActiveView("settings"); }} />
+        navOpen={navOpen} closeNav={() => setNavOpen(false)}
+        goToSettings={(section) => { setSettingsSection(section || "provider"); setActiveView("settings"); setNavOpen(false); }} />
       <div className="main">
-        <Topbar ctx={ctx} />
+        <Topbar ctx={ctx} openNav={() => setNavOpen(true)} />
         <div className="main-content" id="lg-main" tabIndex={-1} role="main">
           <ViewErrorBoundary viewKey={activeView}>
             {activeView === "library"   && <ViewLibrary ctx={ctx} />}
@@ -189,7 +204,7 @@ function App() {
 }
 
 /* =============== SIDEBAR =============== */
-function Sidebar({ ctx, collapsed, setCollapsed, goToSettings }) {
+function Sidebar({ ctx, collapsed, setCollapsed, navOpen, closeNav, goToSettings }) {
   const { tt, activeView, setActiveView, data, activeBook, conversations } = ctx;
 
   const counts = {
@@ -286,7 +301,7 @@ function Sidebar({ ctx, collapsed, setCollapsed, goToSettings }) {
 function _DEPRECATED_AccountMenu_REMOVED() { return null; }
 
 /* =============== TOPBAR =============== */
-function Topbar({ ctx }) {
+function Topbar({ ctx, openNav }) {
   const { tt, activeView, activeBook, locale, setLocale, graphViewMode, setGraphViewMode, graphLeftHidden, setGraphLeftHidden, graphRightHidden, setGraphRightHidden, tlMode, setTlMode } = ctx;
   const [langOpen, setLangOpen] = useState(false);
   const langRef = useRef(null);
@@ -328,6 +343,14 @@ function Topbar({ ctx }) {
 
   return (
     <div className="main-bar">
+      {/* Only painted below 700px, where the rail is off-canvas. */}
+      <button className="nav-toggle" onClick={openNav} aria-label={tt("a11y.openNav")}>
+        <svg viewBox="0 0 18 14" width="18" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+          <line x1="1" y1="2"  x2="17" y2="2" />
+          <line x1="1" y1="7"  x2="17" y2="7" />
+          <line x1="1" y1="12" x2="17" y2="12" />
+        </svg>
+      </button>
       <div className="crumbs">
         <span className="cur">{viewLabel}</span>
         {showBook && (

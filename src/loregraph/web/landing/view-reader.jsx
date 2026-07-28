@@ -94,6 +94,10 @@ function ViewReader({ ctx }) {
   const [selectedChunkId, setSelectedChunkId] = useState(defaultChunkId);
   const [entOpen, setEntOpen] = useState(false);
   const ENT_CAP = 12;
+  // Phone only: the TOC rail is off-canvas below 1080px, which left a
+  // hundred-chapter book with no way to change chapter. It becomes a drawer,
+  // opened from a control in the content flow rather than from the crowded bar.
+  const [tocOpen, setTocOpen] = useState(false);
   // Re-anchor when switching books so a stale id from one book doesn't show null.
   useEffect(() => {
     if (!chunks.find(c => c.id === selectedChunkId)) {
@@ -101,7 +105,13 @@ function ViewReader({ ctx }) {
       setSelectedChunkId(f ? f.id : null);
     }
   }, [activeBook && activeBook.id]);
-  useEffect(() => { setEntOpen(false); }, [selectedChunkId]);
+  useEffect(() => { setEntOpen(false); setTocOpen(false); }, [selectedChunkId]);
+  useEffect(() => {
+    if (!tocOpen) return;
+    const onKey = (e) => { if (e.key === "Escape") setTocOpen(false); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [tocOpen]);
   const currentChunk = chunks.find(c => c.id === selectedChunkId) || firstFull || chunks[0];
 
   // Chapters list — derived from scoped chunks. Books whose chapters carry no
@@ -137,6 +147,20 @@ function ViewReader({ ctx }) {
 
   const currentChapter = (currentChunk && chapters.find(c => c.n === currentChunk.chapter)) || chapters[0];
 
+  // Most-mentioned entity of a type, named in the reader's language, for the
+  // highlight legend. Short names only — the legend is 240px wide, and event
+  // entities are whole clauses.
+  const legendSample = (type) => {
+    const pool = entities
+      .filter(e => e.type === type)
+      .sort((a, b) => (b.mentions || 0) - (a.mentions || 0));
+    for (const e of pool) {
+      const name = window.entityLocale(e.id, locale)?.name || e.name;
+      if (name && name.length <= 16) return name;
+    }
+    return pool.length ? (window.entityLocale(pool[0].id, locale)?.name || pool[0].name).slice(0, 15) + "…" : null;
+  };
+
   // build a single token aliases map for highlight
   const aliasMap = useMemo(() => {
     const map = [];
@@ -170,7 +194,8 @@ function ViewReader({ ctx }) {
   const selectedEntity = selectedEntityId ? entities.find(e => e.id === selectedEntityId) : null;
 
   return (
-    <div className="rd">
+    <div className={"rd" + (tocOpen ? " toc-open" : "")}>
+      <div className="rd-toc-scrim" onClick={() => setTocOpen(false)} aria-hidden="true" />
       {/* TOC */}
       <aside className="rd-toc" onKeyDown={window.listNav(".rd-ch")}>
         <h3>{tt("rd.toc")}</h3>
@@ -199,17 +224,40 @@ function ViewReader({ ctx }) {
 
         <div style={{marginTop:32, padding:"14px 12px", background:"var(--paper-deep)"}}>
           <div style={{fontFamily:"'JetBrains Mono', monospace", fontSize:"var(--fs-micro)", letterSpacing:"var(--track-l)", color:"var(--gold-deep)", marginBottom:10}}>{tt("rd.legend")}</div>
-          <div style={{fontSize:11.5, lineHeight:1.9, fontFamily:"'Spectral', serif"}}>
-            <div><span style={{borderBottom:"1px solid var(--gold)"}}>Elizabeth</span> &nbsp;{tt("type.agent").toLowerCase()}</div>
-            <div><span style={{background:"rgba(184,149,74,.15)"}}>Pemberley</span> &nbsp;{tt("type.object").toLowerCase()}</div>
-            <div><span style={{fontStyle:"italic", textDecoration:"underline", textDecorationColor:"var(--gold)", textUnderlineOffset:"3px"}}>proposes</span> &nbsp;{tt("type.event").toLowerCase()}</div>
-            <div><span style={{color:"var(--gold-deep)", fontStyle:"italic"}}>pride</span> &nbsp;{tt("type.concept").toLowerCase()}</div>
+          {/* The examples were Elizabeth, Pemberley, proposes, pride — Austen's,
+              printed above whatever book was open. They now come from this book,
+              which is also the only way the reader can match a sample against
+              something they will actually meet in the prose. */}
+          <div className="rd-legend-rows">
+            {[
+              { type: "agent",   cls: "ent agent" },
+              { type: "object",  cls: "ent object" },
+              { type: "event",   cls: "ent event" },
+              { type: "concept", cls: "ent concept" },
+            ].map(({ type, cls }) => {
+              const sample = legendSample(type);
+              if (!sample) return null;
+              return (
+                <div key={type}>
+                  <span className={cls}>{sample}</span> <span className="rd-legend-type">{tt("type." + type)}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
       </aside>
 
       {/* PROSE */}
       <div className="rd-text">
+        <button className="rd-toc-trigger" onClick={() => setTocOpen(true)}
+                aria-expanded={tocOpen} aria-label={tt("rd.toc")}>
+          <span className="rd-toc-trigger-icon" aria-hidden="true">☰</span>
+          <span className="rd-toc-trigger-label">{tt("rd.toc")}</span>
+          <span className="rd-toc-trigger-cur">
+            {currentChapter.hasTitle ? currentChapter.ord : currentChapter.parts[0]}
+          </span>
+        </button>
+
         <div className="rd-text-head">
           {/* The kicker used to read "ATOM CH01_P000" — an internal chunk key
               standing where a book prints its chapter ordinal. The ordinal is
