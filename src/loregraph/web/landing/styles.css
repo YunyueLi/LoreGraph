@@ -5420,19 +5420,24 @@ a { color: inherit; }
 }
 .tl2-folio-rail-dot-ch {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: var(--fs-label);
   color: var(--paper-text-faint);
   letter-spacing: 0.08em;
 }
 .tl2-folio-rail-dot.active .tl2-folio-rail-dot-ch { color: var(--phase-color); }
+/* Event names ran to two or three ideographs past the rail and ellipsised —
+   "把墨水瓶砸向…" told a reader nothing about which event it was. Two lines is
+   plenty for every event in the corpus, and the rail is a scroll list anyway. */
 .tl2-folio-rail-dot-name {
   font-family: 'Spectral', serif;
   font-style: italic;
   font-size: 12.5px;
   color: var(--paper-text-mute);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .tl2-folio-rail-dot.active .tl2-folio-rail-dot-name { color: var(--paper-text); }
 
@@ -5507,14 +5512,6 @@ a { color: inherit; }
   overflow: hidden;
   min-width: 0;
 }
-.tl2-folio-gutter-eyebrow {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.32em;
-  color: var(--paper-text-faint);
-  text-transform: uppercase;
-  margin-bottom: 12px;
-}
 /* Roman scales by character count so XXXIV (5ch), XXXVIII (7ch) etc. always
    fit within the 200px gutter without colliding with the title column.
    Formula: each italic-serif Roman glyph ≈ 0.5× font-size wide, so for a
@@ -5529,22 +5526,15 @@ a { color: inherit; }
   line-height: 0.9;
   color: var(--phase-color);
   letter-spacing: -0.01em;
-  margin-bottom: 6px;
+  margin-bottom: 20px;
   white-space: nowrap;
   max-width: 100%;
-}
-.tl2-folio-gutter-arabic {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  letter-spacing: 0.22em;
-  color: var(--paper-text-mute);
-  margin-bottom: 18px;
 }
 .tl2-folio-gutter-cite {
   display: inline-flex; align-items: center; gap: 6px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px;
-  letter-spacing: 0.16em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-l);
   color: var(--gold-deep);
   text-transform: uppercase;
 }
@@ -5786,10 +5776,14 @@ a { color: inherit; }
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--phase-color) 18%, transparent);
 }
 .tl2-stage-progress-dot.active .tl2-stage-progress-num { color: var(--phase-color); }
+/* Now carries a localized "Chapter N" rather than "ch2", so it takes the serif
+   and drops the wide mono tracking that pulls CJK apart. */
 .tl2-stage-progress-ch {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.08em;
+  font-family: 'Spectral', serif;
+  font-style: italic;
+  font-size: 11.5px;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
   color: var(--paper-text-faint);
   opacity: 0;
   transition: opacity 0.2s;
@@ -5877,14 +5871,6 @@ a { color: inherit; }
 .tl2-stage-sigil {
   text-align: right;
 }
-.tl2-stage-sigil-eyebrow {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.32em;
-  color: var(--paper-text-faint);
-  text-transform: uppercase;
-  margin-bottom: 4px;
-}
 .tl2-stage-sigil-roman {
   font-family: 'Spectral', serif;
   font-style: italic;
@@ -5897,8 +5883,8 @@ a { color: inherit; }
 }
 .tl2-stage-sigil-arabic {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.22em;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-l);
   color: var(--paper-text-mute);
   margin-top: 4px;
 }
