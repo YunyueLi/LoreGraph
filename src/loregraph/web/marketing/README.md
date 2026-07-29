@@ -60,6 +60,21 @@ the measurements behind each one. In short:
 - **Navigation on a phone.** The header dropped all five section links below
   1080px with nothing in their place, and the footer hid two whole columns —
   the repository, the issues, the changelog and the licence.
+- **One header, not two bands.** The top bar and the header had the same
+  background, the same width and the same 11px tracked caps, separated by one
+  hairline, so they read as a single 124px beige block with a stray line through
+  it. Three of the bar's four items already appeared within two rows: the
+  wordmark (the nav's own brand mark), "v0.1.0-dev" and "Alpha" (one fact twice,
+  and again in the footer), "Apache-2.0 / Python 3.11+" (also the brand meta,
+  also the footer). The fourth, the language switcher, moved into the header and
+  the bar went.
+- **Furniture that fits its column.** Each section rule centred its plate
+  caption by accident — `space-between` across three unequal items, landing 26px
+  off the centre line at 1150 and somewhere else at every other width, six times
+  down the page. And the section-summary row was placed inside the left grid
+  column, whose 495px is exactly its three children's minimum, so the four
+  claims wrapped to two ragged lines and "One rule / ≥ 95%" was crushed into
+  57px — three words over five lines.
 - **The star count.** The live count replaced the whole button label, so
   "在 GitHub 上 Star" became "Star · 5" a moment after load on three of the four
   pages.
