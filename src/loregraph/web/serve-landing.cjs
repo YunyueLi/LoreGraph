@@ -29,11 +29,16 @@ http
   .createServer((req, res) => {
     let rel = decodeURIComponent((req.url || "/").split("?")[0]);
     if (rel.endsWith("/")) rel += "index.html";
-    const fp = path.normalize(path.join(ROOT, rel));
+    let fp = path.normalize(path.join(ROOT, rel));
     if (!fp.startsWith(ROOT)) {
       res.writeHead(403);
       return res.end("Forbidden");
     }
+    // Cloudflare serves `dist/zh.html` at `/zh`, so that is the URL the pages
+    // link to — asking for `/zh.html` only earns a redirect there. Resolve the
+    // same way here, or every extensionless link 404s in local preview and dev
+    // stops matching what actually ships.
+    if (!fs.existsSync(fp) && fs.existsSync(fp + ".html")) fp += ".html";
     fs.readFile(fp, (err, data) => {
       if (err) {
         res.writeHead(404, { "Content-Type": "text/plain" });

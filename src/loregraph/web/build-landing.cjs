@@ -23,6 +23,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const esbuild = require("esbuild");
+const { patchMarketing } = require("./marketing-patch.cjs");
 
 const SRC = path.join(__dirname, "landing");
 const DEST = path.join(__dirname, "dist");
@@ -124,13 +125,15 @@ async function main() {
   // Static marketing bundle: the four landing pages, the four plate-credits
   // pages, the WebP plates, the social card and the favicon. Generated outside
   // this repo and committed as-is; see marketing/README.md. It brings its own
-  // assets/, which merges with the shelf materials copied just above. Its
-  // README documents the directory for whoever finds it in the repo and is not
-  // part of the site, so it is the one file that does not get published.
-  fs.cpSync(path.join(__dirname, "marketing"), DEST, {
-    recursive: true,
-    filter: (src) => path.basename(src) !== "README.md",
-  });
+  // assets/, which merges with the shelf materials copied just above.
+  //
+  // The copy runs each page through marketing-patch.cjs. Those pages cannot be
+  // hand-edited — a regeneration overwrites the whole directory — so the fixes
+  // the export still needs (the site's own URL, lazy plates, contrast, the two
+  // cards that linked nowhere) are applied here on the way through. That module
+  // throws if a patch stops matching, so a future export cannot silently ship
+  // the pages with a fixed bug back in them.
+  console.log(patchMarketing(path.join(__dirname, "marketing"), DEST));
 
   // 4. Skip Jekyll on GitHub Pages. The app has no client-side routes, so there
   //    are no deep links to preserve — send unknown paths to the landing page,

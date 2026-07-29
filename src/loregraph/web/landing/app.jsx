@@ -429,7 +429,7 @@ function Topbar({ ctx, openNav }) {
       {activeView === "technical" && (
         <>
           <span className="bar-note">{tt("tech.overlay")}</span>
-          <a className="bar-btn" href="Technical.html" target="_blank" rel="noopener">{tt("tech.openFull")}</a>
+          <a className="bar-btn" href="Technical" target="_blank" rel="noopener">{tt("tech.openFull")}</a>
         </>
       )}
 
