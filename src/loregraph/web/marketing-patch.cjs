@@ -95,6 +95,10 @@ const CORRECTIONS = `
   .hero-actions { flex-wrap: wrap; row-gap: 12px; }
 }
 
+/* With the interpuncts gone, the language switcher's 7px gap was doing all the
+ * separating and the four links ran together. */
+.lang-switch { gap: 14px; }
+
 /* The bibliography row moved here from the section that used to restate the rule.
  * It was laid out inside a narrow copy column; here it spans the section, so it
  * gets its own breathing room and the partner list can use the width. */
@@ -562,6 +566,37 @@ const PATCHES = [
       if (!html.includes("</head>")) return { html, count: 0 };
       const tag = `<style>${CORRECTIONS}</style>\n`;
       return { html: html.replace("</head>", tag + "</head>"), count: 1 };
+    },
+  },
+  {
+    name: "drop-dot-chains",
+    why: "the interpuncts joining short phrases everywhere read as machine-written",
+    // Every one of these is a separator between two things that spacing can
+    // separate on its own — "LoreGraph · v0.1.0-dev", "Apache-2.0 · Python 3.11+",
+    // "COVER PLATE • DESIGN FOR A THEATER SET". Removing the glyph is typographic,
+    // not editorial: no word changes, the items stay, the gap does the work.
+    //
+    // Two dots stay, because in their languages they are not separators at all:
+    // Japanese's 中点 (・) inside a list of words — 小説・戯曲・脚本 — and Chinese's
+    // 间隔号 in a transliterated name — 伊丽莎白·班纳特. Removing either produces
+    // broken text rather than cleaner text. Both survive because the patterns
+    // below require the dot to have space around it, which a word-internal dot
+    // never does.
+    run(html) {
+      let count = 0;
+      const out = mapMarkup(html, (chunk) => {
+        let c = chunk;
+        const before = c;
+        c = c.split("&nbsp;·&nbsp;").join("&nbsp;&nbsp;&nbsp;");
+        c = c.split(" · ").join("&nbsp;&nbsp;");
+        // The section rules give the mark its own element — as a class in most
+        // rules and as an inline style in the corpus one — and both sit in an
+        // inline-flex row with a gap already, so the element simply goes.
+        c = c.replace(/<span[^>]*>\s*[•·]\s*<\/span>\s*/g, "");
+        if (c !== before) count++;
+        return c;
+      });
+      return { html: out, count };
     },
   },
   {
