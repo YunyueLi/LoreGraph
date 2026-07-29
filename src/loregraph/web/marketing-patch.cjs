@@ -35,6 +35,220 @@ const CORAL_TEXT = "#a44d3f"; // 2.42:1 -> 4.59:1
 const CORPUS_URL = "https://github.com/YunyueLi/LoreGraph#the-corpus";
 const LINK_ATTRS = "target='_blank' rel='noreferrer noopener'";
 
+// The export shipped no way into the app. The only links to it were five 28px
+// arrows starting 6396px down a 16000px page, and the most prominent button on
+// the whole site — in the header and in the hero — was "Star on GitHub". A reader
+// could not reach the product without scrolling 40% of the page and finding an
+// icon. So the app becomes the primary action in both places, and the repository
+// steps back to secondary.
+const APP_LABEL = {
+  en: "Open the app",
+  "zh-CN": "打开应用",
+  ja: "アプリを開く",
+  fr: "Ouvrir l'application",
+};
+const ARROW =
+  "<span class='arrow'><svg viewBox='0 0 24 24'><path d='M5 19L19 5M19 5H8M19 5v11'/></svg></span>";
+
+function appLabel(html) {
+  const lang = (html.match(/<html[^>]*\blang=['"]([^'"]+)/) || [])[1] || "en";
+  return APP_LABEL[lang] || APP_LABEL.en;
+}
+
+// Every rule here fixes something measured, and nothing here restyles the design
+// for its own sake. Appended after the export's own stylesheet so it wins on
+// order without needing !important.
+const CORRECTIONS = `
+/* ---------------------------------------------------------------------------
+ * Build-time corrections. See src/loregraph/web/marketing-patch.cjs — edit
+ * there, not here; this block is generated.
+ * ------------------------------------------------------------------------ */
+
+/* The hero's stat row was flex-wrap:nowrap, so its min-content — 524px for the
+ * three stats side by side — sized the hero grid's only column and floored the
+ * whole document at 541px. Every phone scrolled sideways by 151px. The action
+ * row did the same at 373px. */
+.hero-stats { flex-wrap: wrap; row-gap: 16px; }
+.hero-actions { flex-wrap: wrap; row-gap: 12px; }
+
+/* The app entry, styled from .nav-cta's own declarations but deliberately NOT
+ * given that class: the export's star-count script does
+ * querySelector('a.nav-cta:not(.ghost)') and rewrote this button's label to
+ * "Star · 5" the first time it shared it. Its own class also keeps it out of the
+ * rule that hides .nav-cta below 1080px, which is how a phone ended up with no
+ * navigation and no way into the app at all. */
+.nav-app {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.nav-app:hover { background: #2a2620; }
+
+/* With the app filled and primary, the repository steps back to outlined. Its
+ * ★ was mustard on the dark fill; on paper that is 1.48:1, so it takes the ink
+ * tone instead. */
+.nav-cta-repo {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid rgba(21, 20, 15, 0.22);
+}
+.nav-cta-repo:hover { background: rgba(21, 20, 15, 0.05); }
+.nav-cta-repo::after { color: var(--ink-mute); }
+
+/* The top bar is a space-between row whose children are all white-space:nowrap,
+ * so below ~430px the language switcher simply hung off the right edge — 117px
+ * past it at 360. */
+@media (max-width: 880px) {
+  .topbar-inner { flex-wrap: wrap; gap: 6px 14px; }
+  .topbar-inner .right { flex-wrap: wrap; gap: 6px 12px; }
+  .lang-switch { flex-wrap: wrap; }
+}
+
+/* Art frames that hang past their column. The plates are capped at 600-620px
+ * and the containers are narrower than that below desktop. */
+.about-art,
+.capabilities-art,
+.cta-art,
+.testimonial-art { max-width: 100%; }
+
+/* The footer keeps three columns down to the smallest phone. Their min-content
+ * adds to 292px inside a 278px track once the two 40px gaps are taken, so the
+ * last column hung 27px off the edge at 360. */
+@media (max-width: 560px) {
+  .foot-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px 24px; }
+}
+
+/* At 320 the header cannot hold the wordmark and two pills — 412px of content in
+ * 288px. The app button is the one that matters there; the repository is still
+ * linked from the top bar and the footer. The hero's install line does not break
+ * either, partly because of a non-breaking space and 0.18em of tracking. */
+@media (max-width: 400px) {
+  .foot-grid { grid-template-columns: minmax(0, 1fr); }
+  .nav-cta-repo { display: none; }
+  /* Uppercase tracked labels, the section rules and inline code are all
+   * unbreakable runs: "uv sync -> loregraph extract" and "evidence_span" are
+   * single tokens as far as the line breaker is concerned. */
+  .meta,
+  .sec-rule,
+  .topbar-inner > span,
+  .topbar-inner .right > span,
+  .topbar-inner .right > a { white-space: normal; overflow-wrap: anywhere; letter-spacing: 0.1em; }
+  .sec-rule .meta-grp { flex-wrap: wrap; gap: 4px 12px; }
+  .code-inline { overflow-wrap: anywhere; }
+
+  /* Everything above this fixes a named cause. This is the backstop for 320px,
+   * a width nothing in the export was laid out for: releasing every remaining
+   * nowrap (the stylesheet sets no pre / pre-wrap anywhere, so nothing depends
+   * on preserved whitespace) and clipping the shell, because a page that scrolls
+   * sideways is worse than one whose ornament is cropped. Without it each fix
+   * just uncovers the next unbreakable label. */
+  [class] { white-space: normal; }
+  .shell * { overflow-wrap: anywhere; }
+  .shell { overflow-x: clip; }
+
+  /* …except the short atomic marks, which that blanket rule mangled: the roman
+   * numeral "I." broke between the letter and the period, and the section
+   * counter "001 / 008" split across two lines. None of these is long enough to
+   * overflow anything. */
+  .roman,
+  .dot-mark,
+  .sec-rule > span:last-child,
+  .work-rule > span:last-child,
+  .hero-stats .stat-label b { white-space: nowrap; }
+  /* 320px (an SE) leaves 288px of content, and the wordmark plus the app pill
+   * plus two 18px gaps plus the status dot came to exactly that or more. The dot
+   * is ornament and goes; the gaps tighten. */
+  .nav-inner { gap: 12px; }
+  .nav-side { gap: 10px; }
+  .nav-side .status-dot { display: none; }
+}
+
+@media (max-width: 1080px) {
+  /* Rotated ornament pinned 32-42px outside the art frame. There is no margin
+   * to hang it in below desktop, and vertical 10px type is not read on a phone. */
+  .capabilities-art .ribbon,
+  .cta-art .ribbon { display: none; }
+
+  /* This one is real copy, so it flows into the column instead of hanging
+   * outside it. */
+  .about-side-note {
+    position: static;
+    max-width: none;
+    text-align: left;
+    margin-top: 18px;
+  }
+  .about-side-note b { margin: 0 auto 10px 0; }
+}
+
+/* White on the bright coral is 2.99:1, under the 4.5:1 floor — and these are
+ * the two buttons carrying the page's main actions. The darker tone reads the
+ * same and measures 5.66:1. */
+.btn-primary,
+.btn-app {
+  background: var(--coral-text);
+  box-shadow: 0 14px 26px -16px rgba(164, 77, 63, 1);
+}
+.btn-primary:hover,
+.btn-app:hover { background: #8f4235; transform: translateY(-1px); }
+
+/* The other three places white type sits on the bright fill: the active filter
+ * pill, the card's hover mark and the section's active arrow. */
+.pill.active,
+.card:hover .arrow-mark,
+.work-arrows .nav-btn.active { background: var(--coral-text); border-color: var(--coral-text); }
+
+@media (max-width: 880px) {
+  /* 28px arrow buttons are well under the 44px touch minimum, and they are the
+   * links into the app. Grown on touch widths only; the desktop mark is a
+   * deliberate size in a deliberate corner. */
+  .card .arrow-mark,
+  .lab .arrow-mark { width: 44px; height: 44px; }
+  .card .arrow-mark svg,
+  .lab .arrow-mark svg { width: 14px; height: 14px; }
+}
+
+@media (max-width: 880px) {
+  /* 9-10.5px type on a phone or tablet. Raised to 11px here only, so the desktop
+   * typographic scale is untouched. */
+  .topbar-inner,
+  .nav-links a .num,
+  .about-caption,
+  .card .num .tag,
+  .lab-img .badge,
+  .annot,
+  .annot.coord,
+  .brand-meta,
+  .coord,
+  .partner small,
+  .pill .count,
+  .about-side-note,
+  .capabilities-art .ribbon,
+  .cta-art .ribbon,
+  .hero-art .index,
+  .lab .num-row,
+  .labs-meta .meta-text,
+  .meta,
+  .sec-rule,
+  .work-card .small-label,
+  .work-rule { font-size: 11px; }
+
+  /* The language switcher's four links were 13-32px wide and 15px tall. */
+  /* The language switcher's four links were 13-32px wide and 15px tall. */
+  .topbar-inner .lang-switch a,
+  .topbar-link { display: inline-flex; align-items: center; min-height: 34px; padding: 0 5px; }
+}
+`;
+
 const IMG_RE = /<img\b[^>]*>/g;
 
 // The stylesheet documents itself with prose, and that prose contains tag-shaped
@@ -182,11 +396,61 @@ const PATCHES = [
         count++;
         return `${m}\n  --coral-text: ${CORAL_TEXT};`;
       });
+      // Matches `color:` and also `border-color:` / `outline-color:`, on purpose:
+      // all four of the latter sit on a ring, pill or hover mark whose own text
+      // this same pass darkens, so a bright border beside dark type would read as
+      // a mismatch. Backgrounds are NOT swept up here — those are handled by name
+      // in CORRECTIONS, where the text colour on top decides the right fill.
       out = out.replace(/color:\s*var\(--coral\)/g, () => {
         count++;
         return `color: var(--coral-text)`;
       });
       return { html: out, count };
+    },
+  },
+  {
+    name: "app-entry-nav",
+    why: "the header's only button was 'Star on GitHub', and it was hidden on phones",
+    run(html) {
+      let count = 0;
+      const label = appLabel(html);
+      const out = mapMarkup(html, (chunk) =>
+        chunk.replace(/(<div class='nav-side'>\s*)<a class='nav-cta'/, (m, open) => {
+          count++;
+          return (
+            `${open}<a class='nav-app' href='./app'>${label}</a>\n` +
+            `<a class='nav-cta nav-cta-repo'`
+          );
+        }),
+      );
+      return { html: out, count };
+    },
+  },
+  {
+    name: "app-entry-hero",
+    why: "the hero's primary action starred a repository instead of opening the app",
+    run(html) {
+      let count = 0;
+      const label = appLabel(html);
+      const out = mapMarkup(html, (chunk) =>
+        chunk.replace(/(<div class='hero-actions'[^>]*>\s*)<a class='btn btn-primary'/, (m, open) => {
+          count++;
+          return (
+            `${open}<a class='btn btn-primary btn-app' href='./app'>\n${label}\n${ARROW}\n</a>\n` +
+            `<a class='btn btn-ghost'`
+          );
+        }),
+      );
+      return { html: out, count };
+    },
+  },
+  {
+    name: "corrections-stylesheet",
+    why: "the export has no working phone layout — the document floors at 541px wide",
+    run(html) {
+      if (!html.includes("</head>")) return { html, count: 0 };
+      const tag = `<style>${CORRECTIONS}</style>\n`;
+      return { html: html.replace("</head>", tag + "</head>"), count: 1 };
     },
   },
   {
