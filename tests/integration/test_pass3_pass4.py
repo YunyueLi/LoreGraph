@@ -1,7 +1,8 @@
 """Integration tests for Pass-3 (cluster) and Pass-4 (coref).
 
-Pass-3 mocks the LLM judge via `unittest.mock.patch` on `LLMClient.complete`,
-returning canned same/different decisions for known pairs.
+Pass-3 mocks the LLM via `unittest.mock.patch` on `LLMClient.complete`, answering
+whichever of its two prompts it is handed: the batched anchor/candidate judge, and
+the transitivity sanity check on clusters of three or more forms.
 
 Pass-4 is fully deterministic — no LLM — so it runs against the real
 canonical entities produced by Pass-3.
@@ -9,6 +10,9 @@ canonical entities produced by Pass-3.
 
 from __future__ import annotations
 
+import json
+import re
+from collections.abc import Callable
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -33,13 +37,44 @@ def _stub_message(text_body: str) -> LLMResponse:
     )
 
 
-def _judge(same: bool, confidence: float = 0.95) -> object:
-    body = (
-        '```json\n{"same": '
-        + ("true" if same else "false")
-        + f', "confidence": {confidence}, "reason": "test"}}\n```'
+def _json_message(payload: dict[str, object]) -> LLMResponse:
+    return _stub_message("```json\n" + json.dumps(payload) + "\n```")
+
+
+# Pass-3 sends one call per anchor carrying its whole candidate set, and reads the
+# verdicts back by candidate id. These parse the rendered prompt so the fake
+# answers the ids the pass actually asked about — the candidate order is shuffled
+# to blunt position bias, so a fixed answer list would bind to the wrong forms.
+_ANCHOR_RE = re.compile(r'^ANCHOR:\s*"([^"]*)"', re.MULTILINE)
+_CANDIDATE_RE = re.compile(r'^\[(\d+)\]\s*"([^"]*)"', re.MULTILINE)
+
+
+def _batch_reply(user: str, same: Callable[[str, str], bool]) -> LLMResponse:
+    """Answer a batched judge prompt: one verdict per candidate id."""
+    anchor_match = _ANCHOR_RE.search(user)
+    assert anchor_match, f"no ANCHOR in prompt:\n{user}"
+    anchor = anchor_match.group(1).lower()
+    return _json_message(
+        {
+            "matches": [
+                {"id": int(cid), "same": same(anchor, surface.lower()), "confidence": 0.95}
+                for cid, surface in _CANDIDATE_RE.findall(user)
+            ]
+        }
     )
-    return _stub_message(body)
+
+
+def _fake_complete(same: Callable[[str, str], bool]) -> Callable[..., object]:
+    """An `LLMClient.complete` that judges pairs by `same` and never splits a
+    cluster in the sanity pass."""
+
+    async def complete(**kwargs: object) -> object:
+        user = str(kwargs["user"])
+        if "ANCHOR:" in user:
+            return _batch_reply(user, same)
+        return _json_message({"outliers": []})
+
+    return complete
 
 
 def _fake_llm_client() -> LLMClient:
@@ -105,26 +140,19 @@ async def test_pass3_clusters_alias_pair_under_one_canonical(
         ],
     )
 
-    # Judge map: (a_low, b_low) -> same?
+    # Judge map: the unordered pair of surface forms -> same entity?
     judgements = {
         ("alice", "alice liddell"): True,
         ("the white rabbit", "white rabbit"): True,
     }
 
+    def same(a: str, b: str) -> bool:
+        return judgements.get((min(a, b), max(a, b)), False)
+
     mentions = await repo.list_mentions(session, book_id)
     clusterer = Pass3Clusterer(_fake_llm_client())
 
-    async def fake_complete(**kwargs):  # type: ignore[no-untyped-def]
-        user = kwargs["user"]
-        # Extract A and B from the rendered user prompt.
-        a_line = next(line for line in user.splitlines() if line.startswith("A:"))
-        b_line = next(line for line in user.splitlines() if line.startswith("B:"))
-        a = a_line.split('"')[1].lower()
-        b = b_line.split('"')[1].lower()
-        same = judgements.get((min(a, b), max(a, b)), False)
-        return _judge(same)
-
-    with patch.object(LLMClient, "complete", new=AsyncMock(side_effect=fake_complete)):
+    with patch.object(LLMClient, "complete", new=AsyncMock(side_effect=_fake_complete(same))):
         entities = await clusterer.cluster_book(book_id=book_id, mentions=mentions)
 
     canonical = {(e.canonical_name, tuple(e.aliases)) for e in entities}
@@ -151,10 +179,12 @@ async def test_pass4_binds_mentions_to_canonical_entity(session: AsyncSession) -
 
     clusterer = Pass3Clusterer(_fake_llm_client())
 
-    async def fake_complete(**_kwargs):  # type: ignore[no-untyped-def]
-        return _judge(True)  # always merge — only one pair survives the gate anyway
+    # Merge whatever is put in front of it — only Alice/Alice Liddell clears the
+    # blocking gate anyway, so Bob is never offered as a candidate.
+    def always(_a: str, _b: str) -> bool:
+        return True
 
-    with patch.object(LLMClient, "complete", new=AsyncMock(side_effect=fake_complete)):
+    with patch.object(LLMClient, "complete", new=AsyncMock(side_effect=_fake_complete(always))):
         entities_in = await clusterer.cluster_book(book_id=book_id, mentions=mentions)
 
     entities = await repo.insert_entities(session, entities_in)

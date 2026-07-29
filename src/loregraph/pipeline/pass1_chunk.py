@@ -34,9 +34,40 @@ CHAPTER_HEADER_RE = re.compile(
     # CJK: "第一回" / "第十二章" / "第三卷" (西游记 uses 回, 红楼梦 too; + optional title)
     r"|第\s*[〇零一二三四五六七八九十百千两\d]+\s*[回章卷節节折]"
     r")"
-    r"\.?(?:[ \t　:：—\-][^\n]*)?[ \t]*$",  # noqa: RUF001 - fullwidth colon/space intentional for CJK
+    r"\.?(?:[ \t　:：—\-](?P<title>[^\n]*))?[ \t]*$",  # noqa: RUF001 - fullwidth colon/space intentional for CJK
     flags=re.MULTILINE,
 )
+
+# The regex FINDS candidate headings; these bounds decide which are real.
+#
+# The title used to be an unbounded `[^\n]*`, so any line merely BEGINNING with
+# "Chapter N" was taken as a chapter break — including body prose. A paragraph
+# opening "Chapter 2 paragraph 0. ..." was read as a heading, and because a
+# heading with no body under it is discarded as a table-of-contents entry, the
+# real Chapter 2 heading directly above it was discarded too and its prose went
+# with it. A chunker that silently drops a chapter of the book is worse than one
+# that miscounts chapters, so the title is now held to what a title looks like.
+_MAX_HEADING_CHARS = 120
+"""Longest heading line accepted. A Victorian chapter summary fits well inside
+this; a paragraph of prose does not."""
+
+_SENTENCE_RUN_ON_RE = re.compile(r"[.!?][ \t]+[\"'“‘(]?[\w]")  # noqa: RUF001 - curly quotes intentional
+"""A title does not continue into a second sentence. Checked against the TITLE
+only, never the whole line: "CHAPTER I. Down the Rabbit-Hole" has a period after
+the numeral, and that one belongs to the number, not to a sentence."""
+
+
+def _is_chapter_heading(match: re.Match[str]) -> bool:
+    line = match.group(0).strip()
+    if len(line) > _MAX_HEADING_CHARS:
+        return False
+    title = (match.group("title") or "").strip()
+    if _SENTENCE_RUN_ON_RE.search(title):
+        return False
+    # A chapter title is capitalised, numbered, quoted or CJK — effectively never
+    # a lowercase English word. This is what separates a heading from a sentence
+    # that happens to open "Chapter 2 was where it all began."
+    return not (title[:1].isascii() and title[:1].islower())
 
 
 @dataclass(slots=True)
@@ -63,23 +94,31 @@ class _ChapterSpan:
 
 
 def _split_into_chapters(text: str) -> list[_ChapterSpan]:
-    matches = list(CHAPTER_HEADER_RE.finditer(text))
+    matches = [m for m in CHAPTER_HEADER_RE.finditer(text) if _is_chapter_heading(m)]
     if not matches:
         return [_ChapterSpan(chapter=1, start=0, end=len(text))]
 
-    bounds = [
-        (m.end(), m.start(), (matches[i + 1].start() if i + 1 < len(matches) else len(text)))
-        for i, m in enumerate(matches)
-    ]
+    starts = [m.start() for m in matches]
+    # A heading's BODY runs to the NEXT heading, kept or not — that is exactly what
+    # makes a table-of-contents line (heading after heading after heading, nothing
+    # between) fall under the bar.
+    body_ends = [*starts[1:], len(text)]
     kept = [
-        (start, end)
-        for body_start, start, end in bounds
-        if count_tokens(text[body_start:end]) >= _MIN_CHAPTER_BODY_TOKENS
+        m.start()
+        for m, body_end in zip(matches, body_ends, strict=True)
+        if count_tokens(text[m.end() : body_end]) >= _MIN_CHAPTER_BODY_TOKENS
     ]
     if not kept:  # nothing cleared the bar — keep every heading rather than lose the text
-        kept = [(start, end) for _, start, end in bounds]
+        kept = starts
 
-    return [_ChapterSpan(chapter=i + 1, start=s, end=e) for i, (s, e) in enumerate(kept)]
+    # A kept chapter, though, runs to the next KEPT heading. Ending it at the next
+    # RAW heading deleted whatever sat under a discarded one: losing a heading
+    # should cost the heading, never the prose beneath it.
+    span_ends = [*kept[1:], len(text)]
+    return [
+        _ChapterSpan(chapter=i + 1, start=s, end=e)
+        for i, (s, e) in enumerate(zip(kept, span_ends, strict=True))
+    ]
 
 
 def _split_chapter_text(

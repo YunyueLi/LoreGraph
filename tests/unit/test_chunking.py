@@ -8,8 +8,87 @@ from loregraph.pipeline.pass1_chunk import (
     CHAPTER_HEADER_RE,
     ChunkerConfig,
     Pass1Chunker,
+    _is_chapter_heading,
     _split_into_chapters,
 )
+
+
+def _headings(text: str) -> list[str]:
+    """The heading lines the chunker would actually act on."""
+    return [m.group(0).strip() for m in CHAPTER_HEADER_RE.finditer(text) if _is_chapter_heading(m)]
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "line",
+    [
+        "Chapter 1",
+        "CHAPTER II",
+        "Chapter the First",
+        "CHAPTER I. Down the Rabbit-Hole",
+        "Chapter 2. The Pool of Tears",
+        "Chapter 4: The Rabbit Sends in a Little Bill",
+        "第一回 靈根育孕源流出 心性修持大道生",
+        "第十二章",
+        "CHAPTER I. The Extent And Military Force Of The Empire In The Age Of The Antonines",
+    ],
+)
+def test_real_headings_are_recognised(line: str) -> None:
+    assert _headings(f"body before\n\n{line}\n\nbody after") == [line]
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "line",
+    [
+        # Prose that merely OPENS with a chapter reference. The title tail used to
+        # be unbounded, so every one of these was read as a chapter break — and
+        # because a heading with no body under it is discarded as a table-of-
+        # contents entry, the real heading above it was discarded too, taking its
+        # prose with it.
+        "Chapter 2 paragraph 0. " + "filler " * 40,
+        "Chapter 2 was where it all began.",
+        "Chapter 3 had been the worst of them. She never spoke of it again.",
+    ],
+)
+def test_prose_opening_with_a_chapter_reference_is_not_a_heading(line: str) -> None:
+    assert _headings(f"Chapter 1\n\nsome body\n\n{line}\n\nmore body") == ["Chapter 1"]
+
+
+@pytest.mark.unit
+def test_chapter_text_is_never_dropped_with_its_heading() -> None:
+    """Discarding a heading must cost the heading, not the prose beneath it."""
+    chapter_two = [f"Chapter 2 paragraph {i}." + (" filler" * 60) for i in range(6)]
+    text = (
+        "Chapter 1\n\n"
+        + "\n\n".join(f"This is paragraph {i}." + (" filler" * 60) for i in range(8))
+        + "\n\nChapter 2\n\n"
+        + "\n\n".join(chapter_two)
+    )
+    chunks = Pass1Chunker(ChunkerConfig(max_tokens=300)).chunk(book_id=1, text=text)
+
+    assert sorted({c.chapter for c in chunks}) == [1, 2]
+    # Every paragraph of chapter 2 survives, and the spans reach the end of the book.
+    body = "\n".join(c.text for c in chunks)
+    for para in chapter_two:
+        assert para[:40] in body
+    assert max(c.char_offset_end for c in chunks) == len(text)
+
+
+@pytest.mark.unit
+def test_table_of_contents_entries_are_still_dropped() -> None:
+    """The TOC filter has to keep working: 2 TOC lines + 2 real chapters → 2."""
+    text = (
+        "CONTENTS\n\nChapter 1\n\nChapter 2\n\n"
+        + "Chapter 1\n\n"
+        + "\n\n".join(f"First body paragraph {i}." + (" filler" * 60) for i in range(4))
+        + "\n\nChapter 2\n\n"
+        + "\n\n".join(f"Second body paragraph {i}." + (" filler" * 60) for i in range(4))
+    )
+    spans = _split_into_chapters(text)
+    assert [s.chapter for s in spans] == [1, 2]
+    assert text[spans[0].start : spans[0].end].count("First body paragraph") == 4
+    assert text[spans[1].start : spans[1].end].count("Second body paragraph") == 4
 
 
 @pytest.mark.unit
