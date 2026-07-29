@@ -118,6 +118,21 @@ async function main() {
   fs.writeFileSync(path.join(DEST, ".nojekyll"), "");
   fs.copyFileSync(path.join(DEST, "index.html"), path.join(DEST, "404.html"));
 
+  // The custom domain has to be BUILT, not left sitting on the gh-pages branch.
+  // `npm run deploy` empties that branch before it publishes, so a CNAME that
+  // only exists there is deleted by the next deploy — and GitHub reads the
+  // absence as "no custom domain" and drops it from the repo's Pages settings,
+  // which takes the live site off loregraph.ungetsu.net. That is exactly what
+  // happened on the first deploy after the domain was added by hand. Anything
+  // the published site needs belongs in the source tree.
+  const cname = path.join(SRC, "CNAME");
+  if (fs.existsSync(cname)) fs.copyFileSync(cname, path.join(DEST, "CNAME"));
+
+  // 5. Cloudflare Workers serves this same directory as static assets, where the
+  // two files above are meaningless — one is a Jekyll opt-out, the other tells
+  // GitHub which domain to answer on. Neither should be reachable as a URL.
+  fs.writeFileSync(path.join(DEST, ".assetsignore"), ".nojekyll\nCNAME\n");
+
   const kb = (Buffer.byteLength(bundle) / 1024).toFixed(0);
   console.log(`Built landing → ${DEST}  (${bundleName} ${kb} KB, ${cssName})`);
 }
