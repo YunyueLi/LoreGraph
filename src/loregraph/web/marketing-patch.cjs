@@ -99,6 +99,18 @@ const CORRECTIONS = `
  * separating and the four links ran together. */
 .lang-switch { gap: 14px; }
 
+/* The corpus section's 90px against every other section's 130px is not an
+ * inconsistency and is deliberately left alone: it wraps the dark panel, which
+ * carries 110px of its own, so 90 + 110 comes out ahead of a plain 130. The
+ * class is called .tight for that reason.
+ *
+ * The radii are a system: 50% for every ring, 999px for every pill,
+ * 18px for both card types, 12px for the image frame inside a card, 4px for the
+ * small chips, and 32px for the one big panel. Two values sit 2px off the family
+ * they belong to and nowhere else — an image frame at 14 and a chip at 6. */
+.lab-img { border-radius: 12px; }
+.hero-art .index { border-radius: 4px; }
+
 /* The bibliography row moved here from the section that used to restate the rule.
  * It was laid out inside a narrow copy column; here it spans the section, so it
  * gets its own breathing room and the partner list can use the width. */
@@ -140,6 +152,13 @@ const CORRECTIONS = `
 }
 .nav-cta-repo:hover { background: rgba(21, 20, 15, 0.05); }
 .nav-cta-repo::after { color: var(--ink-mute); }
+
+/* The count is appended after the label and the ★ comes from ::after, so the
+ * button read "Star on GitHub 5 ★" with the number stranded between the two
+ * things it belongs to. Both are flex items, so order puts the star back in
+ * front of its own number. */
+.nav-cta::after { order: 1; }
+.nav-cta [data-github-stars] { order: 2; margin-left: -12px; }
 
 /* The top bar is a space-between row whose children are all white-space:nowrap,
  * so below ~430px the language switcher simply hung off the right edge — 117px
@@ -267,34 +286,207 @@ const CORRECTIONS = `
 }
 
 @media (max-width: 880px) {
-  /* 9-10.5px type on a phone or tablet. Raised to 11px here only, so the desktop
-   * typographic scale is untouched. */
-  .topbar-inner,
-  .nav-links a .num,
-  .about-caption,
-  .card .num .tag,
-  .lab-img .badge,
-  .annot,
-  .annot.coord,
-  .brand-meta,
-  .coord,
-  .partner small,
-  .pill .count,
-  .about-side-note,
-  .capabilities-art .ribbon,
-  .cta-art .ribbon,
-  .hero-art .index,
-  .lab .num-row,
-  .labs-meta .meta-text,
-  .meta,
-  .sec-rule,
-  .work-card .small-label,
-  .work-rule { font-size: 11px; }
-
-  /* The language switcher's four links were 13-32px wide and 15px tall. */
   /* The language switcher's four links were 13-32px wide and 15px tall. */
   .topbar-inner .lang-switch a,
   .topbar-link { display: inline-flex; align-items: center; min-height: 34px; padding: 0 5px; }
+}
+
+/* The small end of the scale ran 9 / 9.5 / 10 / 10.5 / 11 / 11.5 / 12 — seven
+ * sizes inside three pixels, which is not a scale, just seven components that
+ * fail to match. An earlier pass floored them at 11px on phones only, on the
+ * reasoning that the desktop scale was deliberate. It is not: 9px is below the
+ * legibility floor on any screen, and the two smallest are carrying real
+ * content, not ornament — .about-caption is the museum credit for the plate and
+ * .about-side-note states the closed-world rule. Same floor everywhere. */
+.topbar-inner,
+.nav-links a .num,
+.about-caption,
+.card .num .tag,
+.lab-img .badge,
+.annot,
+.annot.coord,
+.brand-meta,
+.coord,
+.partner small,
+.pill .count,
+.about-side-note,
+.capabilities-art .ribbon,
+.cta-art .ribbon,
+.hero-art .index,
+.lab .num-row,
+.labs-meta .meta-text,
+.meta,
+.credits-foot,
+.plate-head,
+.plate-slot,
+.sec-rule,
+.side-rail .rail-text,
+.wire-item .wire-coord,
+.wire-item .wire-role,
+.wire-title span,
+.work-card .small-label,
+.work-rule { font-size: 11px; }
+
+/* Seven section headlines came out at seven sizes — 64, 66, 68, 72, 74.9, 77.8
+ * and 95px at 1440 — because each one got its own clamp() ramp: three of them
+ * differ only in the vw coefficient with identical endpoints. The 95px one is a
+ * section heading set larger than the page's own h1, which inverts the
+ * hierarchy. Two ramps replace the twelve: one for the hero, one for sections,
+ * so the h1 is the largest thing on the page and the seven sections match. */
+.hero h1,
+h1.display { font-size: clamp(40px, 5.2vw, 74px); }
+.section-header h2,
+.about h2.display,
+.capabilities h2.display,
+.labs-head h2,
+.method-head h2,
+.work-copy h2,
+.cta h2.display { font-size: clamp(30px, 4.1vw, 56px); }
+
+/* The closing wordmark is nowrap inside an overflow-hidden band, and its clamp
+ * floors at 70px — which needs 300px for "LoreGraph." against 272px of content
+ * at 320. The brand name was cropped to "LoreGrap". Nothing else on the page
+ * bleeds, so this was the floor being wrong rather than a deliberate crop. */
+.foot-mega .word { font-size: clamp(58px, 13vw, 200px); }
+
+/* line-height equal to font-size, so the descenders of one line and the
+ * ascenders of the next clear each other by 4.1px at 72px — 0.06em, which at
+ * display size reads as touching.
+ *
+ * The number is set by ink, not by the em box. Inter Tight descends 0.204em and
+ * Playfair's italic ascends 0.795em, so a line of one over a line of the other
+ * spends 0.999em before any gap exists at all — which is why 1.06 still left
+ * 3.4px between the "p" of "graph" and the "h" of "relationship". 1.12 leaves
+ * about 0.12em, and that is the whole reason the value looks loose for a
+ * display size: it is paying for the second typeface. */
+.hero h1,
+h1.display,
+h2.display,
+.labs-head h2,
+.work-copy h2,
+.section-header h2 { line-height: 1.12; }
+
+/* Except on the Chinese and Japanese pages. Their own adaptation block sets
+ * .display to 1.2, because a Han or Kana glyph fills its em box where a Latin
+ * lowercase fills half of it, and this correction is appended after that block
+ * — so without saying so it would undo it. 1.2 also reaches the one heading
+ * that adaptation missed, the corpus h2, which carries no .display class and
+ * was still at 1.0. */
+html[lang='zh-CN'] .display,
+html[lang='zh-CN'] .work-copy h2,
+html[lang='ja'] .display,
+html[lang='ja'] .work-copy h2 { line-height: 1.2; }
+
+/* The four steps stack number, title, copy and plate in flow, and the four
+ * copy blocks are 4 to 7 lines long, so the four plates landed at four
+ * different heights — a 63px spread across a row that is otherwise aligned to
+ * the pixel. The steps are already equal-height grid items; the plate just has
+ * to sit at the bottom of one. */
+.method-step { display: flex; flex-direction: column; }
+.method-step .img { margin-top: auto; }
+/* The numeral is an inline-block painted in the paper colour so it knocks a hole
+ * in the rule threaded across the row. Turning the step into a flex column made
+ * it a flex item, which stretches — so the hole became the full column width and
+ * swallowed the rule. It has to keep shrinking to its own glyphs. */
+.method-step .num { align-self: flex-start; }
+
+/* Each section rule is a three-part row — roman numeral, plate caption,
+ * counter — flexed with align-items:center. Below ~700px the caption wraps to
+ * two lines and the numeral centres itself against both of them, landing in the
+ * gap between them and hard against the caption's first character. Aligning the
+ * numeral to the caption's first baseline puts it back on a line of text. */
+.sec-rule { align-items: baseline; column-gap: 18px; }
+
+/* The five filter pills need 522px and their grid column was 488px, so
+ * "Catalogue" wrapped alone onto a second row while 684px of headline column
+ * sat half empty beside it. The headline is smaller now and needs less of the
+ * split, and the pills themselves come down from 18px of side padding to 14,
+ * which is 48px off the row. Together that fits them on one line from about
+ * 1200px up. Below that they still wrap — the column cannot be widened far
+ * enough without starving the headline — but flex-end keeps the second row
+ * flush right instead of ragged. */
+@media (min-width: 1101px) {
+  .labs-head { grid-template-columns: 1.15fr 1fr; }
+  .pills { gap: 8px; }
+  .pill { padding: 9px 14px; }
+}
+
+/* 16 characters wide, right-aligned, absolutely positioned over the plate: five
+ * ragged lines averaging three words, two of them a single word. It states the
+ * closed-world rule, which is the section's whole argument. Widened to a
+ * readable measure — still right-aligned against the plate's edge, which is the
+ * design, but no longer a classified ad. */
+.about-side-note { max-width: 30ch; }
+
+/* Same shape: a full sentence set in tracked uppercase inside 28 characters,
+ * breaking as "READER, GRAPH," / "TIMELINE," / "INDEX AND ASK ALL READ" / "THE
+ * SAME GRAPH." Caps at 0.18em need roughly twice the measure of lowercase. */
+.labs-meta .meta-text { max-width: 44ch; letter-spacing: 0.08em; }
+
+/* Inline code is a background plus 6px of horizontal padding on an inline box,
+ * which does two things to the prose it sits in. It breaks across lines, so
+ * "loregraph ingest" shipped as a chip fragment ending mid-air; and the padding
+ * puts a 6px space between the chip and any punctuation that follows it, so the
+ * quick-start paragraph read "uv sync , then" and "loregraph extract . One" —
+ * a space before a comma, four times in four lines. The nowrap fixes the first;
+ * the second needs the punctuation pulled back over the padding, which is what
+ * tuck-punctuation marks up. */
+.code-inline { white-space: nowrap; }
+.punct-tuck { font-style: normal; margin-left: -6px; }
+.code-inline.sm + .punct-tuck { margin-left: -4px; }
+/* Except at 320-400px, where "loregraph extract" and "multilingual-e5-large"
+ * are wider than the column and a chip that cannot break is a chip that
+ * overflows. The 400px block above already releases every other nowrap for the
+ * same reason; this rule comes after it, so it has to say so itself. */
+@media (max-width: 400px) {
+  .code-inline { white-space: normal; overflow-wrap: anywhere; }
+}
+
+/* A comma set in 800-weight Inter Tight immediately after an italic Playfair
+ * word: "Strict about <em>evidence</em>, relaxed". It reads as a much heavier
+ * mark than the word it belongs to. Only commas are re-set — the full stops
+ * after an em are the coral and black terminal dots, which are deliberate. */
+.em-punct { font-family: var(--serif); font-style: italic; font-weight: 500; }
+
+/* The header drops all five section links below 1080px and puts nothing in
+ * their place: no menu, no button, no anchors — on every tablet and phone the
+ * only way to any section was to scroll the whole 17,000px page. They come back
+ * as their own row under the wordmark, scrolling sideways if they have to,
+ * which needs no menu state and no script. The superscript counters go: they
+ * are ornament, and they are what makes each link too wide. */
+@media (max-width: 1080px) {
+  .nav-inner { flex-wrap: wrap; row-gap: 12px; }
+  .nav-inner > nav { order: 3; width: 100%; }
+  .nav-links {
+    display: flex;
+    gap: 22px;
+    list-style: none;
+    margin: 0;
+    padding: 11px 0 0;
+    border-top: 1px solid var(--line-soft);
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    /* Five links need 407px and a 390px phone gives the row 358px, so the last
+     * one is partly off the end. The fade says so; without it a half-drawn
+     * "Quick start" just looks broken. */
+    mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent);
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent);
+  }
+  .nav-links::-webkit-scrollbar { display: none; }
+  .nav-links li { flex: 0 0 auto; }
+  .nav-links a { white-space: nowrap; }
+  .nav-links a .num { display: none; }
+}
+
+/* Below 1080px the footer hid its fourth and fifth columns outright, so every
+ * tablet and phone lost the repository, the issue tracker, the changelog and
+ * the licence. The grid already reflows to two columns at 560 and one at 400;
+ * it never needed to drop the content. */
+@media (max-width: 1080px) {
+  .foot-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px 32px; }
+  .foot-grid .foot-col:nth-child(4),
+  .foot-grid .foot-col:nth-child(5) { display: block; }
 }
 `;
 
@@ -596,6 +788,114 @@ const PATCHES = [
         if (c !== before) count++;
         return c;
       });
+      return { html: out, count };
+    },
+  },
+  {
+    name: "star-count-label",
+    why: "the live star count replaced the localised button label with English",
+    // The export's script does `cta.textContent = 'Star · ' + count`, which
+    // throws away whatever the button said. On the Chinese page that means
+    // "在 GitHub 上 Star" is replaced by "Star · 5" a moment after load; same on
+    // the Japanese and French pages. It also reintroduces an interpunct that
+    // drop-dot-chains cannot reach, because the string is assembled at runtime.
+    // Appending the number keeps the label in its own language and lets the
+    // button's own gap do the separating.
+    run(html) {
+      const from = "cta.textContent = 'Star · ' + format(data.stargazers_count);";
+      if (!html.includes(from)) return { html, count: 0 };
+      const to =
+        "var n = document.createElement('span');\n" +
+        "        n.setAttribute('data-github-stars', '');\n" +
+        "        n.textContent = format(data.stargazers_count);\n" +
+        "        cta.appendChild(n);";
+      return { html: html.split(from).join(to), count: html.split(from).length - 1 };
+    },
+  },
+  {
+    name: "tuck-punctuation",
+    why: "6px of chip padding put a space between inline code and the comma after it",
+    // Two marks land a visible space too far right. An inline code chip carries
+    // 6px of padding, and the comma or full stop that follows sits outside it:
+    // "uv sync , then", "loregraph extract . One". And a comma directly after an
+    // italic Playfair word is set in the headline's 800-weight sans, so it reads
+    // heavier than the word it belongs to.
+    //
+    // Only commas are re-set after an em. The full stops there are the coral
+    // terminal dot the headlines end on and the black dot the footer wordmark
+    // ends on — both deliberate, both much larger than a period.
+    run(html) {
+      let count = 0;
+      const out = mapMarkup(html, (chunk) => {
+        let c = chunk;
+        // Full-width CJK punctuation too: the Chinese and Japanese pages put a
+        // 、 or 。 straight after a chip, and those already carry a wide left
+        // sidebearing of their own, so the padding on top of it opens a gap
+        // twice the size of the Latin one.
+        c = c.replace(/(<\/code>)([,.;:!?)]|[，。、；：！？）」』])/g, (m, close, mark) => {
+          count++;
+          return `${close}<span class='punct-tuck'>${mark}</span>`;
+        });
+        c = c.replace(/(<\/em>)(,)/g, (m, close, mark) => {
+          count++;
+          return `${close}<span class='em-punct'>${mark}</span>`;
+        });
+        return c;
+      });
+      return { html: out, count };
+    },
+  },
+  {
+    name: "single-font-request",
+    why: "the four webfont families are requested twice — once by <link>, once by @import",
+    // The stylesheet opens with an @import for the exact URL the head already
+    // loads with <link rel=stylesheet>, alongside both preconnects. The <link>
+    // is the one that wins on timing: it is discovered by the preload scanner,
+    // while an @import inside an inline <style> is not seen until the parser
+    // reaches the style block and then blocks rendering on its own request.
+    run(html) {
+      let count = 0;
+      const out = html.replace(/@import\s+url\((['"])https:\/\/fonts\.googleapis\.com[^)]*\1\);\s*/g, () => {
+        count++;
+        return "";
+      });
+      return { html: out, count };
+    },
+  },
+  {
+    name: "short-alt-text",
+    why: "three plates carry 231-576 character alt text — a museum title read aloud",
+    // The plates are attributed twice over: a visible caption on the page and a
+    // full entry on the credits page, which is where the complete object title
+    // belongs. In the alt attribute an unabridged 18th-century title is a
+    // penalty paid only by someone using a screen reader. The head of the title
+    // and the attribution stay; the subtitle, the alternate-language rendering
+    // and the plate number go.
+    run(html) {
+      let count = 0;
+      const out = mapMarkup(html, (chunk) =>
+        chunk.replace(/(<img\b[^>]*\balt=)(['"])([^'"]*)\2/g, (m, head, q, alt) => {
+          if (alt.length <= 180) return m;
+          // The attribution is the tail after the last full stop that precedes
+          // it; everything before is the object title.
+          const credit = alt.match(/(The Met, CC0[^.]*\.?)\s*$/);
+          const tail = credit ? credit[1] : "";
+          let title = credit ? alt.slice(0, credit.index) : alt;
+          // Cut at the first structural break in the title: a bracketed gloss,
+          // an ellipsis, or ", from '…'".
+          title = title
+            .split(/\s*(?:\.\.\.|&hellip;|\(|, from )/)[0]
+            .replace(/[\s,:]+$/, "")
+            // The titles quote their own titles, so a cut can land inside an
+            // entity: "…Les Noces de Thétis&#39;, from…" split at ", from "
+            // leaves a bare "&#39" that renders as those four characters.
+            .replace(/&(?:#\d{0,4}|[a-zA-Z]{0,8})$/, "");
+          const next = tail ? `${title}. ${tail}` : `${title}.`;
+          if (next.length >= alt.length) return m;
+          count++;
+          return `${head}${q}${next}${q}`;
+        }),
+      );
       return { html: out, count };
     },
   },
