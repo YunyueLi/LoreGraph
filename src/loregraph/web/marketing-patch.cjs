@@ -99,6 +99,69 @@ const CORRECTIONS = `
  * separating and the four links ran together. */
 .lang-switch { gap: 14px; }
 
+/* The switcher now lives in the header instead of on its own strip. It has to
+ * earn its 211px there, and the header was already tight: at 1281 the brand's
+ * second line reappears and the row needs 1345px against 1201px of content.
+ *
+ * The second line is what goes. "Apache-2.0 / evidence-anchored graphs" repeats
+ * the hero label sitting 120px below it and the licence line in the footer, and
+ * it is the single widest thing in the header at 227px. Without it the row needs
+ * 1100px, which clears from about 1180 up; between 1081 and 1180 the repository
+ * pill stands down too, the same way it already does below 1080. */
+.brand-meta { display: none; }
+@media (max-width: 1240px) {
+  .nav-cta { display: none; }
+}
+.lang-switch {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.lang-switch b { color: var(--ink); font-weight: 600; }
+
+/* Below 1080 the header is already two rows — brand and actions, then the
+ * section links. The switcher needs 228px of its own, which at 390 leaves 96px
+ * for the links if it shares their row and nothing at all if it shares the
+ * first. So it takes a third row from 620 down, right-aligned under the links.
+ * Three rows, one job each, and still one band fewer than the strip it
+ * replaced — that was two rows of its own on a phone, plus the header's. */
+@media (max-width: 1080px) {
+  .nav-inner {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'brand .     side'
+      'links links lang';
+    align-items: center;
+    row-gap: 12px;
+  }
+  .nav-inner > .brand { grid-area: brand; }
+  .nav-inner > .nav-side { grid-area: side; }
+  .nav-inner > nav { grid-area: links; min-width: 0; }
+  .nav-inner > .lang-switch { grid-area: lang; justify-self: end; padding-top: 11px; }
+}
+@media (max-width: 620px) {
+  .nav-inner {
+    grid-template-areas:
+      'brand .     side'
+      'links links links'
+      'lang  lang  lang';
+  }
+  .nav-inner > .lang-switch { justify-self: start; padding-top: 0; }
+  /* Three rows at 22px of padding is a 178px sticky header on a 844px phone,
+   * 48px more sticky chrome than the two bands this replaced. The rows are the
+   * price of four languages and a real call to action on a 342px line; the
+   * padding is not. */
+  .nav { padding: 12px 0; }
+  .nav-inner { row-gap: 10px; }
+}
+
 /* The corpus section's 90px against every other section's 130px is not an
  * inconsistency and is deliberately left alone: it wraps the dark panel, which
  * carries 110px of its own, so 90 + 110 comes out ahead of a plain 130. The
@@ -299,7 +362,6 @@ const CORRECTIONS = `
  * content, not ornament — .about-caption is the museum credit for the plate and
  * .about-side-note states the closed-world rule. Same floor everywhere. */
 .topbar-inner,
-.nav-links a .num,
 .about-caption,
 .card .num .tag,
 .lab-img .badge,
@@ -326,6 +388,13 @@ const CORRECTIONS = `
 .wire-title span,
 .work-card .small-label,
 .work-rule { font-size: 11px; }
+
+/* .nav-links a .num is NOT in that list, and was wrongly put there once. It is
+ * an absolutely-positioned superscript counter at top:-7px right:-16px — pure
+ * ornament, not running copy — and those offsets are drawn around a 9px glyph.
+ * At 11px the counter grew past them and printed into the neighbouring link.
+ * The floor is for text a reader has to read; this is a tick mark. */
+.nav-links a .num { font-size: 9px; }
 
 /* Seven section headlines came out at seven sizes — 64, 66, 68, 72, 74.9, 77.8
  * and 95px at 1440 — because each one got its own clamp() ramp: three of them
@@ -396,6 +465,53 @@ html[lang='ja'] .work-copy h2 { line-height: 1.2; }
  * gap between them and hard against the caption's first character. Aligning the
  * numeral to the caption's first baseline puts it back on a line of text. */
 .sec-rule { align-items: baseline; column-gap: 18px; }
+
+/* The rule is three unequal items in a space-between row — numeral, plate
+ * caption, counter — so the caption lands wherever the two ends leave it: 26px
+ * left of the band's centre at 1150, and a different amount at every width. It
+ * is neither centred nor on a column edge, six times down the page. A three
+ * column grid with equal outer tracks puts it on the centre line and keeps it
+ * there. The outer tracks are minmax(0, 1fr) so a long caption can still push
+ * into them rather than overflow.
+ *
+ * Only from 700 up. Below that the caption is wider than the third of the band
+ * a centred layout would leave it, the outer minmax(0, 1fr) tracks collapse to
+ * nothing, and the counter ends up printed over "THE MET". There is no centre
+ * to find on a phone — the export's own space-between, with the caption allowed
+ * to wrap, is the right behaviour there. */
+@media (min-width: 700px) {
+  .sec-rule {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+  .sec-rule > :first-child { justify-self: start; }
+  .sec-rule > :last-child { justify-self: end; }
+  .sec-rule .meta-grp { justify-self: center; }
+}
+
+/* This row summarises the whole section, but it sits inside the left column of
+ * the section's two-column grid — 495px, and its three children need exactly
+ * that, so every one of them is at its minimum width. The four claims wrap to
+ * two ragged lines and "One rule / ≥ 95%" is crushed into 58px, which is three
+ * words over five lines. Letting the row wrap gives the claims their own line,
+ * and the stamp keeps its two parts whole. */
+.about .footer-row { flex-wrap: wrap; row-gap: 16px; }
+.about .footer-row > span:not(.mark) { letter-spacing: 0.08em; }
+/* The stamp is a two-line stack by design — "One rule" over "≥ 95%" — but at
+ * 0.18em it needed 90px for the first line inside the 57px the squeezed row
+ * gave it, so that line broke too and the stamp came out as three. It keeps its
+ * two lines and stops shrinking. */
+.about .footer-row .stamp { flex: 0 0 auto; white-space: nowrap; }
+
+/* The five section links were never given nowrap, so whenever the header runs
+ * short of room they break inside the word: "Reading / room", "Quick / start".
+ * Above 1280 the brand's second line reappears and takes the room, which is the
+ * band where it showed. Links are labels, not copy — they do not wrap. The 38px
+ * gap pays for it; 28px is still twice the word space. */
+.nav-links a { white-space: nowrap; }
+@media (min-width: 1081px) {
+  .nav-links { gap: 28px; }
+}
 
 /* The five filter pills need 522px and their grid column was 488px, so
  * "Catalogue" wrapped alone onto a second row while 684px of headline column
@@ -749,6 +865,67 @@ const PATCHES = [
         }),
       );
       return { html: out, count };
+    },
+  },
+  {
+    name: "fold-topbar-into-header",
+    why: "two beige bands with one hairline between them read as one 124px block, not as a utility rail plus a header",
+    // The top bar carried four things. Three of them already appear elsewhere
+    // within two rows: the wordmark (the nav's own brand mark, one row down),
+    // "v0.1.0-dev" and "Alpha" (the same fact stated twice, and again in the
+    // footer), and "Apache-2.0 / Python 3.11+" (also the brand meta, also the
+    // footer). The fourth, the language switcher, is the only thing on the strip
+    // that exists nowhere else — so the strip goes and the switcher moves into
+    // the header, between the section links and the actions.
+    //
+    // That is one band fewer above the fold and 39px less before the headline.
+    // The cost, accepted deliberately: the release link behind "Alpha" and the
+    // version number no longer appear above the fold. Both are still in the
+    // footer.
+    run(html) {
+      // The switcher is one balanced <span>; the bar is one balanced <div>.
+      const balanced = (src, at, tag) => {
+        const open = `<${tag}`, close = `</${tag}>`;
+        let depth = 0, p = at;
+        while (p < src.length) {
+          if (src.startsWith(open, p)) depth++;
+          else if (src.startsWith(close, p)) {
+            depth--;
+            if (depth === 0) return p + close.length;
+          }
+          p++;
+        }
+        return -1;
+      };
+
+      const barAt = html.indexOf("<div class='topbar'");
+      const langAt = html.indexOf("<span class='lang-switch'>");
+      const sideAt = html.indexOf("<div class='nav-side'>");
+      if (barAt < 0 || langAt < 0 || sideAt < 0) return { html, count: 0 };
+
+      const barEnd = balanced(html, barAt, "div");
+      const langEnd = balanced(html, langAt, "span");
+      if (barEnd < 0 || langEnd < 0) return { html, count: 0 };
+      // The switcher has to be inside the bar for this to be the right surgery.
+      if (langAt < barAt || langEnd > barEnd) return { html, count: 0 };
+
+      // The switcher's four items were separated by " · ". drop-dot-chains would
+      // turn each into two non-breaking spaces, and in the header the switcher
+      // is an inline-flex row with a real 14px gap — so those spaces become flex
+      // items of their own and the group pays for both separators: 114px of gap
+      // and padding around 99px of text, 241px in a header that has none to
+      // spare. The gap is enough on its own.
+      const lang = html
+        .slice(langAt, langEnd)
+        .split(" · ")
+        .join("")
+        .split("&nbsp;·&nbsp;")
+        .join("");
+      let out = html.slice(0, barAt) + html.slice(barEnd);
+      const shift = barEnd - barAt;
+      const side = sideAt > barAt ? sideAt - shift : sideAt;
+      out = out.slice(0, side) + lang + "\n      " + out.slice(side);
+      return { html: out, count: 2 };
     },
   },
   {
