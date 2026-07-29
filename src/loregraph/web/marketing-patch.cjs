@@ -64,12 +64,36 @@ const CORRECTIONS = `
  * there, not here; this block is generated.
  * ------------------------------------------------------------------------ */
 
-/* The hero's stat row was flex-wrap:nowrap, so its min-content — 524px for the
- * three stats side by side — sized the hero grid's only column and floored the
- * whole document at 541px. Every phone scrolled sideways by 151px. The action
- * row did the same at 373px. */
-.hero-stats { flex-wrap: wrap; row-gap: 16px; }
-.hero-actions { flex-wrap: wrap; row-gap: 12px; }
+/* The hero carries two rows of furniture under the copy: three buttons, which
+ * need 545px to sit on one line, and three stats, which need 524px. The exported
+ * two-column grid gives the copy column 414px at 1200 and 466px at 1440, so it
+ * cannot hold either row at any desktop width — and the export's own
+ * flex-wrap:nowrap did not fit them, it hid the overflow: the third button and
+ * the third stat slid under the plate panel, which paints after them, and were
+ * cut in half.
+ *
+ * Releasing the wrap instead surfaced the same shortfall as a ragged 2 + 1, four
+ * rows of furniture where the design has two. Neither setting can win, because
+ * the column is too narrow either way. So the column gets the width:
+ *
+ *   ≤ 700px   the rows genuinely do not fit on one line — wrap them. Without
+ *             this the stats' 524px min-content floors the whole document and
+ *             every phone scrolls sideways, which is where this started.
+ *   ≤ 1100px  one column, the copy at full container width. Both rows fit with
+ *             room to spare and the plate stacks beneath, which is what the
+ *             export already does below 880.
+ *   > 1100px  two columns again, the copy floored at 560px so the rows always
+ *             fit, the plate taking what is left. */
+@media (max-width: 1100px) {
+  .hero-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (min-width: 1101px) {
+  .hero-grid { grid-template-columns: minmax(560px, 1fr) 1fr; }
+}
+@media (max-width: 700px) {
+  .hero-stats { flex-wrap: wrap; row-gap: 16px; }
+  .hero-actions { flex-wrap: wrap; row-gap: 12px; }
+}
 
 /* The app entry, styled from .nav-cta's own declarations but deliberately NOT
  * given that class: the export's star-count script does
