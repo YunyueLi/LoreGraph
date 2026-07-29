@@ -69,6 +69,10 @@ node_modules/
 src/loregraph/web/static/
 src/loregraph/web/dist/
 
+# `wrangler dev` local state (workerd cache, per-machine). The deployed config is
+# wrangler.jsonc; nothing in here belongs to the repo.
+.wrangler/
+
 # OS
 .DS_Store
 Thumbs.db
