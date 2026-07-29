@@ -79,10 +79,31 @@ class ViewErrorBoundary extends React.Component {
   }
 }
 
+// The one set of views the app renders — keep in step with the activeView
+// switch below. Used as a whitelist for ?view=, so a mistyped or stale deep
+// link falls back to the remembered view instead of rendering a blank page.
+const VIEW_KEYS = [
+  "library",
+  "graph",
+  "reader",
+  "entities",
+  "timeline",
+  "pipeline",
+  "ask",
+  "settings",
+  "technical",
+];
+
 function App() {
   const data = window.LG_DATA;
   const [locale, setLocaleState] = useState(() => localStorage.getItem("lg_locale") || "zh-CN");
-  const [activeView, setActiveView] = useState(() => localStorage.getItem("lg_view") || "library");
+  // ?view= lets the marketing pages link straight into a specific view. It wins
+  // over the remembered one for this load only; the effect below then persists
+  // it, so a reload without the query lands where the link did.
+  const [activeView, setActiveView] = useState(() => {
+    const q = new URLSearchParams(location.search).get("view");
+    return VIEW_KEYS.includes(q) ? q : localStorage.getItem("lg_view") || "library";
+  });
   const [activeBookId, setActiveBookId] = useState(() => {
     // Restore the most recently opened book if any.
     try {
