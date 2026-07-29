@@ -1261,7 +1261,11 @@ a { color: inherit; }
 .shelf3d-panel {
   position: absolute;
   top: 50%; right: 26px; transform: translateY(-50%);
-  width: min(320px, 42%);
+  /* A floor, not just a ceiling. At 42% of a narrow stage the panel came out
+     around 248px, which is not enough for three figures side by side, and a
+     six-digit word count ran out past its own edge. The stage can spare the
+     width — the volume's framing is solved against whatever is left. */
+  width: clamp(288px, 42%, 320px);
   background: rgba(245,239,226,0.97);
   color: var(--paper-text);
   border: 1px solid var(--paper-line);
@@ -1295,7 +1299,10 @@ a { color: inherit; }
   color: var(--paper-text-mute); font-size: 14px; margin-top: 6px;
 }
 .shelf3d-panel-stats {
-  display: grid; grid-template-columns: repeat(3, 1fr);
+  /* Three across whenever they fit, wrapping when they cannot. A fixed
+     `repeat(3, 1fr)` had no way to give, so a long figure overflowed its column
+     instead of the row finding more space. */
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
   gap: 10px; margin: 20px 0 22px;
   border-top: 1px solid var(--paper-line);
   border-bottom: 1px solid var(--paper-line);
@@ -1307,7 +1314,10 @@ a { color: inherit; }
 }
 .shelf3d-panel-stats span {
   font-family: 'JetBrains Mono', monospace; font-size: var(--fs-micro);
-  letter-spacing: var(--track-m); text-transform: uppercase; color: var(--paper-text-faint);
+  /* Tighter than the shared track. At --track-m the widest label, CHARACTERS,
+     measured 79px in a 73px column: it spilled into the gutter on both sides and
+     closed the gap to RELATIONS, so the three labels read as one run of type. */
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--paper-text-faint);
 }
 .shelf3d-panel-actions { display: flex; gap: 10px; }
 .shelf3d-open, .shelf3d-back {
@@ -1326,7 +1336,21 @@ a { color: inherit; }
 
 @media (max-width: 720px) {
   .lib-shelf3d { height: min(64vh, 520px); }
-  .shelf3d-panel { right: 12px; left: 12px; width: auto; }
+  /* Docked to the bottom, not floated in the middle. A full-width card centred
+     vertically sat exactly where the volume is presented and covered it, so on a
+     phone you got the panel and no book. The renderer reads this panel's real
+     box to decide where the volume goes, so moving it here is all that is
+     needed — the volume takes the space above. */
+  .shelf3d-panel {
+    top: auto; bottom: 12px; left: 12px; right: 12px;
+    width: auto;
+    transform: none;
+    animation: shelf3d-rise 0.32s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+}
+@keyframes shelf3d-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 .lib-card {
   background: transparent;
