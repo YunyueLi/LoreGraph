@@ -19,10 +19,10 @@
   },
   "assets": {
     "directory": "src/loregraph/web/dist",
-    // Unknown paths get the app's own 404 page, which the build writes as a copy
-    // of index.html. Not "single-page-application": Technical.html is a real
-    // second document, and swallowing every miss into the app would hide typos
-    // in its URL behind a working-looking page.
+    // Unknown paths get 404.html, which the build writes as a copy of the
+    // landing page at index.html. Not "single-page-application": app.html and
+    // Technical.html are real second documents, and swallowing every miss into
+    // one of them would hide typos in a URL behind a working-looking page.
     "not_found_handling": "404-page"
   }
 }

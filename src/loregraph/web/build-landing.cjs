@@ -1,8 +1,14 @@
 #!/usr/bin/env node
-// Build the LoreGraph landing site into ./dist as a PRODUCTION bundle:
-// JSX is precompiled (no in-browser Babel) and React is loaded from its
-// production CDN build. The editable source stays in ./landing (which still
-// runs via Babel-in-browser for quick local previews).
+// Build the LoreGraph site into ./dist as a PRODUCTION bundle. ./dist holds two
+// things that reach the reader at different URLs:
+//
+//   /            the marketing site — four hand-authored static landing pages
+//                plus their plate-credits pages, committed under ./marketing
+//                and copied in verbatim. This is what a stranger sees first.
+//   /app.html    the React app (Library, Reader, Graph, Timeline, Index, Ask),
+//                built from ./landing. JSX is precompiled (no in-browser Babel)
+//                and React comes from its production CDN build. That source
+//                still runs via Babel-in-browser for quick local previews.
 //
 // To build AND publish to GitHub Pages in one step, run `npm run deploy` from
 // the web/ directory. This script only builds (into ./dist):
@@ -103,7 +109,8 @@ async function main() {
   }
   fs.writeFileSync(path.join(DEST, bundleName), bundle);
   fs.writeFileSync(path.join(DEST, cssName), cssBuf);
-  fs.writeFileSync(path.join(DEST, "index.html"), htmlDoc(cssName, bundleName));
+  // The app now lives at /app.html; the marketing page takes the root.
+  fs.writeFileSync(path.join(DEST, "app.html"), htmlDoc(cssName, bundleName));
   fs.copyFileSync(path.join(SRC, "Technical.html"), path.join(DEST, "Technical.html"));
 
   // Static assets referenced by URL at runtime (the 3-D shelf's binding
@@ -114,7 +121,20 @@ async function main() {
     fs.cpSync(assetsSrc, path.join(DEST, "assets"), { recursive: true });
   }
 
-  // 4. GitHub Pages: skip Jekyll; route unknown paths back to the app.
+  // Static marketing bundle: the four landing pages, the four plate-credits
+  // pages, the WebP plates, the social card and the favicon. Generated outside
+  // this repo and committed as-is; see marketing/README.md. It brings its own
+  // assets/, which merges with the shelf materials copied just above. Its
+  // README documents the directory for whoever finds it in the repo and is not
+  // part of the site, so it is the one file that does not get published.
+  fs.cpSync(path.join(__dirname, "marketing"), DEST, {
+    recursive: true,
+    filter: (src) => path.basename(src) !== "README.md",
+  });
+
+  // 4. Skip Jekyll on GitHub Pages. The app has no client-side routes, so there
+  //    are no deep links to preserve — send unknown paths to the landing page,
+  //    which is the better page for a stranger who mistyped a URL.
   fs.writeFileSync(path.join(DEST, ".nojekyll"), "");
   fs.copyFileSync(path.join(DEST, "index.html"), path.join(DEST, "404.html"));
 

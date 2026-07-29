@@ -1,7 +1,10 @@
 # LoreGraph web
 
-- **`landing/`** — the static **GitHub Pages** site (this is the product). Self-contained: React via CDN + plain CSS + JSX. The editable source runs with in-browser Babel; `build-landing.cjs` precompiles it into a production bundle.
+- **`marketing/`** — the site root: four hand-authored static landing pages (EN / 中文 / 日本語 / FR) and their plate-credits pages. Generated outside this repo and committed as-is — see [`marketing/README.md`](marketing/README.md) before editing anything in there.
+- **`landing/`** — the app (this is the product). Self-contained: React via CDN + plain CSS + JSX. The editable source runs with in-browser Babel; `build-landing.cjs` precompiles it into a production bundle.
 - **FastAPI backend** (`server.py`, `routes/`, `schemas.py`) — an optional local query API, launched by `loregraph view`. Not part of the public static site.
+
+`build-landing.cjs` builds both into `dist/`: the marketing pages take `/`, the app lands at `/app.html`.
 
 ## Preview locally
 
@@ -11,7 +14,8 @@ node serve-landing.cjs            # → http://localhost:4178 (source, Babel-in-
 
 ## Build + publish
 
-Live site: **https://loregraph.ungetsu.net**
+Live site: **https://loregraph.ungetsu.net** — the marketing page (EN / 中文 / 日本語 / FR)
+App: **https://loregraph.ungetsu.net/app.html** — Library, Reader, Graph, Timeline, Index, Ask
 
 ```bash
 cd src/loregraph/web

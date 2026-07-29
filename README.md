@@ -10,6 +10,8 @@ implies — where **every single claim is anchored to a literal span of the sour
 
 No hallucinated edges. No "trust me." Click any relationship and you land on the exact sentence it came from.
 
+Live at **[loregraph.ungetsu.net](https://loregraph.ungetsu.net)** — the app is at [`/app.html`](https://loregraph.ungetsu.net/app.html).
+
 `Apache-2.0`  ·  `Python 3.11+`  ·  `8-pass pipeline`  ·  `multi-LLM · DeepSeek V4 Pro default`  ·  `multilingual`  ·  `Alpha`
 
 **English**  ·  [简体中文](README.zh-CN.md)

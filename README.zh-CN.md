@@ -10,6 +10,8 @@ LoreGraph 把一部小说、剧本、电影脚本或歌剧 libretto 变成**可�
 
 没有凭空捏造的边。不用"相信我"。点任意一条关系，直接跳到它出自的那句原文。
 
+线上站点 **[loregraph.ungetsu.net](https://loregraph.ungetsu.net)**，应用在 [`/app.html`](https://loregraph.ungetsu.net/app.html)。
+
 `Apache-2.0`  ·  `Python 3.11+`  ·  `8 步流水线`  ·  `多 LLM · 默认 DeepSeek V4 Pro`  ·  `多语种`  ·  `Alpha`
 
 [English](README.md)  ·  **简体中文**
