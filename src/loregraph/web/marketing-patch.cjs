@@ -95,6 +95,14 @@ const CORRECTIONS = `
   .hero-actions { flex-wrap: wrap; row-gap: 12px; }
 }
 
+/* The bibliography row moved here from the section that used to restate the rule.
+ * It was laid out inside a narrow copy column; here it spans the section, so it
+ * gets its own breathing room and the partner list can use the width. */
+.merged-bibliography { margin-top: 64px; }
+.merged-bibliography .partners-text { max-width: 58ch; }
+.merged-bibliography .partners { margin-top: 22px; }
+.merged-bibliography .read-more { display: inline-block; margin-top: 26px; }
+
 /* The app entry, styled from .nav-cta's own declarations but deliberately NOT
  * given that class: the export's star-count script does
  * querySelector('a.nav-cta:not(.ghost)') and rewrote this button's label to
@@ -345,6 +353,72 @@ const PATCHES = [
     why: "canonical / og:url / og:image / hreflang pointed at the old Pages address",
     run(html) {
       return { html: html.split(STALE).join(SITE), count: html.split(STALE).length - 1 };
+    },
+  },
+  {
+    name: "merge-rule-sections",
+    why: "section VII restated section II's rule; its bibliography row moves to II",
+    // The export states the evidence rule five times: II's headline, II's lead,
+    // III's first card, V's third step and VII's pull-quote. VII adds nothing but
+    // a fifth phrasing — except the bibliography row, which is the only place the
+    // page credits Splink, GraphRAG, pgvector, e5-large and Gutenberg. So this is
+    // a merge, not a deletion: the row moves into II, then VII goes.
+    //
+    // The section cannot be dropped upstream. The design template declares all
+    // eight as required (`about: AboutBlock`) and compose.ts reads them
+    // unconditionally, so omitting one from the copy deck throws. Structural
+    // surgery on the output is the only lever, which is why it is done as one
+    // move plus one delete plus the renumber, each asserted.
+    run(html) {
+      let count = 0;
+      const sectionOf = (name) => {
+        const open = html.indexOf(`<section class='${name}'`);
+        if (open < 0) return null;
+        const close = html.indexOf("</section>", open);
+        if (close < 0) return null;
+        return { start: open, end: close + "</section>".length };
+      };
+
+      const vii = sectionOf("testimonial");
+      const ii = sectionOf("about");
+      if (!vii || !ii) return { html, count: 0 };
+
+      // The bibliography run is contiguous: rule, caption, the six partner
+      // anchors, and the link out to references.bib.
+      const slice = html.slice(vii.start, vii.end);
+      const from = slice.indexOf("<div class='divider'></div>");
+      const to = slice.indexOf("</a>", slice.indexOf("class='read-more'"));
+      if (from < 0 || to < 0) return { html, count: 0 };
+      const moved = slice.slice(from, to + "</a>".length);
+
+      // Land it as the last child of II's container — after the two-column grid,
+      // not inside it, so it spans the section instead of becoming a third column.
+      const iiSlice = html.slice(ii.start, ii.end);
+      const anchor = iiSlice.lastIndexOf("</div>");
+      if (anchor < 0) return { html, count: 0 };
+      const iiPatched =
+        iiSlice.slice(0, anchor) +
+        `<div class='merged-bibliography'>\n${moved}\n</div>\n` +
+        iiSlice.slice(anchor);
+      count++;
+
+      // Rebuild: II with the row, everything between II and VII untouched, VII gone.
+      let out =
+        html.slice(0, ii.start) + iiPatched + html.slice(ii.end, vii.start) + html.slice(vii.end);
+      count++;
+
+      // Seven sections now, so the numbering has to follow or the page shows a
+      // gap at VII and every counter still reads "/ 008".
+      const before = out;
+      out = out
+        .replace(/<span class='roman'>VIII\.<\/span>/, "<span class='roman'>VII.</span>")
+        .replace(/(<div class='index'>)VIII(<\/div>)/, "$1VII$2")
+        .split(" / 008<")
+        .join(" / 007<")
+        .replace(/>008 \/ 007</, ">007 / 007<");
+      if (out !== before) count++;
+
+      return { html: out, count };
     },
   },
   {
