@@ -1307,6 +1307,178 @@ function BookShelf3D({ books, activeId, ctx, onOpen }) {
     // restore that selection into the fresh scene.
     if (selectRef.current) apiRef.current.setSelected(selectRef.current);
 
+    // ---- depth of field behind the held volume ----
+    // A book drawn off the shelf and held up belongs in focus with the case
+    // going soft behind it, the way a photograph of a hand holding a book does.
+    // three's postprocessing addons are ESM-only and this page loads the UMD
+    // build, so there is no EffectComposer and no BokehPass here. Done by hand
+    // in three passes instead: the case WITHOUT the held volume, blurred; then
+    // the volume, sharp, over it.
+    //
+    // Rendering the case without the book first is why there is no halo at the
+    // book's silhouette — the blur samples the real shelf behind it rather than
+    // smearing the book's own edge outward.
+    const DOF_LAYER = 1;
+    // Lights are matched to both layers, so the volume is lit identically
+    // whichever pass draws it. (Row lamps are created with the planks above, so
+    // this has to run after the case is built.)
+    scene.traverse((o) => { if (o.isLight) o.layers.enable(DOF_LAYER); });
+
+    const rtOpts = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter };
+    const rtScene = new THREE.WebGLRenderTarget(2, 2, rtOpts);
+    const rtBlurA = new THREE.WebGLRenderTarget(2, 2, { ...rtOpts, depthBuffer: false });
+    const rtBlurB = new THREE.WebGLRenderTarget(2, 2, { ...rtOpts, depthBuffer: false });
+    // Tone mapping runs in the object shaders either way, but the sRGB encode
+    // follows the TARGET's colour space. Marking these sRGB means the buffer
+    // holds display-ready pixels, so the blur and the blit can be plain copies
+    // and nothing gets encoded twice.
+    [rtScene, rtBlurA, rtBlurB].forEach((rt) => { rt.texture.colorSpace = THREE.SRGBColorSpace; });
+
+    const QUAD_VERT = [
+      "varying vec2 vUv;",
+      "void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }",
+    ].join("\n");
+
+    const blurMat = new THREE.ShaderMaterial({
+      uniforms: { uMap: { value: null }, uStep: { value: new THREE.Vector2() } },
+      vertexShader: QUAD_VERT,
+      fragmentShader: [
+        "uniform sampler2D uMap;",
+        "uniform vec2 uStep;",
+        "varying vec2 vUv;",
+        "void main() {",
+        "  float w0 = 0.2270270270;",
+        "  float w1 = 0.1945945946;",
+        "  float w2 = 0.1216216216;",
+        "  float w3 = 0.0540540541;",
+        "  float w4 = 0.0162162162;",
+        "  vec4 c = texture2D(uMap, vUv) * w0;",
+        "  c += (texture2D(uMap, vUv + uStep) + texture2D(uMap, vUv - uStep)) * w1;",
+        "  c += (texture2D(uMap, vUv + uStep * 2.0) + texture2D(uMap, vUv - uStep * 2.0)) * w2;",
+        "  c += (texture2D(uMap, vUv + uStep * 3.0) + texture2D(uMap, vUv - uStep * 3.0)) * w3;",
+        "  c += (texture2D(uMap, vUv + uStep * 4.0) + texture2D(uMap, vUv - uStep * 4.0)) * w4;",
+        "  gl_FragColor = c;",
+        "}",
+      ].join("\n"),
+      depthTest: false,
+      depthWrite: false,
+    });
+
+    // The buffer is an sRGB-format texture, so sampling it DECODES to linear in
+    // hardware, and the default framebuffer expects sRGB. Writing the sampled
+    // value straight out therefore darkens the image by a full transfer
+    // function: a mid grey of 153 lands at 81. On a cabinet this dark that came
+    // out as flat black, which is what sank an earlier attempt at this effect —
+    // the pass was running the whole time, just three stops down. Encode on the
+    // way out. (The blur passes need no such thing: they render INTO sRGB
+    // targets, so the hardware re-encodes for them and their maths stays linear,
+    // which is where a blur belongs anyway.)
+    const blitMat = new THREE.ShaderMaterial({
+      uniforms: { uMap: { value: null } },
+      vertexShader: QUAD_VERT,
+      fragmentShader: [
+        "uniform sampler2D uMap;",
+        "varying vec2 vUv;",
+        "vec3 toSRGB(vec3 c) {",
+        "  return mix(pow(c, vec3(0.41666)) * 1.055 - vec3(0.055), c * 12.92, step(c, vec3(0.0031308)));",
+        "}",
+        "void main() {",
+        "  vec4 t = texture2D(uMap, vUv);",
+        "  gl_FragColor = vec4(toSRGB(t.rgb), t.a);",
+        "}",
+      ].join("\n"),
+      depthTest: false,
+      depthWrite: false,
+    });
+
+    const quadCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
+    quadCam.position.z = 1;
+    const quadGeo = new THREE.PlaneGeometry(2, 2);
+    const quad = new THREE.Mesh(quadGeo, blitMat);
+    // The vertex shader writes clip space directly, so the mesh's world bounds
+    // are meaningless to the frustum test — and its bounding sphere straddles
+    // the near plane, which culls it. This is why an earlier attempt at this
+    // effect blitted pure black: the quad was never drawn.
+    quad.frustumCulled = false;
+    const quadScene = new THREE.Scene();
+    quadScene.add(quad);
+    disposables.push(rtScene, rtBlurA, rtBlurB, blurMat, blitMat, quadGeo);
+
+    const DOF_SCALE = 0.5;   // blur at half resolution: wider kernel, quarter the taps
+    const DOF_ITERS = 3;     // ping-pong count; sigma grows as sqrt(iterations)
+    function sizeDofTargets(w, h) {
+      const dpr = renderer.getPixelRatio();
+      rtScene.setSize(Math.max(2, Math.round(w * dpr)), Math.max(2, Math.round(h * dpr)));
+      rtBlurA.setSize(Math.max(2, Math.round(w * dpr * DOF_SCALE)), Math.max(2, Math.round(h * dpr * DOF_SCALE)));
+      rtBlurB.setSize(rtBlurA.width, rtBlurA.height);
+    }
+    sizeDofTargets(width, height);
+
+    // Which mesh currently sits on the DOF layer, so it can be put back.
+    let dofMesh = null;
+
+    function renderScene(held) {
+      const dof = held ? held.fly : 0;
+      const wantMesh = dof > 0.04 ? held.mesh : null;
+      if (dofMesh !== wantMesh) {
+        if (dofMesh) dofMesh.layers.set(0);
+        if (wantMesh) wantMesh.layers.set(DOF_LAYER);
+        dofMesh = wantMesh;
+      }
+      if (!dofMesh) {
+        camera.layers.set(0);
+        renderer.render(scene, camera);
+        return;
+      }
+      // Ramped so focus falls off as the volume comes forward, rather than the
+      // case snapping out of focus the instant one is picked.
+      //
+      // Small step, several iterations — NOT one wide pass. Nine taps stretched
+      // over a 24-texel radius stop behaving like a Gaussian and start reading as
+      // nine separate copies of the image: the first version of this streaked the
+      // spines into vertical bands. Iterating a tight kernel compounds sigma by
+      // sqrt(n) and stays smooth, at the same cost per tap.
+      const step = 0.8 + 1.2 * dof;
+
+      camera.layers.set(0);                     // the case, minus the held volume
+      renderer.setRenderTarget(rtScene);
+      renderer.render(scene, camera);
+
+      quad.material = blurMat;                  // separable Gaussian, half res
+      let src = rtScene.texture;
+      for (let i = 0; i < DOF_ITERS; i++) {
+        blurMat.uniforms.uMap.value = src;
+        blurMat.uniforms.uStep.value.set(step / rtBlurA.width, 0);
+        renderer.setRenderTarget(rtBlurA);
+        renderer.render(quadScene, quadCam);
+        blurMat.uniforms.uMap.value = rtBlurA.texture;
+        blurMat.uniforms.uStep.value.set(0, step / rtBlurA.height);
+        renderer.setRenderTarget(rtBlurB);
+        renderer.render(quadScene, quadCam);
+        src = rtBlurB.texture;   // A and B never swap, so no pass reads its own target
+      }
+
+      renderer.setRenderTarget(null);           // soft case, then the volume sharp
+      quad.material = blitMat;
+      blitMat.uniforms.uMap.value = rtBlurB.texture;
+      renderer.render(quadScene, quadCam);
+
+      // scene.background has to come off for the foreground pass. three treats a
+      // solid-colour background as a reason to clear the frame REGARDLESS of
+      // autoClear (WebGLBackground sets forceClear for it), so leaving it set
+      // wipes the soft case that was just blitted and refills the frame with
+      // #141110. That is the flat black this effect showed for two attempts: the
+      // blur was landing every frame and then being painted over.
+      const bg = scene.background;
+      scene.background = null;
+      camera.layers.set(DOF_LAYER);
+      renderer.autoClear = false;
+      renderer.clearDepth();
+      renderer.render(scene, camera);
+      renderer.autoClear = true;
+      scene.background = bg;
+    }
+
     // ---- animation loop ----
     const clock = new THREE.Clock();
     let raf = 0;
@@ -1408,7 +1580,7 @@ function BookShelf3D({ books, activeId, ctx, onOpen }) {
         e.mesh.renderOrder = e.fly > 0.02 ? 10 : 0;
       }
 
-      renderer.render(scene, camera);
+      renderScene(selectedIdx >= 0 ? bookEntries[selectedIdx] : null);
     }
 
     function frame() {
@@ -1424,8 +1596,7 @@ function BookShelf3D({ books, activeId, ctx, onOpen }) {
       width = mount.clientWidth || width;
       height = mount.clientHeight || height;
       renderer.setSize(width, height);
-      // The scene buffer already holds tone-mapped, sRGB-encoded pixels, so the
-    // blit must not encode them a second time.
+      sizeDofTargets(width, height);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
       // Re-solve the framing for the new viewport; if the reader hasn't zoomed
