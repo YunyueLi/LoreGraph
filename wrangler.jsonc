@@ -1,0 +1,28 @@
+// Cloudflare Worker serving the landing site as static assets.
+//
+// There is no `main` here on purpose: the site is a static bundle — CDN React
+// plus precompiled JSX, with the graphs baked into `landing/data-exports.js` —
+// so it needs a host, not a runtime. No Worker script means every request is
+// answered straight from the asset store.
+//
+// `src/loregraph/web/dist` is generated and gitignored, so the build has to run
+// on Cloudflare's side; `build.command` below is what produces it. Keep the
+// asset directory in step with DEST in `src/loregraph/web/build-landing.cjs`.
+{
+  "$schema": "https://developers.cloudflare.com/workers/wrangler/configuration/schema.json",
+  "name": "loregraph",
+  "compatibility_date": "2026-07-29",
+  "build": {
+    // `npm ci` rather than `npm install`: the lockfile is committed, and a deploy
+    // should build what was tested. esbuild is the only dependency.
+    "command": "npm ci --prefix src/loregraph/web && node src/loregraph/web/build-landing.cjs"
+  },
+  "assets": {
+    "directory": "src/loregraph/web/dist",
+    // Unknown paths get the app's own 404 page, which the build writes as a copy
+    // of index.html. Not "single-page-application": Technical.html is a real
+    // second document, and swallowing every miss into the app would hide typos
+    // in its URL behind a working-looking page.
+    "not_found_handling": "404-page"
+  }
+}
