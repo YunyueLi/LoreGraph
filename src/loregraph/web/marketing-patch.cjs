@@ -125,6 +125,37 @@ const CORRECTIONS = `
 }
 .lang-switch b { color: var(--ink); font-weight: 600; }
 
+/* Nothing declares scroll-margin-top, and the header is sticky, so every anchor
+ * jump lands the target's top at viewport 0 — behind the header. On a phone all
+ * four section links bury the section's own rule and label under 158px of
+ * chrome; on desktop it is "back to top" that lands 60px under. The links were
+ * hidden below 1080 until this pass, so the phone case never showed.
+ *
+ * The offsets are the header's own measured heights plus 15px of air: 85px above
+ * 1080, 140 for the two-row band, 158 for the three-row one. */
+:target,
+section[id],
+[id='top'],
+[id='agents'],
+[id='labs'],
+[id='contact'] { scroll-margin-top: 100px; }
+@media (max-width: 1080px) {
+  :target,
+  section[id],
+  [id='top'],
+  [id='agents'],
+  [id='labs'],
+  [id='contact'] { scroll-margin-top: 156px; }
+}
+@media (max-width: 620px) {
+  :target,
+  section[id],
+  [id='top'],
+  [id='agents'],
+  [id='labs'],
+  [id='contact'] { scroll-margin-top: 174px; }
+}
+
 /* Below 1080 the header is already two rows — brand and actions, then the
  * section links. The switcher needs 228px of its own, which at 390 leaves 96px
  * for the links if it shares their row and nothing at all if it shares the
