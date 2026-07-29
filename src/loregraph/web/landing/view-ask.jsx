@@ -8,26 +8,62 @@ function ViewAsk({ ctx }) {
 
   const conv = conversations[selectedConvId] || conversations[0];
 
-  // suggested follow-ups
+  // Suggested prompts are built from THIS book's most-mentioned entities. The
+  // previous version hard-coded Pemberley and the letters from Pride and
+  // Prejudice, so every other work in the library was offered questions about
+  // a novel it has nothing to do with.
+  const named = entities
+    .slice()
+    .sort((a, b) => (b.mentions || 0) - (a.mentions || 0))
+    .map((e) => (window.entityLocale(e.id, locale) || {}).name || e.name)
+    .filter(Boolean);
   const suggested = [
-    locale === "en"  ? "Trace the role of letters in the plot." :
-    locale === "zh-CN" ? "追踪信件在情节中的作用。" :
-    locale === "zh-TW" ? "追蹤信件在情節中的作用。" :
-    locale === "ja"  ? "プロットにおける手紙の役割を追え。" :
-    locale === "ko"  ? "줄거리에서 편지의 역할을 추적하라." :
-    locale === "fr"  ? "Tracez le rôle des lettres dans l'intrigue." :
-    locale === "es"  ? "Sigue el papel de las cartas en la trama." :
-                       "Verfolge die Rolle der Briefe in der Handlung.",
+    named[0] && tt("ask.sug.role", { n: named[0] }),
+    named[0] && named[1] && tt("ask.sug.relation", { a: named[0], b: named[1] }),
+    tt("ask.sug.turning"),
+  ].filter(Boolean);
 
-    locale === "en"  ? "What does Pemberley symbolize?" :
-    locale === "zh-CN" ? "Pemberley 象征什么？" :
-    locale === "zh-TW" ? "Pemberley 象徵什麼？" :
-    locale === "ja"  ? "ペンバリーは何を象徴するか？" :
-    locale === "ko"  ? "펨벌리는 무엇을 상징하는가?" :
-    locale === "fr"  ? "Que symbolise Pemberley ?" :
-    locale === "es"  ? "¿Qué simboliza Pemberley?" :
-                       "Was symbolisiert Pemberley?",
-  ];
+  const composer = (
+    <div className="av-input-area">
+      <div className="av-input">
+        <textarea
+          placeholder={tt("ask.placeholder")}
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          rows={2}
+        />
+        <button>{tt("ask.send")} →</button>
+      </div>
+      <div className="av-input-hint">
+        {tt("ask.hint", {k: "<span class='k'>⌘ ⏎</span>"}).split(/<span class='k'>(.*?)<\/span>/).map((part, i) =>
+          i % 2 === 0 ? part : <span key={i} className="k">{part}</span>
+        )}
+      </div>
+    </div>
+  );
+
+  // A work with no recorded conversations is the normal case, not an error —
+  // most of the library has never been asked anything. Reading conv.q here is
+  // what used to take the whole view down with the error boundary.
+  if (!conv) {
+    return (
+      <div className="av av-solo">
+        <div className="av-conv">
+          <div className="av-conv-body av-empty">
+            <h2 className="av-empty-title">{tt("ask.empty.title")}</h2>
+            <p className="av-empty-body">{tt("ask.empty.body")}</p>
+            <div className="av-empty-start">{tt("ask.empty.start")}</div>
+            <div className="av-suggest-row">
+              {suggested.map((s, i) => (
+                <button key={i} className="av-suggest" onClick={() => setDraft(s)}>{s}</button>
+              ))}
+            </div>
+          </div>
+          {composer}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="av">
@@ -39,7 +75,7 @@ function ViewAsk({ ctx }) {
                className={"av-hist-item " + (selectedConvId === i ? "active" : "")}
                onClick={() => setSelectedConvId(i)}>
             {c.q}
-            <div className="meta">{c.points.length} EVIDENCE-ANCHORED POINTS</div>
+            <div className="meta">{tt("ask.hist.points", { n: c.points.length })}</div>
           </div>
         ))}
       </aside>
@@ -78,52 +114,26 @@ function ViewAsk({ ctx }) {
           </div>
 
           {conv.caveat && (
-            <div className="av-caveat">{conv.caveat}</div>
+            <div className="av-caveat">
+              <span className="av-caveat-label">{tt("ask.caveat")}</span>
+              {conv.caveat}
+            </div>
           )}
 
           {/* Suggested follow-ups */}
           <div style={{marginTop:48, paddingTop: 24, borderTop:"1px solid var(--paper-line-soft)"}}>
-            <div style={{fontFamily:"'JetBrains Mono', monospace", fontSize:10, letterSpacing:".22em", color:"var(--gold-deep)", textTransform:"uppercase", marginBottom: 14}}>
+            <div style={{fontFamily:"'JetBrains Mono', monospace", fontSize:"var(--fs-label)", letterSpacing:"var(--track-l)", color:"var(--gold-deep)", textTransform:"uppercase", marginBottom: 14}}>
               {ctx.tt("ask.suggested")}
             </div>
-            <div style={{display:"flex", flexWrap:"wrap", gap: 8}}>
+            <div className="av-suggest-row">
               {suggested.map((s, i) => (
-                <button key={i}
-                  onClick={() => setDraft(s)}
-                  style={{
-                    fontFamily:"'Spectral', serif",
-                    fontStyle:"italic",
-                    fontSize:13,
-                    padding:"8px 14px",
-                    border:"1px solid var(--paper-line)",
-                    color:"var(--paper-text)",
-                    background:"transparent",
-                    transition:"all 0.2s",
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--gold)"; e.currentTarget.style.background = "rgba(184,149,74,.05)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--paper-line)"; e.currentTarget.style.background = "transparent"; }}
-                >→ {s}</button>
+                <button key={i} className="av-suggest" onClick={() => setDraft(s)}>{s}</button>
               ))}
             </div>
           </div>
         </div>
 
-        <div className="av-input-area">
-          <div className="av-input">
-            <textarea
-              placeholder={tt("ask.placeholder")}
-              value={draft}
-              onChange={e => setDraft(e.target.value)}
-              rows={2}
-            />
-            <button>{tt("ask.send")} →</button>
-          </div>
-          <div className="av-input-hint">
-            {tt("ask.hint", {k: "<span class='k'>⌘ ⏎</span>"}).split(/<span class='k'>(.*?)<\/span>/).map((part, i) =>
-              i % 2 === 0 ? part : <span key={i} className="k">{part}</span>
-            )}
-          </div>
-        </div>
+        {composer}
       </div>
     </div>
   );

@@ -1261,6 +1261,7 @@ window.LG_DATA = {
         { n: 5, name: "Relation", zh: "关系 + 事件", status: "running", durationS: 488,  tokensIn: 198400, tokensOut: 41200, cachedIn: 158000, cost: 1.42, gleaning: 1.1, output: "edge extraction · chunk 192 / 298" },
         { n: 6, name: "GLUCOSE",  zh: "隐式信息",   status: "queued",  durationS: 0,    tokensIn: 0,      tokensOut: 0,     cachedIn: 0,      cost: 0.00, gleaning: null, output: null },
         { n: 7, name: "CoVe",     zh: "字面验证",   status: "queued",  durationS: 0,    tokensIn: 0,      tokensOut: 0,     cachedIn: 0,      cost: 0.00, gleaning: null, output: null },
+        { n: 8, name: "Notes",    zh: "笔记合成",   status: "queued",  durationS: 0,    tokensIn: 0,      tokensOut: 0,     cachedIn: 0,      cost: 0.00, gleaning: null, output: null },
       ],
       logs: [
         { t: "09:18:04", level: "info",  msg: "run started · book #2 · provider deepseek · model deepseek-chat" },
@@ -1284,6 +1285,7 @@ window.LG_DATA = {
         { n: 5, name: "Relation", zh: "关系 + 事件", status: "done", durationS: 384, tokensIn: 142400, tokensOut: 32800, cachedIn: 120000, cost: 0.78, gleaning: 1.0, output: "124 edges · 8 realis events · 142 filtered as non-realis" },
         { n: 6, name: "GLUCOSE",  zh: "隐式信息",   status: "done", durationS: 268, tokensIn: 98800,  tokensOut: 26400, cachedIn: 82400,  cost: 0.42, gleaning: null, output: "412 GLUCOSE facts · 5 dims × 2 time × 38 entities" },
         { n: 7, name: "CoVe",     zh: "字面验证",   status: "done", durationS: 224, tokensIn: 88200,  tokensOut: 11400, cachedIn: 78000,  cost: 0.30, gleaning: null, output: "match rate 0.971 ✓ above threshold · 18 claims rewritten" },
+        { n: 8, name: "Notes",    zh: "笔记合成",   status: "done", durationS: 96,  tokensIn: 41200,  tokensOut: 18600, cachedIn: 34800,  cost: 0.21, gleaning: null, output: "38 entity notes · 6 volume summaries · every line cited" },
       ],
       matchRate: 0.971,
       totalCost: 2.84,

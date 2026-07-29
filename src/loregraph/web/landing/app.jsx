@@ -3,6 +3,56 @@
 
 const { useState, useEffect, useMemo, useRef } = React;
 
+// Most of this interface's controls are <div onClick> — rows, cards, chips,
+// tabs, TOC entries. They work with a mouse and are unreachable by keyboard,
+// which made the whole app unusable without one: even the sidebar that switches
+// views could not be focused. Spreading `clickable(fn)` onto such an element
+// gives it the three things a button has — a role, a tab stop, and Enter/Space —
+// without restructuring markup that legitimately cannot be a <button> (several
+// of these contain buttons of their own).
+window.clickable = function (onActivate, opts) {
+  const o = opts || {};
+  return {
+    role: o.role || "button",
+    // `roving` keeps a long list to one tab stop: 477 index rows must not be 477
+    // presses of Tab. The active row is tabbable, the rest are reachable with
+    // the Arrow keys via listNav below — the listbox pattern.
+    tabIndex: o.disabled || o.roving ? -1 : 0,
+    "aria-disabled": o.disabled || undefined,
+    onClick: o.disabled ? undefined : onActivate,
+    onKeyDown: o.disabled ? undefined : (e) => {
+      if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
+        // Space scrolls the page by default; a control must not.
+        e.preventDefault();
+        e.stopPropagation();
+        onActivate(e);
+      }
+    },
+  };
+};
+
+// Arrow-key movement inside a roving list. Moves focus only — Enter or Space
+// still does the selecting, so arrowing through a hundred chapters does not load
+// a hundred chapters.
+window.listNav = function (itemSelector) {
+  const STEP = { ArrowDown: 1, ArrowUp: -1, ArrowRight: 1, ArrowLeft: -1 };
+  return (e) => {
+    if (!(e.key in STEP) && e.key !== "Home" && e.key !== "End") return;
+    const items = [...e.currentTarget.querySelectorAll(itemSelector)]
+      .filter((el) => el.getAttribute("aria-disabled") !== "true");
+    if (!items.length) return;
+    e.preventDefault();
+    const cur = items.indexOf(document.activeElement);
+    let next;
+    if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = items.length - 1;
+    else if (cur < 0) next = 0;
+    else next = Math.min(items.length - 1, Math.max(0, cur + STEP[e.key]));
+    items[next].focus();
+    if (items[next].scrollIntoView) items[next].scrollIntoView({ block: "nearest" });
+  };
+};
+
 /* =================== ERROR BOUNDARY =================== */
 // Wraps each view so a render error in one view doesn't white-screen the entire app.
 class ViewErrorBoundary extends React.Component {
@@ -12,25 +62,16 @@ class ViewErrorBoundary extends React.Component {
   componentDidUpdate(prevProps) { if (prevProps.viewKey !== this.props.viewKey && this.state.error) this.setState({ error: null }); }
   render() {
     if (this.state.error) {
+      // The heading and eyebrow were English while the body text was Chinese,
+      // whatever the reader's locale. All four strings are localized now, and
+      // the stack trace's rule is a hairline like every other rule here.
       return (
-        <div style={{padding:"60px 48px", maxWidth: 720, fontFamily:"'Spectral', serif", color:"var(--paper-text)"}}>
-          <div style={{fontFamily:"'JetBrains Mono', monospace", fontSize:10, letterSpacing:".26em", color:"var(--rust)", textTransform:"uppercase", marginBottom: 14}}>
-            ▲ View error
-          </div>
-          <h2 style={{fontWeight:300, fontSize:32, lineHeight:1.15, marginBottom: 12, fontStyle:"italic", color:"var(--paper-text)"}}>
-            Something went wrong rendering this view.
-          </h2>
-          <p style={{fontStyle:"italic", color:"var(--paper-text-mute)", fontSize:15, lineHeight:1.55, marginBottom: 24}}>
-            其他视图仍可正常使用。点击下方按钮重试，或切换到其他视图。
-          </p>
-          <pre style={{fontFamily:"'JetBrains Mono', monospace", fontSize: 11, padding:"14px 16px", background:"rgba(160,74,42,.06)", borderLeft:"2px solid var(--rust)", color:"var(--rust)", whiteSpace:"pre-wrap", marginBottom: 20, lineHeight: 1.5}}>
-            {String(this.state.error?.message || this.state.error)}
-          </pre>
-          <button
-            onClick={() => this.setState({ error: null })}
-            style={{padding:"8px 18px", border:"1px solid var(--gold)", background:"transparent", color:"var(--gold-deep)", fontFamily:"'Spectral', serif", fontStyle:"italic", fontSize: 13, cursor:"pointer"}}>
-            重试
-          </button>
+        <div className="vb-error">
+          <div className="vb-error-eyebrow">▲ {window.t("err.view.label")}</div>
+          <h2>{window.t("err.view.title")}</h2>
+          <p>{window.t("err.view.body")}</p>
+          <pre>{String(this.state.error?.message || this.state.error)}</pre>
+          <button onClick={() => this.setState({ error: null })}>{window.t("err.view.retry")}</button>
         </div>
       );
     }
@@ -67,11 +108,34 @@ function App() {
   const [graphRightHidden, setGraphRightHidden] = useState(false);
   // Timeline mode — lifted so topbar can render the pill
   const [tlMode, setTlMode] = useState(() => localStorage.getItem("lg_tl_mode") || "folio");
+  // Cover style. Settings owned this state privately and wrote it to
+  // localStorage, but the library hard-coded "photo" — so the control did
+  // nothing. Lifted here so the views that draw covers actually read it.
+  const [coverStyle, setCoverStyle] = useState(() => localStorage.getItem("lg_cover_style") || "photo");
+  // Phone-width navigation drawer. Not the same thing as sbCollapsed, which
+  // narrows the rail in place; here it is off-canvas entirely.
+  const [navOpen, setNavOpen] = useState(false);
 
-  useEffect(() => { window.__lg_locale = locale; localStorage.setItem("lg_locale", locale); }, [locale]);
+  // Mirror the locale onto <html lang>. Besides being correct for screen readers
+  // and line-breaking, the stylesheet keys its letter-spacing tokens off this:
+  // wide Latin small-caps tracking would otherwise blow CJK labels apart.
+  useEffect(() => {
+    window.__lg_locale = locale;
+    localStorage.setItem("lg_locale", locale);
+    document.documentElement.lang = locale;
+  }, [locale]);
   useEffect(() => { localStorage.setItem("lg_view", activeView); }, [activeView]);
   useEffect(() => { localStorage.setItem("lg_sb_collapsed", sbCollapsed ? "1" : "0"); }, [sbCollapsed]);
   useEffect(() => { localStorage.setItem("lg_tl_mode", tlMode); }, [tlMode]);
+  useEffect(() => { localStorage.setItem("lg_cover_style", coverStyle); }, [coverStyle]);
+  // A drawer must close on Escape, and must not survive a view change.
+  useEffect(() => {
+    if (!navOpen) return;
+    const onKey = (e) => { if (e.key === "Escape") setNavOpen(false); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [navOpen]);
+  useEffect(() => { setNavOpen(false); }, [activeView]);
   // Promote the active book to the head of the MRU list whenever it changes.
   useEffect(() => {
     if (!activeBookId) return;
@@ -104,16 +168,23 @@ function App() {
     if (view) setActiveView(view);
   };
 
-  const ctx = { data, locale, setLocale, tt, activeView, setActiveView, activeBook, setActiveBookId, bookMru, entities, edges, chunks, glucose, conversations, selectedEntityId, setSelectedEntityId, gotoEntity, selectedConvId, setSelectedConvId, settingsSection, setSettingsSection, graphViewMode, setGraphViewMode, graphLeftHidden, setGraphLeftHidden, graphRightHidden, setGraphRightHidden, tlMode, setTlMode };
+  const ctx = { data, locale, setLocale, tt, activeView, setActiveView, activeBook, setActiveBookId, bookMru, entities, edges, chunks, glucose, conversations, selectedEntityId, setSelectedEntityId, gotoEntity, selectedConvId, setSelectedConvId, settingsSection, setSettingsSection, coverStyle, setCoverStyle, graphViewMode, setGraphViewMode, graphLeftHidden, setGraphLeftHidden, graphRightHidden, setGraphRightHidden, tlMode, setTlMode };
 
   return (
-    <div className={"app" + (sbCollapsed ? " sb-collapsed" : "")}>
+    <div className={"app" + (sbCollapsed ? " sb-collapsed" : "") + (navOpen ? " nav-open" : "")}>
+      {/* First tab stop on the page: nine rail items stand between the keyboard
+          and the content otherwise. Visible only when focused. */}
+      <a className="skip-link" href="#lg-main">{tt("a11y.skipToContent")}</a>
+      {/* Below 700px the rail becomes an overlay drawer, so it needs a scrim to
+          dismiss and to darken what it covers. Above it, this never paints. */}
+      <div className="nav-scrim" onClick={() => setNavOpen(false)} aria-hidden="true" />
       <Sidebar ctx={ctx}
         collapsed={sbCollapsed} setCollapsed={setSbCollapsed}
-        goToSettings={(section) => { setSettingsSection(section || "provider"); setActiveView("settings"); }} />
+        navOpen={navOpen} closeNav={() => setNavOpen(false)}
+        goToSettings={(section) => { setSettingsSection(section || "provider"); setActiveView("settings"); setNavOpen(false); }} />
       <div className="main">
-        <Topbar ctx={ctx} />
-        <div className="main-content">
+        <Topbar ctx={ctx} openNav={() => setNavOpen(true)} />
+        <div className="main-content" id="lg-main" tabIndex={-1} role="main">
           <ViewErrorBoundary viewKey={activeView}>
             {activeView === "library"   && <ViewLibrary ctx={ctx} />}
             {activeView === "graph"     && <ViewGraph ctx={ctx} />}
@@ -133,7 +204,7 @@ function App() {
 }
 
 /* =============== SIDEBAR =============== */
-function Sidebar({ ctx, collapsed, setCollapsed, goToSettings }) {
+function Sidebar({ ctx, collapsed, setCollapsed, navOpen, closeNav, goToSettings }) {
   const { tt, activeView, setActiveView, data, activeBook, conversations } = ctx;
 
   const counts = {
@@ -147,9 +218,10 @@ function Sidebar({ ctx, collapsed, setCollapsed, goToSettings }) {
 
   const NavItem = ({ id, icon, label, count, dot }) => (
     <div className={"sb-item " + (activeView === id ? "active" : "")}
-         onClick={() => setActiveView(id)}
+         {...window.clickable(() => setActiveView(id))}
+         aria-current={activeView === id ? "page" : undefined}
          data-tip={label}>
-      <span className="sb-item-icon">{icon}</span>
+      <span className="sb-item-icon" aria-hidden="true">{icon}</span>
       <span className="sb-item-label">{label}</span>
       {dot && <span className="sb-item-dot" />}
       {count !== undefined && count !== null && <span className="sb-item-count">{count}</span>}
@@ -229,7 +301,7 @@ function Sidebar({ ctx, collapsed, setCollapsed, goToSettings }) {
 function _DEPRECATED_AccountMenu_REMOVED() { return null; }
 
 /* =============== TOPBAR =============== */
-function Topbar({ ctx }) {
+function Topbar({ ctx, openNav }) {
   const { tt, activeView, activeBook, locale, setLocale, graphViewMode, setGraphViewMode, graphLeftHidden, setGraphLeftHidden, graphRightHidden, setGraphRightHidden, tlMode, setTlMode } = ctx;
   const [langOpen, setLangOpen] = useState(false);
   const langRef = useRef(null);
@@ -254,6 +326,8 @@ function Topbar({ ctx }) {
     pipeline: tt("nav.pipeline"),
     ask: tt("nav.ask"),
     technical: tt("nav.technical"),
+    // Settings was the one view with no breadcrumb, so its bar read as empty.
+    settings: tt("nav.settings"),
   }[activeView];
 
   const showBook = ["graph","reader","entities","timeline","ask","pipeline"].includes(activeView) && activeBook;
@@ -269,11 +343,21 @@ function Topbar({ ctx }) {
 
   return (
     <div className="main-bar">
+      {/* Only painted below 700px, where the rail is off-canvas. */}
+      <button className="nav-toggle" onClick={openNav} aria-label={tt("a11y.openNav")}>
+        <svg viewBox="0 0 18 14" width="18" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+          <line x1="1" y1="2"  x2="17" y2="2" />
+          <line x1="1" y1="7"  x2="17" y2="7" />
+          <line x1="1" y1="12" x2="17" y2="12" />
+        </svg>
+      </button>
       <div className="crumbs">
         <span className="cur">{viewLabel}</span>
         {showBook && (
           <>
-            <span className="sep">/</span>
+            {/* A drawn separator, not content — hidden from screen readers, and
+                exempt from the contrast floor for the same reason. */}
+            <span className="sep" aria-hidden="true">/</span>
             <em>{activeBook.title}</em>
             <span style={{fontSize:11, opacity:.5}}>· {activeBook.author}</span>
           </>
@@ -317,6 +401,17 @@ function Topbar({ ctx }) {
         <div className="bar-pill running"><span className="dot" />running</div>
       )}
 
+      {/* The technical doc's provenance and its full-page link used to float over
+          the embedded document. The document scrolls from a dark hero onto paper,
+          so a chip tuned for one ground vanished against the other; the app's own
+          bar is a stable place for a view-level action. */}
+      {activeView === "technical" && (
+        <>
+          <span className="bar-note">{tt("tech.overlay")}</span>
+          <a className="bar-btn" href="Technical.html" target="_blank" rel="noopener">{tt("tech.openFull")}</a>
+        </>
+      )}
+
       {/* language switcher */}
       <div style={{position:"relative"}} ref={langRef}>
         <button
@@ -325,7 +420,7 @@ function Topbar({ ctx }) {
           style={{display:"inline-flex", alignItems:"center", gap: 6}}
         >
           <span style={{fontFamily: "'Spectral', serif", fontStyle:"italic", color:"var(--gold-deep)"}}>{currentLoc.label}</span>
-          <span style={{opacity:.5, fontSize:9}}>▾</span>
+          <span style={{opacity:.5, fontSize:"var(--fs-micro)"}}>▾</span>
         </button>
         {langOpen && (
           <div style={{
@@ -348,7 +443,7 @@ function Topbar({ ctx }) {
                 }}
               >
                 <span style={{fontFamily:"'Spectral', serif", fontSize: 14}}>{l.name}</span>
-                <span style={{fontFamily:"'JetBrains Mono', monospace", fontSize:10, letterSpacing:".16em", color: locale === l.code ? "var(--gold)" : "var(--paper-text-mute)"}}>{l.label}</span>
+                <span style={{fontFamily:"'JetBrains Mono', monospace", fontSize:"var(--fs-label)", letterSpacing:"var(--track-l)", color: locale === l.code ? "var(--gold)" : "var(--paper-text-mute)"}}>{l.label}</span>
               </button>
             ))}
           </div>

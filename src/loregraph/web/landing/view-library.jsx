@@ -126,18 +126,34 @@ function ViewLibrary({ ctx }) {
           </div>
         </div>
       ) : (
-        <BookShelf books={filtered} activeId={activeBook && activeBook.id} ctx={ctx} onOpen={openBook} />
+        renderShelf(filtered, activeBook, ctx, openBook)
       )}
     </div>
   );
 }
 
+// Shelf mode: real 3D closet (WebGL) with the flat CSS shelf as a graceful
+// fallback — mirrors the Ovid reader's own no-WebGL degradation.
+function renderShelf(books, activeBook, ctx, openBook) {
+  const Shelf3D = window.BookShelf3D;
+  const canWebGL = window.__lgHasWebGL && window.__lgHasWebGL();
+  if (Shelf3D && canWebGL) {
+    return <Shelf3D books={books} activeId={activeBook && activeBook.id} ctx={ctx} onOpen={openBook} />;
+  }
+  return <BookShelf books={books} activeId={activeBook && activeBook.id} ctx={ctx} onOpen={openBook} />;
+}
+
 function BookCard({ book, active, onClick, ctx }) {
-  const { tt, locale } = ctx;
+  const { tt, locale, coverStyle } = ctx;
   const title = window.bookTitle(book, locale);
   const author = window.bookAuthor(book, locale);
   const typeLabel = tt("work.type." + (book.type || "novel"));
+  // An em dash is the printing convention for "no figure available", but on its
+  // own it reads as a rendering fault — and as zero. Label it.
   const fmt = (n) => (n == null ? "—" : Number(n).toLocaleString());
+  const statProps = (n) => (n == null
+    ? { className: "lib-card-stat-num none", title: tt("lib.card.noData"), "aria-label": tt("lib.card.noData") }
+    : { className: "lib-card-stat-num" });
   // Localized BC year for ancient works (Greek tragedies etc.).
   const fmtYear = (y) => {
     if (y >= 0) return y;
@@ -152,13 +168,15 @@ function BookCard({ book, active, onClick, ctx }) {
   };
 
   return (
-    <div className={"lib-card " + (active ? "active" : "")} onClick={onClick}>
+    <div className={"lib-card " + (active ? "active" : "")}
+         {...window.clickable(onClick)}
+         aria-current={active ? "true" : undefined}>
       <div className="lib-card-top">
-        {window.bookCover(book, "photo")}
+        {window.bookCover(book, coverStyle)}
       </div>
 
       <div className="lib-card-info">
-        <div style={{fontFamily:"'JetBrains Mono', monospace", fontSize: 9.5, letterSpacing:".22em", color:"var(--gold-deep)", textTransform:"uppercase", marginBottom: 6, opacity: .85}}>
+        <div style={{fontFamily:"'JetBrains Mono', monospace", fontSize: "var(--fs-micro)", letterSpacing:"var(--track-l)", color:"var(--gold-deep)", textTransform:"uppercase", marginBottom: 6, opacity: .85}}>
           {typeLabel}
         </div>
         <div className="lib-card-title">{title}</div>
@@ -167,15 +185,15 @@ function BookCard({ book, active, onClick, ctx }) {
 
       <div className="lib-card-stats">
         <div className="lib-card-stat">
-          <div className="lib-card-stat-num">{fmt(book.entities)}</div>
+          <div {...statProps(book.entities)}>{fmt(book.entities)}</div>
           <div className="lib-card-stat-lbl">{tt("lib.card.characters")}</div>
         </div>
         <div className="lib-card-stat">
-          <div className="lib-card-stat-num">{fmt(book.edges)}</div>
+          <div {...statProps(book.edges)}>{fmt(book.edges)}</div>
           <div className="lib-card-stat-lbl">{tt("lib.card.relations")}</div>
         </div>
         <div className="lib-card-stat">
-          <div className="lib-card-stat-num">{fmt(book.tokens)}</div>
+          <div {...statProps(book.tokens)}>{fmt(book.tokens)}</div>
           <div className="lib-card-stat-lbl">{tt("lib.card.words")}</div>
         </div>
       </div>

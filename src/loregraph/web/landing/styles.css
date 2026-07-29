@@ -10,18 +10,64 @@
   --paper-line-soft: #e5dbc1;
   --gold: #b8954a;
   --gold-bright: #d1ac5e;
-  --gold-deep: #8a6e36;
+  /* Text colours are set to clear WCGA AA (4.5:1) against every ground they are
+     actually painted on — the three papers (#f5efe2, #fbf7ea, #ece4cf) for these,
+     the inks for the scoped overrides further down. Measured, not estimated:
+     --gold-deep was 3.80:1 on paper, --paper-text-faint 2.55:1, and the faint
+     token carries 11px running text (chunk keys, hints, empty states). The
+     hairlines and washes are unaffected: they are rgba() literals, not tokens,
+     and decoration has no contrast floor. */
+  --gold-deep: #7b6230;
   --rust: #a04a2a;
   --moss: #5a6a3f;
   --paper-text: #1f1c17;
   --ink-text: #f0e8d4;
   --ink-text-mute: #a89c80;
   --paper-text-mute: #6b6253;
-  --paper-text-faint: #9a8e75;
-  --green: #5a7a3f;
+  --paper-text-faint: #6d6553;
+  --green: #516e39;
   --red: #a04a2a;
-  --blue: #4a6a8a;
+  --blue: #496989;
+
+  /* ---- Tracking scale ----
+     Wide letter-spacing is a Latin small-caps device: it is what gives the
+     catalog labels their archival voice. Applied to Chinese, Japanese or Korean
+     it is simply wrong — CJK glyphs are full-width with no word spaces, so the
+     same value blows 「原文证据」 apart into 「原 文 证 据」. These are tokens so
+     the CJK locales can dial them down in one place (below) instead of in the
+     sixty-odd rules that set tracking. */
+  --track-m: 0.12em;   /* small labels, nav, meta */
+  --track-l: 0.18em;   /* catalog labels, tabs */
+  --track-x: 0.26em;   /* display eyebrows, section marks */
+
+  /* ---- Type floor ----
+     11px is the hard minimum for anything a reader has to actually read;
+     see PRODUCT.md. --fs-micro is the old 9–10px label tier, raised. */
+  --fs-micro: 11px;
+  --fs-label: 11.5px;
+
+  /* ---- Graph ----
+     `ground` is the canvas paper; `casing` is that same paper painted under
+     nodes and edge strokes so crossings read as over/under instead of mush.
+     `node-ink` is a real ink outline: figure/ground on paper comes from the
+     line, not from a tinted fill. */
+  --gv-ground: #f0e8d5;
+  --gv-casing: #f0e8d5;
+  --gv-node-fill: #fdfaf2;
+  --gv-node-ink: #453a2c;
 }
+
+/* CJK: keep a hint of air for grouping, nowhere near Latin caps tracking. */
+html:lang(zh-CN), html:lang(zh-TW), html:lang(ja), html:lang(ko) {
+  --track-m: 0.02em;
+  --track-l: 0.05em;
+  --track-x: 0.08em;
+}
+
+/* Strings that are always Latin (VOL. I, ch01_p000, ATOM …) keep the wide
+   catalog tracking even inside a CJK locale. */
+.lat { letter-spacing: 0.18em; }
+.lat-x { letter-spacing: 0.26em; }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
@@ -48,6 +94,18 @@ a { color: inherit; }
   transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .app.sb-collapsed { --sb-w: 64px; }
+
+/* Gold and green need opposite corrections on the two grounds — darker on paper,
+   lighter on ink — so one value cannot serve both. The dark containers remap the
+   two tokens for everything inside them, which is cheaper and harder to get
+   wrong than correcting each rule that happens to sit on ink.
+   On #1a1714 / #1a1a1a / #232220: 4.54:1 and 4.53:1. */
+.sb,
+.pv-logs,
+.ink {
+  --gold-deep: #a68441;
+  --green: #6d944c;
+}
 
 /* ---- sidebar (dark ink, expandable) ---- */
 .sb {
@@ -117,8 +175,8 @@ a { color: inherit; }
 .sb-section {
   padding: 22px 24px 10px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.26em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-x);
   text-transform: uppercase;
   color: var(--gold-deep);
   display: flex; align-items: center; gap: 10px;
@@ -190,7 +248,7 @@ a { color: inherit; }
 }
 .sb-item-count {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: var(--fs-label);
   color: var(--ink-text-mute);
   opacity: 0.5;
   letter-spacing: 0.05em;
@@ -257,7 +315,7 @@ a { color: inherit; }
   margin-top: auto;
   padding: 18px 24px 22px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: var(--fs-label);
   color: var(--ink-text-mute);
   position: relative;
 }
@@ -284,8 +342,8 @@ a { color: inherit; }
 }
 .sb-budget-row {
   display: flex; justify-content: space-between;
-  font-size: 9.5px;
-  letter-spacing: 0.14em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-m);
   text-transform: uppercase;
 }
 .sb-user {
@@ -449,9 +507,9 @@ a { color: inherit; }
 }
 .sb-acct-row .sb-user-plan {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
+  font-size: var(--fs-micro);
   color: var(--ink-text-mute);
-  letter-spacing: 0.16em;
+  letter-spacing: var(--track-l);
   margin-top: 2px;
   text-transform: uppercase;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -525,7 +583,7 @@ a { color: inherit; }
 }
 .sb-acct-caret {
   color: var(--ink-text-mute);
-  font-size: 10px;
+  font-size: var(--fs-label);
   opacity: 0.55;
   transition: opacity 0.18s;
 }
@@ -562,10 +620,10 @@ a { color: inherit; }
   margin-bottom: 6px;
   border-bottom: 1px solid rgba(184,149,74,0.14);
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: var(--fs-label);
   color: var(--ink-text-mute);
 }
-.sb-acct-budget .sb-budget-row { letter-spacing: 0.08em; text-transform: uppercase; font-size: 9.5px; }
+.sb-acct-budget .sb-budget-row { letter-spacing: 0.08em; text-transform: uppercase; font-size: var(--fs-micro); }
 .sb-acct-budget .sb-budget-bar { margin-top: 8px; }
 
 .sb-acct-item {
@@ -615,8 +673,8 @@ a { color: inherit; }
 .sb-section {
   padding: 22px 26px 10px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.26em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-x);
   text-transform: uppercase;
   color: var(--gold-deep);
   display: flex; align-items: center; gap: 10px;
@@ -672,7 +730,7 @@ a { color: inherit; }
 }
 .sb-item-count {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: var(--fs-label);
   color: var(--ink-text-mute);
   opacity: 0.5;
   letter-spacing: 0.05em;
@@ -692,7 +750,7 @@ a { color: inherit; }
 .sb-foot {
   padding: 22px 26px 24px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: var(--fs-label);
   color: var(--ink-text-mute);
   position: relative;
 }
@@ -719,8 +777,8 @@ a { color: inherit; }
 }
 .sb-budget-row {
   display: flex; justify-content: space-between;
-  font-size: 9.5px;
-  letter-spacing: 0.14em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-m);
   text-transform: uppercase;
 }
 .sb-user {
@@ -834,6 +892,8 @@ a { color: inherit; }
   background: transparent;
   border-radius: 8px;
   transition: all 0.15s;
+  /* Also used on <a> for view-level actions, which would otherwise underline. */
+  text-decoration: none;
 }
 .bar-btn:hover {
   color: var(--paper-text);
@@ -862,8 +922,8 @@ a { color: inherit; }
 /* =================== COMMON CHIPS / TYPOGRAPHY =================== */
 .eyebrow-s {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.22em;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-l);
   text-transform: uppercase;
   color: var(--gold-deep);
 }
@@ -886,8 +946,8 @@ a { color: inherit; }
   display: inline-flex; align-items: center; gap: 6px;
   padding: 3px 8px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.14em;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-m);
   text-transform: uppercase;
   color: var(--gold-deep);
   border: 1px solid var(--paper-line);
@@ -909,7 +969,9 @@ a { color: inherit; }
   font-size: 13.5px;
   line-height: 1.55;
   color: var(--paper-text);
-  border-left: 2px solid var(--gold);
+  /* A hairline quotation rule, not a status stripe — the tinted ground and the
+     quote marks already carry the block. */
+  border-left: 1px solid rgba(184,149,74,0.5);
   margin: 6px 0;
 }
 .evid::before { content: "“"; font-size: 18px; color: var(--gold); margin-right: 2px; }
@@ -918,7 +980,7 @@ a { color: inherit; }
   margin-top: 6px;
   display: flex; gap: 10px; align-items: center;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: var(--fs-label);
   color: var(--paper-text-mute);
   letter-spacing: 0.06em;
 }
@@ -959,8 +1021,8 @@ a { color: inherit; }
 .lib-stat-num small { font-size: 14px; color: var(--paper-text-mute); margin-left: 3px; }
 .lib-stat-label {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.22em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-l);
   text-transform: uppercase;
   color: var(--paper-text-mute);
   margin-top: 6px;
@@ -998,8 +1060,8 @@ a { color: inherit; }
 .lib-filter span {
   font-family: 'JetBrains Mono', monospace;
   font-style: normal;
-  font-size: 10px;
-  letter-spacing: 0.1em;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-m);
   opacity: 0.55;
 }
 
@@ -1132,8 +1194,8 @@ a { color: inherit; }
 }
 .lib-spine-year {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 8.5px;
-  letter-spacing: 0.18em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-l);
   opacity: 0.65;
   flex-shrink: 0;
   text-shadow: 0 1px 0 rgba(0,0,0,0.4);
@@ -1157,6 +1219,115 @@ a { color: inherit; }
   .lib-spine { height: 200px; margin-bottom: 16px; }
   .lib-spine-title { font-size: 11.5px; max-height: 138px; }
 }
+
+/* ============== 3D bookshelf (WebGL) ============== */
+.lib-shelf3d {
+  position: relative;
+  width: 100%;
+  height: min(72vh, 660px);
+  border-radius: 4px;
+  overflow: hidden;
+  background: radial-gradient(120% 90% at 50% 28%, #2a2018 0%, #161210 62%, #100d0b 100%);
+  box-shadow: inset 0 0 90px -22px rgba(0,0,0,0.82), inset 0 1px 0 rgba(255,240,200,0.05);
+  border: 1px solid var(--ink-line);
+  user-select: none;
+}
+.lib-shelf3d-canvas { position: absolute; inset: 0; }
+.lib-shelf3d-canvas canvas { display: block; }
+/* A single line in the lower left, in the reading face rather than tracked mono
+   caps — an aside, not a control-panel legend. It fades itself out. */
+@keyframes lg-hint-life {
+  0%   { opacity: 0; transform: translateY(4px); }
+  8%   { opacity: 1; transform: translateY(0); }
+  84%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+.lib-shelf3d-hint {
+  position: absolute;
+  left: 22px; bottom: 18px;
+  max-width: 60%;
+  font-family: 'Spectral', serif;
+  font-style: italic;
+  font-size: 14px;
+  color: rgba(240,232,212,0.62);
+  pointer-events: none;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.7);
+  animation: lg-hint-life 6s ease-out forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lib-shelf3d-hint { animation: none; opacity: 0.62; }
+}
+
+.shelf3d-panel {
+  position: absolute;
+  top: 50%; right: 26px; transform: translateY(-50%);
+  width: min(320px, 42%);
+  background: rgba(245,239,226,0.97);
+  color: var(--paper-text);
+  border: 1px solid var(--paper-line);
+  border-radius: 4px;
+  padding: 26px 24px 22px;
+  box-shadow: 0 24px 60px -18px rgba(0,0,0,0.7);
+  backdrop-filter: blur(6px);
+  animation: shelf3d-slide 0.32s cubic-bezier(0.2,0.7,0.2,1);
+}
+@keyframes shelf3d-slide {
+  from { opacity: 0; transform: translateY(-50%) translateX(20px); }
+  to   { opacity: 1; transform: translateY(-50%) translateX(0); }
+}
+.shelf3d-panel-close {
+  position: absolute; top: 8px; right: 12px;
+  background: none; border: none; cursor: pointer;
+  font-size: 22px; line-height: 1; color: var(--paper-text-mute);
+}
+.shelf3d-panel-close:hover { color: var(--paper-text); }
+.shelf3d-panel-type {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--fs-micro); letter-spacing: var(--track-l); text-transform: uppercase;
+  color: var(--gold-deep); margin-bottom: 10px;
+}
+.shelf3d-panel-title {
+  font-family: 'Spectral', serif; font-weight: 600; font-size: 24px;
+  line-height: 1.18; color: var(--ink);
+}
+.shelf3d-panel-meta {
+  font-family: 'Spectral', serif; font-style: italic;
+  color: var(--paper-text-mute); font-size: 14px; margin-top: 6px;
+}
+.shelf3d-panel-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 10px; margin: 20px 0 22px;
+  border-top: 1px solid var(--paper-line);
+  border-bottom: 1px solid var(--paper-line);
+  padding: 16px 0;
+}
+.shelf3d-panel-stats > div { text-align: center; }
+.shelf3d-panel-stats b {
+  display: block; font-family: 'Spectral', serif; font-size: 20px; color: var(--ink);
+}
+.shelf3d-panel-stats span {
+  font-family: 'JetBrains Mono', monospace; font-size: var(--fs-micro);
+  letter-spacing: var(--track-m); text-transform: uppercase; color: var(--paper-text-faint);
+}
+.shelf3d-panel-actions { display: flex; gap: 10px; }
+.shelf3d-open, .shelf3d-back {
+  flex: 1; padding: 11px 12px; border-radius: 3px; cursor: pointer;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  letter-spacing: var(--track-m); text-transform: uppercase; transition: all 0.18s;
+}
+.shelf3d-open {
+  background: var(--ink); color: var(--ink-text); border: 1px solid var(--ink);
+}
+.shelf3d-open:hover { background: var(--gold-deep); border-color: var(--gold-deep); }
+.shelf3d-back {
+  background: transparent; color: var(--paper-text-mute); border: 1px solid var(--paper-line);
+}
+.shelf3d-back:hover { color: var(--paper-text); border-color: var(--paper-text-mute); }
+
+@media (max-width: 720px) {
+  .lib-shelf3d { height: min(64vh, 520px); }
+  .shelf3d-panel { right: 12px; left: 12px; width: auto; }
+}
 .lib-card {
   background: transparent;
   padding: 0;
@@ -1175,7 +1346,7 @@ a { color: inherit; }
   background: rgba(26,23,20,0.85);
   color: var(--gold);
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px; letter-spacing: 0.18em;
+  font-size: var(--fs-micro); letter-spacing: var(--track-l);
   padding: 4px 10px;
   text-transform: uppercase;
 }
@@ -1196,7 +1367,10 @@ a { color: inherit; }
 .lib-card.import .plus {
   font-family: 'Spectral', serif;
   font-size: 48px;
-  color: var(--gold);
+  /* --gold is a line-and-wash colour: 2.64:1, below the 3:1 floor for large
+     text. This glyph is the affordance for "add a book", not decoration, so it
+     takes the darkest gold that still reads as gold rather than as brown. */
+  color: #9c7f3f;
   font-weight: 300;
   line-height: 1;
 }
@@ -1209,9 +1383,9 @@ a { color: inherit; }
 }
 .lib-card.import .formats {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: var(--fs-label);
   color: var(--paper-text-faint);
-  letter-spacing: 0.18em;
+  letter-spacing: var(--track-l);
   margin-top: 10px;
 }
 
@@ -1261,13 +1435,18 @@ a { color: inherit; }
   opacity: 0.65;
 }
 
+/* Three equal columns rather than a flex row: the figures differ in width, so
+   flex put each card's labels at its own x and the grid of cards read as
+   parallax. Aligned columns let the eye compare across cards. */
 .lib-card-stats {
-  display: flex;
-  gap: 18px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
   padding: 12px 4px 0;
   margin-top: 12px;
   position: relative;
 }
+.lib-card-stat-num.none { color: var(--paper-text-faint); cursor: help; }
 .lib-card-stats::before {
   content: "";
   position: absolute;
@@ -1289,8 +1468,8 @@ a { color: inherit; }
 .lib-card-stat-num small { font-size: 11px; color: var(--paper-text-mute); margin-left: 2px; }
 .lib-card-stat-lbl {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.18em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-l);
   text-transform: uppercase;
   color: var(--paper-text-mute);
   margin-top: 4px;
@@ -1299,7 +1478,7 @@ a { color: inherit; }
   padding: 12px 4px 0;
   display: flex; justify-content: space-between; align-items: center;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: var(--fs-label);
   color: var(--paper-text-mute);
   letter-spacing: 0.04em;
 }
@@ -1335,7 +1514,13 @@ a { color: inherit; }
 /* =================== GRAPH VIEW =================== */
 .gv {
   display: grid;
-  grid-template-columns: var(--gv-left, 260px) minmax(400px, 1fr) var(--gv-right, 380px);
+  /* The graph is the artefact this screen exists to show, so it gets the room.
+     Fixed 260px + 380px flanks left it as the NARROWEST column of the three on
+     a 1280 viewport; the side rails now scale and cede ~115px back to it. */
+  grid-template-columns:
+    var(--gv-left, clamp(212px, 17vw, 248px))
+    minmax(420px, 1fr)
+    var(--gv-right, clamp(296px, 24vw, 356px));
   height: 100%;
   position: relative;
   /* During an active drag, JS sets --gv-transition: none so the columns
@@ -1549,7 +1734,7 @@ a { color: inherit; }
   font-family: 'Spectral', serif;
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.2em;
+  letter-spacing: var(--track-l);
   color: var(--paper-text-mute);
   text-transform: uppercase;
   margin-bottom: 3px;
@@ -1590,12 +1775,12 @@ a { color: inherit; }
 }
 .gv-vol-range {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.12em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-m);
   color: var(--paper-text-faint);
 }
 .gv-vol-chevron {
-  font-size: 10px;
+  font-size: var(--fs-label);
   color: var(--paper-text-faint);
   transition: color 0.15s;
 }
@@ -1608,7 +1793,7 @@ a { color: inherit; }
   color: var(--paper-text-mute);
   padding: 8px 6px 10px;
   letter-spacing: 0.01em;
-  border-left: 2px solid rgba(184,149,74,0.2);
+  border-left: 1px solid rgba(184,149,74,0.32);
   margin: 4px 0 4px 2px;
 }
 .gv-ch-list {
@@ -1632,8 +1817,8 @@ a { color: inherit; }
 .gv-ch-row.active { background: rgba(184,149,74,0.12); }
 .gv-ch-num {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px;
-  letter-spacing: 0.1em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-m);
   color: var(--paper-text-faint);
   flex-shrink: 0;
   width: 28px;
@@ -1869,14 +2054,18 @@ a { color: inherit; }
 
 .gv-section-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* The graph's ground is deliberately a step deeper than the near-white the
+   nodes are filled with. It used to be #fbf7ea — the exact same value as the
+   node fill — so every node was invisible apart from a 1.2px hairline, on the
+   one screen the whole product exists to show. */
 .gv-canvas {
   height: 100%;
 
   position: relative;
   background:
-    radial-gradient(circle at 20% 30%, rgba(184,149,74,0.04), transparent 50%),
-    radial-gradient(circle at 80% 70%, rgba(184,149,74,0.03), transparent 50%),
-    #fbf7ea;
+    radial-gradient(circle at 22% 28%, rgba(255,252,243,0.30), transparent 55%),
+    radial-gradient(circle at 82% 76%, rgba(138,110,54,0.06), transparent 55%),
+    var(--gv-ground);
   overflow: hidden;
 }
 
@@ -1919,8 +2108,8 @@ a { color: inherit; }
 .gv-canvas-status {
   position: absolute; bottom: 16px; left: 16px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.12em;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-m);
   color: var(--paper-text-mute);
   text-transform: uppercase;
   display: flex; gap: 14px;
@@ -1945,8 +2134,8 @@ a { color: inherit; }
 }
 .gv-section-label {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px;
-  letter-spacing: 0.22em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-l);
   text-transform: uppercase;
   color: var(--gold-deep);
   margin-bottom: 12px;
@@ -1969,7 +2158,7 @@ a { color: inherit; }
 .gv-filter-row .lbl { flex: 1; padding-left: 4px; }
 .gv-filter-row .count {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: var(--fs-label);
   color: var(--paper-text-mute);
 }
 
@@ -1979,7 +2168,7 @@ a { color: inherit; }
 .gv-slider-head {
   display: flex; justify-content: space-between;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: var(--fs-label);
   color: var(--paper-text-mute);
   margin-bottom: 6px;
 }
@@ -2011,7 +2200,7 @@ a { color: inherit; }
   aspect-ratio: 1;
   border: 1px solid var(--paper-line);
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
+  font-size: var(--fs-micro);
   display: grid; place-items: center;
   cursor: pointer;
   color: var(--paper-text-mute);
@@ -2043,8 +2232,8 @@ a { color: inherit; }
 .gv-panel-type {
   display: inline-flex; align-items: center;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.2em;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-l);
   background: var(--gold);
   color: var(--ink);
   padding: 4px 9px;
@@ -2068,16 +2257,16 @@ a { color: inherit; }
 }
 .gv-panel-aliases {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10.5px;
+  font-size: var(--fs-label);
   color: var(--paper-text-mute);
   line-height: 1.7;
 }
-.gv-panel-aliases span { color: var(--gold-deep); margin-right: 6px; letter-spacing: 0.16em; text-transform: uppercase; font-size: 9.5px; }
+.gv-panel-aliases span { color: var(--gold-deep); margin-right: 6px; letter-spacing: var(--track-l); text-transform: uppercase; font-size: var(--fs-micro); }
 .gv-panel-stats {
   margin-top: 14px;
   display: flex; gap: 18px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: var(--fs-label);
   color: var(--paper-text-mute);
   letter-spacing: 0.06em;
 }
@@ -2092,8 +2281,8 @@ a { color: inherit; }
 .gv-panel-tab {
   padding: 12px 14px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10.5px;
-  letter-spacing: 0.14em;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-m);
   text-transform: uppercase;
   color: var(--paper-text-mute);
   cursor: pointer;
@@ -2106,7 +2295,7 @@ a { color: inherit; }
   color: var(--paper-text-mute);
   padding: 1px 5px;
   margin-left: 6px;
-  font-size: 9px;
+  font-size: var(--fs-micro);
 }
 .gv-panel-tab.active .ct { background: var(--gold); color: var(--ink); }
 
@@ -2121,39 +2310,72 @@ a { color: inherit; }
   border-bottom: 1px solid var(--paper-line-soft);
 }
 
+/* A claim is a quotable unit, so it reads as a panel with a hairline on all
+   four sides and a faint ground — not as text with a coloured bar bolted to
+   its left edge. */
 .claim {
-  margin-bottom: 18px;
-  padding-left: 14px;
-  border-left: 2px solid var(--paper-line);
-  transition: border 0.15s;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--paper-line-soft);
+  background: rgba(184,149,74,0.035);
+  transition: border-color 0.15s, background-color 0.15s;
   cursor: pointer;
 }
-.claim:hover { border-left-color: var(--gold); }
-.claim-rel {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--gold-deep);
-  margin-bottom: 6px;
+.claim:hover {
+  border-color: var(--gold);
+  background: rgba(184,149,74,0.075);
 }
-.claim-rel .src, .claim-rel .dst { color: var(--paper-text); letter-spacing: 0.04em; text-transform: none; font-family: 'Spectral', serif; font-style: italic; font-size: 12px; }
-.claim-rel .arrow { color: var(--paper-text-mute); margin: 0 4px; }
+/* Selection thickens no edge and shifts no text — a full hairline plus ground,
+   as everywhere else in this interface. */
+.claim.selected {
+  border-color: var(--gold);
+  background: rgba(184,149,74,0.10);
+  box-shadow: inset 0 0 0 1px rgba(184,149,74,0.32);
+}
+.claim-rel {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 5px;
+  font-family: 'Spectral', serif;
+  font-size: 13px;
+  color: var(--gold-deep);
+  margin-bottom: 8px;
+}
+.claim-rel .src, .claim-rel .dst { color: var(--paper-text); font-style: italic; font-size: 13px; cursor: pointer; }
+.claim-rel .src:hover, .claim-rel .dst:hover { color: var(--gold-deep); }
+.claim-rel .pred { color: var(--gold-deep); }
+.claim-rel .arrow { color: var(--paper-text-mute); }
+.claim-rel .cat {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-m);
+  text-transform: uppercase;
+  color: var(--paper-text-faint);
+  border: 1px solid rgba(184,149,74,0.2);
+  border-radius: 2px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+/* Still used for the GLUCOSE inferences, whose text is content in its own right
+   rather than a restatement of the relation line above it. */
 .claim-text {
   font-family: 'Spectral', serif;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.55;
   color: var(--paper-text);
-  margin-bottom: 7px;
+  margin-bottom: 8px;
 }
 
 /* =================== READER VIEW =================== */
 .rd { display: grid; grid-template-columns: 240px 1fr 320px; height: 100%; }
-@media (max-width: 1280px) { .rd { grid-template-columns: 200px 1fr 280px; } }
+/* A 七言 couplet hemistich needs ~91px at 13px; 200px left the title column at
+   74px and broke every chapter of 西游记 onto four lines. */
+@media (max-width: 1280px) { .rd { grid-template-columns: 216px 1fr 280px; } }
 @media (max-width: 1080px) { .rd { grid-template-columns: 1fr 280px; } .rd-toc { display: none; } }
 @media (max-width: 800px)  { .rd { grid-template-columns: 1fr; } .rd-panel { display: none; } }
 .rd-toc {
-  padding: 28px 22px;
+  padding: 28px 16px 28px 20px;
   background: var(--paper);
   overflow: auto;
   position: relative;
@@ -2171,8 +2393,8 @@ a { color: inherit; }
 }
 .rd-toc h3 {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.26em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-x);
   text-transform: uppercase;
   color: var(--gold-deep);
   margin-bottom: 22px;
@@ -2181,9 +2403,16 @@ a { color: inherit; }
 .rd-toc h3::before {
   content: ""; width: 14px; height: 1px; background: var(--gold-deep); opacity: 0.5;
 }
+/* A chapter entry is a three-column TOC line: ordinal, title, density. A flex
+   row let the ordinal and the count float against the middle of a title that
+   wrapped to four lines; the grid pins all three to the first line's box, the
+   way a printed table of contents sets them. */
 .rd-ch {
-  padding: 7px 0 7px 18px;
-  display: flex; gap: 10px;
+  padding: 7px 0 8px 14px;
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  align-items: start;
+  column-gap: 8px;
   cursor: pointer;
   font-size: 13px;
   position: relative;
@@ -2193,9 +2422,8 @@ a { color: inherit; }
 .rd-ch::before {
   content: "";
   position: absolute;
-  left: 0; top: 50%;
+  left: 0; top: 14px;
   width: 4px; height: 4px;
-  transform: translateY(-50%);
   background: transparent;
   border-radius: 50%;
   transition: background 0.2s;
@@ -2203,10 +2431,13 @@ a { color: inherit; }
 .rd-ch:hover::before { background: rgba(184,149,74,0.4); }
 .rd-ch.active::before { background: var(--gold); }
 .rd-ch.active { color: var(--gold-deep); }
-.rd-ch-num { font-family: 'JetBrains Mono', monospace; color: var(--paper-text-mute); width: 24px; font-size: 10.5px; letter-spacing: 0.04em; }
+.rd-ch-num { font-family: 'JetBrains Mono', monospace; color: var(--paper-text-mute); font-size: var(--fs-label); letter-spacing: 0.04em; line-height: 20px; }
 .rd-ch.active .rd-ch-num { color: var(--gold-deep); }
-.rd-ch-name { font-family: 'Spectral', serif; font-style: italic; flex: 1; }
-.rd-ch-ent { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: var(--paper-text-mute); opacity: 0.6; }
+.rd-ch-name { font-family: 'Spectral', serif; font-style: italic; min-width: 0; }
+/* Couplet hemistichs are set as their own lines — the break a typesetter would
+   make, instead of CSS breaking 心性修持大道生 between 心 and 性. */
+.rd-ch-line { display: block; line-height: 20px; }
+.rd-ch-ent { font-family: 'JetBrains Mono', monospace; font-size: var(--fs-micro); color: var(--paper-text-mute); opacity: 0.6; line-height: 20px; font-variant-numeric: tabular-nums; }
 
 .rd-text {
   overflow: auto;
@@ -2214,7 +2445,7 @@ a { color: inherit; }
   background: #fbf7ea;
 }
 @media (max-width: 1080px) { .rd-text { padding: 40px 48px 80px; } }
-@media (max-width: 720px) { .rd-text { padding: 28px 22px 60px; } .rd-text-head h1 { font-size: 28px; } .rd-prose { font-size: 16px; } .rd-prose .chunk-block .atom-id { display: none; } .rd-prose .chunk-block { padding-left: 0; } }
+@media (max-width: 720px) { .rd-text { padding: 28px 22px 60px; } .rd-text-head h1 { font-size: 28px; } .rd-prose { font-size: 16px; } .rd-prose .chunk-block .atom-id { display: none; } .rd-prose .chunk-block::before { display: none; } }
 .rd-text-head { margin-bottom: 40px; max-width: 640px; }
 .rd-text-head h1 {
   font-family: 'Spectral', serif;
@@ -2224,10 +2455,14 @@ a { color: inherit; }
   margin-bottom: 6px;
 }
 .rd-text-head h1 em { font-style: italic; }
+/* Same reason as the TOC: give each hemistich its own line rather than letting
+   the 36px setting break a compound mid-word. */
+.rd-title-line { display: block; }
+.rd-title-line + .rd-title-line { margin-top: 2px; }
 .rd-text-head .ch-meta {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  letter-spacing: 0.18em;
+  letter-spacing: var(--track-l);
   text-transform: uppercase;
   color: var(--gold-deep);
   margin-bottom: 8px;
@@ -2246,18 +2481,39 @@ a { color: inherit; }
   line-height: 1.75;
   color: var(--paper-text);
 }
-.rd-prose .chunk-block { position: relative; margin-bottom: 22px; padding-left: 24px; border-left: 1px dashed transparent; transition: border-color 0.2s; }
-.rd-prose .chunk-block:hover { border-left-color: var(--paper-line); }
+/* A passage reads flush with the chapter title above it. Its provenance — the
+   extent of the chunk, its citation key, its token and claim counts — surfaces
+   on hover, in the outer margin, instead of printing an internal id and three
+   raw counts beside every paragraph of the novel. */
+.rd-prose .chunk-block { position: relative; margin-bottom: 26px; }
+.rd-prose .chunk-block::before {
+  content: "";
+  position: absolute;
+  left: -20px; top: 3px; bottom: 3px;
+  border-left: 1px dashed var(--paper-line);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.rd-prose .chunk-block:hover::before { opacity: 1; }
 .rd-prose .chunk-block .atom-id {
   position: absolute;
-  left: -64px; top: 4px;
+  right: 0; top: -16px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px;
-  letter-spacing: 0.14em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-m);
   color: var(--paper-text-faint);
-  width: 56px; text-align: right;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.2s;
 }
-.rd-prose .chunk-block .atom-id::before { content: "▾ "; color: var(--gold-deep); }
+.rd-prose .chunk-block .atom-id::before { content: "¶ "; color: var(--gold-deep); }
+.rd-prose .chunk-block:hover .atom-id,
+.rd-prose .chunk-block:hover .rd-chunk-meta { opacity: 1; }
+/* Without a pointer there is no hover to reveal it, so keep it visible. */
+@media (hover: none) {
+  .rd-prose .chunk-block .atom-id,
+  .rd-prose .chunk-block .rd-chunk-meta { opacity: 1; }
+}
 .rd-prose p { margin-bottom: 14px; }
 
 .rd-prose .ent {
@@ -2301,8 +2557,8 @@ a { color: inherit; }
 }
 .rd-panel h4 {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.26em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-x);
   text-transform: uppercase;
   color: var(--gold-deep);
   margin-bottom: 16px;
@@ -2332,19 +2588,67 @@ a { color: inherit; }
   font-style: italic;
   font-size: 15px;
   color: var(--gold-deep);
-  margin-bottom: 10px;
+  margin-bottom: 3px;
   letter-spacing: 0.005em;
 }
+/* The chunk key, subordinate to the human label above it — present because a
+   reader auditing a claim needs to quote it, not because it is a heading. */
+.rd-chunk-card-key {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--fs-micro);
+  letter-spacing: 0.06em;
+  color: var(--paper-text-faint);
+  margin-bottom: 11px;
+  user-select: all;
+}
 .rd-chunk-stat-row {
-  display: flex; gap: 18px;
+  display: flex; gap: 13px;
   font-family: 'Spectral', serif;
   font-style: italic;
-  font-size: 13px;
+  font-size: 12.5px;
   color: var(--paper-text-mute);
   letter-spacing: 0.005em;
 }
 .rd-chunk-stat-row strong { color: var(--paper-text); font-weight: 500; font-style: normal; font-family: 'JetBrains Mono', monospace; font-size: 12px; margin-right: 3px; }
-.rd-chunk-entities { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 6px; }
+.rd-chunk-entities { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.rd-ent-more {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-m);
+  padding: 3px 9px;
+  color: var(--gold-deep);
+  background: transparent;
+  border: 1px dashed var(--paper-line);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.rd-ent-more:hover { border-color: var(--gold); color: var(--ink); }
+.rd-ent-more:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+/* An empty result states itself rather than leaving the heading over a void. */
+.rd-panel-empty {
+  margin-top: 12px;
+  font-family: 'Spectral', serif;
+  font-style: italic;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--paper-text-faint);
+  max-width: 26em;
+}
+.rd-panel-sel { margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--paper-line); }
+
+/* Per-passage provenance under the prose: token count, mentions, edges. */
+.rd-chunk-meta {
+  margin-top: 10px;
+  display: flex; flex-wrap: wrap; gap: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--fs-micro);
+  letter-spacing: 0.05em;
+  color: var(--paper-text-faint);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.rd-chunk-meta .gold { color: var(--gold-deep); }
 
 .rd-ent-mini {
   font-family: 'Spectral', serif;
@@ -2354,13 +2658,110 @@ a { color: inherit; }
   background: transparent;
   cursor: pointer;
   transition: all 0.15s;
-  border-left: 2px solid transparent;
+  /* inline-block, not inline-flex: text-overflow has no effect on a flex
+     container's anonymous item, so event entities — whose names are whole
+     clauses — ran off the edge of the rail instead of ellipsising. */
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+/* Entity type was carried by the colour of a left-edge stripe: a banned shape,
+   and hue-only encoding on a gold/rust/moss palette — exactly the range red-green
+   colour vision compresses. It is now a marker whose SHAPE differs per type, so
+   the glyph carries the meaning and the colour merely reinforces it. */
+.rd-ent-mini::before {
+  content: "";
+  display: inline-block;
+  width: 6px; height: 6px;
+  margin-right: 6px;
+  vertical-align: 0.08em;
+  background: currentColor;
 }
 .rd-ent-mini:hover { color: var(--gold-deep); }
-.rd-ent-mini.agent   { border-left-color: var(--gold); }
-.rd-ent-mini.object  { border-left-color: var(--gold-deep); }
-.rd-ent-mini.event   { border-left-color: var(--rust); }
-.rd-ent-mini.concept { border-left-color: var(--moss); }
+.rd-ent-mini.agent   { color: var(--gold-deep); }
+.rd-ent-mini.agent::before   { border-radius: 50%; }                    /* circle */
+.rd-ent-mini.object  { color: var(--paper-text-mute); }
+.rd-ent-mini.object::before  { border-radius: 1px; }                    /* square */
+.rd-ent-mini.event   { color: var(--rust); }
+.rd-ent-mini.event::before   { transform: translateY(-1px) rotate(45deg); } /* diamond */
+.rd-ent-mini.concept { color: var(--moss); }
+.rd-ent-mini.concept::before { clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); background: none; box-shadow: inset 0 0 0 3px currentColor; }
+
+/* Book picker in the pipeline bar: ellipsise long titles instead of slicing
+   them mid-word, and keep the pending match-rate legible rather than muted. */
+.bar-btn-book {
+  max-width: 22ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pv-summary-pending {
+  font-family: 'Spectral', serif;
+  font-style: italic;
+  font-size: 21px;
+  color: var(--ink-text-mute);
+}
+
+/* ---- Aliases as countable chips ----
+   Some entities carry 600+ aliases. Rendered inline they became a wall of
+   quoted strings that filled the detail pane and pushed the entity's own
+   content below the fold. */
+.ev-alias { margin-top: 16px; }
+.ev-alias-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-l);
+  text-transform: uppercase;
+  color: var(--gold-deep);
+  margin-right: 8px;
+}
+.ev-alias-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--fs-micro);
+  color: var(--paper-text-faint);
+}
+.ev-alias-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 9px;
+}
+.ev-alias-chips.open {
+  max-height: 168px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.ev-alias-chip {
+  font-family: 'Spectral', serif;
+  font-size: 12.5px;
+  line-height: 1.2;
+  padding: 4px 9px;
+  color: var(--paper-text-mute);
+  background: var(--paper-deep);
+  border: 1px solid var(--paper-line-soft);
+  border-radius: 2px;
+  white-space: nowrap;
+  max-width: 22ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ev-alias-more {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-m);
+  padding: 4px 10px;
+  color: var(--gold-deep);
+  background: transparent;
+  border: 1px dashed var(--paper-line);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.ev-alias-more:hover { border-color: var(--gold); color: var(--ink); }
+.ev-alias-more:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 
 /* =================== ENTITIES VIEW =================== */
 .ev { display: grid; grid-template-columns: 320px 1fr; height: 100%; }
@@ -2411,10 +2812,11 @@ a { color: inherit; }
 }
 .ev-tab {
   flex: 1;
-  padding: 10px 4px;
+  min-width: 0;
+  padding: 10px 2px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.16em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-m);
   text-transform: uppercase;
   color: var(--paper-text-mute);
   cursor: pointer;
@@ -2423,6 +2825,13 @@ a { color: inherit; }
   display: flex; flex-direction: column;
   gap: 4px;
   transition: color 0.2s;
+}
+/* Five labels share one narrow rail; a wrapped 「行动者」 knocks its count out
+   of line with the other four. Let the label shrink rather than wrap. */
+.ev-tab > div:first-child {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .ev-tab::after {
   content: "";
@@ -2539,8 +2948,8 @@ a { color: inherit; }
 .ev-detail-tab {
   padding: 14px 16px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.18em;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-l);
   text-transform: uppercase;
   color: var(--paper-text-mute);
   cursor: pointer;
@@ -2559,7 +2968,7 @@ a { color: inherit; }
 .ev-detail-tab:hover { color: var(--paper-text); }
 .ev-detail-tab.active { color: var(--gold-deep); }
 .ev-detail-tab.active::after { background: var(--gold); height: 2px; }
-.ev-detail-tab .ct { background: transparent; padding: 1px 4px; margin-left: 6px; font-size: 9.5px; color: var(--paper-text-mute); opacity: 0.7; }
+.ev-detail-tab .ct { background: transparent; padding: 1px 4px; margin-left: 6px; font-size: var(--fs-micro); color: var(--paper-text-mute); opacity: 0.7; }
 .ev-detail-tab.active .ct { color: var(--gold); opacity: 1; }
 
 .ev-detail-body { padding: 32px 48px 80px; max-width: 920px; }
@@ -2570,6 +2979,45 @@ a { color: inherit; }
   padding: 22px 0;
   margin-bottom: 0;
   position: relative;
+}
+/* One line stating the claim: the two entities, the extracted predicate between
+   them, and the category the pipeline filed it under. */
+.ev-claim-triple {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 11px;
+}
+.ev-claim-node {
+  font-family: 'Spectral', serif;
+  font-style: italic;
+  font-size: 15px;
+  color: var(--paper-text);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  border-bottom: 1px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.ev-claim-node:hover { color: var(--gold-deep); border-bottom-color: rgba(184,149,74,0.5); }
+.ev-claim-node:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.ev-claim-pred {
+  font-family: 'Spectral', serif;
+  font-size: 14px;
+  color: var(--gold-deep);
+}
+.ev-claim-cat {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-m);
+  text-transform: uppercase;
+  color: var(--paper-text-faint);
+  border: 1px solid rgba(184,149,74,0.2);
+  border-radius: 2px;
+  padding: 2px 7px;
+  white-space: nowrap;
 }
 .ev-claim-card::after {
   content: "";
@@ -2634,8 +3082,8 @@ a { color: inherit; }
 .pv-summary-cell:last-child { border-right: none; }
 .pv-summary-lbl {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.26em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-x);
   text-transform: uppercase;
   color: var(--gold-deep);
   margin-bottom: 14px;
@@ -2689,8 +3137,8 @@ a { color: inherit; }
 
 .pv-pass-status {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.16em;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-l);
   text-transform: uppercase;
 }
 .pv-pass-status.done { color: var(--green); }
@@ -2714,7 +3162,7 @@ a { color: inherit; }
 
 .pv-pass-stat { text-align: right; }
 .pv-pass-stat-val { font-family: 'Spectral', serif; font-size: 18px; color: var(--paper-text); }
-.pv-pass-stat-lbl { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.14em; color: var(--paper-text-mute); text-transform: uppercase; margin-top: 2px; }
+.pv-pass-stat-lbl { font-family: 'JetBrains Mono', monospace; font-size: var(--fs-micro); letter-spacing: var(--track-m); color: var(--paper-text-mute); text-transform: uppercase; margin-top: 2px; }
 
 .pv-bar {
   height: 6px;
@@ -2728,7 +3176,7 @@ a { color: inherit; }
 .pv-bar-legend {
   display: flex; gap: 14px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px;
+  font-size: var(--fs-micro);
   color: var(--paper-text-mute);
   letter-spacing: 0.04em;
 }
@@ -2751,7 +3199,7 @@ a { color: inherit; }
 }
 .pv-log-row { display: flex; gap: 10px; padding: 1px 0; }
 .pv-log-t { color: var(--ink-text-mute); width: 64px; flex-shrink: 0; }
-.pv-log-lv { width: 50px; flex-shrink: 0; font-size: 9.5px; letter-spacing: 0.12em; padding-top: 1px; }
+.pv-log-lv { width: 50px; flex-shrink: 0; font-size: var(--fs-micro); letter-spacing: var(--track-m); padding-top: 1px; }
 .pv-log-lv.info { color: var(--ink-text-mute); }
 .pv-log-lv.warn { color: var(--gold-bright); }
 .pv-log-lv.error { color: var(--red); }
@@ -2760,8 +3208,8 @@ a { color: inherit; }
 .pv-cost { background: #fbf7ea; border: 1px solid var(--paper-line); padding: 22px; }
 .pv-cost h3 {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.22em;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-l);
   text-transform: uppercase;
   color: var(--gold-deep);
   margin-bottom: 16px;
@@ -2793,8 +3241,8 @@ a { color: inherit; }
 .tl-title { max-width: 540px; }
 .tl-eyebrow {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.26em;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-x);
   text-transform: uppercase;
   color: var(--gold-deep);
   margin-bottom: 10px;
@@ -2844,7 +3292,7 @@ a { color: inherit; }
 .tl-phase-chip > span:last-child {
   font-family: 'JetBrains Mono', monospace;
   font-style: normal;
-  font-size: 10px;
+  font-size: var(--fs-label);
   opacity: 0.55;
   margin-left: 2px;
 }
@@ -2870,7 +3318,7 @@ a { color: inherit; }
 .tl-zoom button:hover { background: rgba(184,149,74,0.1); color: var(--gold-deep); }
 .tl-zoom > span {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10.5px;
+  font-size: var(--fs-label);
   letter-spacing: 0.05em;
   color: var(--paper-text-mute);
   min-width: 36px; text-align: center;
@@ -2956,7 +3404,7 @@ a { color: inherit; }
   top: 14px;
   left: 50%; transform: translateX(-50%);
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px;
+  font-size: var(--fs-micro);
   letter-spacing: 0.06em;
   color: rgba(138,110,54,0.65);
   white-space: nowrap;
@@ -3019,8 +3467,8 @@ a { color: inherit; }
 .tl-event-chip {
   display: inline-block;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.18em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-l);
   text-transform: uppercase;
   color: #fbf7ea;
   padding: 2px 7px;
@@ -3057,7 +3505,7 @@ a { color: inherit; }
 }
 .tl-event-pp-more {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: var(--fs-label);
   color: var(--paper-text-faint);
   padding: 2px 6px;
   letter-spacing: 0.04em;
@@ -3080,8 +3528,8 @@ a { color: inherit; }
 .tl-detail-eyebrow {
   display: flex; align-items: center; gap: 8px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.18em;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-l);
   text-transform: uppercase;
   color: var(--paper-text-mute);
   margin-bottom: 14px;
@@ -3125,8 +3573,8 @@ a { color: inherit; }
 }
 .tl-detail-section h4 {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.26em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-x);
   text-transform: uppercase;
   color: var(--gold-deep);
   margin-bottom: 14px;
@@ -3171,27 +3619,31 @@ a { color: inherit; }
   cursor: pointer;
   transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+/* Evidence is the product, so the peek shows three whole lines rather than
+   guillotining the second one at 58px. The taper is a mask, not a gradient
+   painted in --paper: the quote sits on a tinted ground, so the old overlay
+   left a visible seam that read as broken rather than as "more below". */
 .evid-peek:not(.open) {
-  max-height: 58px;
+  max-height: 78px;
   overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, #000 64%, transparent 100%);
+          mask-image: linear-gradient(to bottom, #000 64%, transparent 100%);
 }
 .evid-peek-fade {
   position: absolute;
   bottom: 0; left: 0; right: 0;
-  height: 28px;
-  background: linear-gradient(to bottom, transparent, var(--paper) 95%);
+  height: 24px;
   pointer-events: none;
   display: flex;
   justify-content: flex-end;
   align-items: flex-end;
-  padding: 0 8px 2px 0;
+  padding: 0 6px 1px 0;
 }
 .evid-peek-fade::after {
   content: "▾";
   color: var(--gold-deep);
   font-size: 12px;
-  background: var(--paper);
-  padding: 0 4px;
+  line-height: 1;
 }
 .evid-peek.open .evid-peek-fade { display: none; }
 .evid-peek.open::after {
@@ -3218,8 +3670,8 @@ a { color: inherit; }
   border: none;
   cursor: pointer;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.26em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-x);
   text-transform: uppercase;
   color: var(--gold-deep);
   text-align: left;
@@ -3229,7 +3681,7 @@ a { color: inherit; }
 .tl-evidence-toggle .caret {
   display: inline-block;
   width: 12px;
-  font-size: 10px;
+  font-size: var(--fs-label);
   transition: transform 0.2s;
   color: var(--gold);
 }
@@ -3264,6 +3716,75 @@ a { color: inherit; }
 .av { display: grid; grid-template-columns: 260px 1fr; height: 100%; }
 @media (max-width: 1080px) { .av { grid-template-columns: 220px 1fr; } }
 @media (max-width: 800px)  { .av { grid-template-columns: 1fr; } .av-history { display: none; } }
+/* With nothing in the history there is no second column to justify: the
+   composer becomes the whole screen. */
+.av-solo { grid-template-columns: 1fr; }
+
+/* ---- Ask: first-run state ---- */
+.av-empty {
+  max-width: 62ch;
+  margin: 0 auto;
+  padding: clamp(48px, 11vh, 104px) 32px 0;
+}
+.av-empty-title {
+  font-family: 'Spectral', serif;
+  font-weight: 400;
+  font-style: italic;
+  font-size: clamp(28px, 3.4vw, 40px);
+  line-height: 1.16;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-wrap: balance;
+  margin-bottom: 18px;
+}
+.av-empty-body {
+  font-family: 'Spectral', serif;
+  font-size: 17px;
+  line-height: 1.66;
+  color: var(--paper-text-mute);
+  text-wrap: pretty;
+  max-width: 54ch;
+}
+.av-empty-start {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-l);
+  text-transform: uppercase;
+  color: var(--gold-deep);
+  margin: 40px 0 14px;
+}
+
+/* Suggestion chips, shared by the empty state and the follow-up row. */
+.av-suggest-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.av-suggest {
+  font-family: 'Spectral', serif;
+  font-style: italic;
+  font-size: 14px;
+  line-height: 1.3;
+  text-align: left;
+  padding: 10px 16px;
+  color: var(--paper-text);
+  background: transparent;
+  border: 1px solid var(--paper-line);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: border-color 160ms cubic-bezier(0.22,1,0.36,1),
+              background-color 160ms cubic-bezier(0.22,1,0.36,1),
+              transform 160ms cubic-bezier(0.22,1,0.36,1);
+}
+.av-suggest:hover {
+  border-color: var(--gold);
+  background: rgba(184,149,74,0.06);
+  transform: translateY(-1px);
+}
+.av-suggest:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .av-suggest { transition: none; }
+  .av-suggest:hover { transform: none; }
+}
 .av-history {
   border-right: 1px solid var(--paper-line);
   background: var(--paper);
@@ -3272,8 +3793,8 @@ a { color: inherit; }
 }
 .av-history h3 {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.22em;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-l);
   text-transform: uppercase;
   color: var(--gold-deep);
   margin: 0 6px 12px;
@@ -3286,17 +3807,25 @@ a { color: inherit; }
   font-size: 13px;
   line-height: 1.4;
   color: var(--paper-text);
-  border-left: 2px solid transparent;
+  /* A full transparent hairline, so the active state below thickens nothing and
+     shifts nothing — the earlier 2px left edge turned into a gold stripe. */
+  border: 1px solid transparent;
   margin-bottom: 2px;
 }
 .av-hist-item:hover { background: rgba(184,149,74,0.06); }
-.av-hist-item.active { background: var(--paper-deep); border-left-color: var(--gold); }
+/* Selected state is carried by the ground and a full hairline, not by a thick
+   coloured stripe down one edge. */
+.av-hist-item.active {
+  background: var(--paper-deep);
+  border-color: var(--gold);
+  box-shadow: inset 0 0 0 1px rgba(184,149,74,0.34);
+}
 .av-hist-item .meta {
   font-family: 'JetBrains Mono', monospace;
   font-style: normal;
-  font-size: 9.5px;
+  font-size: var(--fs-micro);
   color: var(--paper-text-faint);
-  letter-spacing: 0.12em;
+  letter-spacing: var(--track-m);
   margin-top: 4px;
 }
 
@@ -3346,13 +3875,17 @@ a { color: inherit; }
 
 .av-points { max-width: 760px; margin-bottom: 24px; }
 .av-point {
-  padding: 14px 0 14px 18px;
-  border-left: 2px solid var(--paper-line);
+  padding: 14px 16px;
+  border: 1px solid var(--paper-line-soft);
+  background: rgba(184,149,74,0.03);
   margin-bottom: 8px;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, background-color 0.15s;
   cursor: pointer;
 }
-.av-point:hover { border-left-color: var(--gold); }
+.av-point:hover {
+  border-color: var(--gold);
+  background: rgba(184,149,74,0.07);
+}
 .av-point-text {
   font-family: 'Spectral', serif;
   font-size: 15px;
@@ -3368,7 +3901,7 @@ a { color: inherit; }
   background: var(--paper-deep);
   padding: 3px 8px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: var(--fs-label);
   letter-spacing: 0.06em;
   color: var(--gold-deep);
   cursor: pointer;
@@ -3385,21 +3918,24 @@ a { color: inherit; }
   max-width: 720px;
   padding: 14px 18px;
   background: rgba(184,149,74,0.07);
-  border-left: 2px solid var(--gold-deep);
+  border: 1px solid rgba(138,110,54,0.28);
   font-family: 'Spectral', serif;
   font-style: italic;
   font-size: 13.5px;
   line-height: 1.55;
   color: var(--paper-text);
 }
-.av-caveat::before {
-  content: "Caveat — ";
+/* The label used to be a CSS `content: "Caveat — "`, which meant it stayed in
+   English in all eight locales. It is a translated string, so it belongs in the
+   markup. */
+.av-caveat-label {
   font-family: 'JetBrains Mono', monospace;
   font-style: normal;
-  font-size: 10px;
-  letter-spacing: 0.18em;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-l);
   color: var(--gold-deep);
   text-transform: uppercase;
+  margin-right: 6px;
 }
 
 .av-input-area {
@@ -3434,8 +3970,8 @@ a { color: inherit; }
   color: var(--paper);
   padding: 8px 18px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.18em;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-l);
   text-transform: uppercase;
   align-self: end;
 }
@@ -3443,9 +3979,9 @@ a { color: inherit; }
 .av-input-hint {
   margin-top: 8px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: var(--fs-label);
   color: var(--paper-text-faint);
-  letter-spacing: 0.1em;
+  letter-spacing: var(--track-m);
   text-transform: uppercase;
 }
 .av-input-hint span.k {
@@ -3460,21 +3996,70 @@ a { color: inherit; }
   position: relative;
 }
 .tech-wrap iframe { width: 100%; height: 100%; border: none; }
-.tech-overlay {
-  position: absolute; top: 18px; right: 18px;
-  display: flex; gap: 8px; align-items: center;
-  background: rgba(245,239,226,0.95);
-  border: 1px solid var(--paper-line);
-  padding: 8px 14px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--paper-text-mute);
-  z-index: 100;
+/* ---- View error boundary ---- */
+.vb-error {
+  padding: 60px 48px;
+  max-width: 68ch;
+  font-family: 'Spectral', serif;
+  color: var(--paper-text);
 }
-.tech-overlay a { color: var(--gold-deep); text-decoration: none; }
-.tech-overlay a:hover { color: var(--gold); }
+.vb-error-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-x);
+  text-transform: uppercase;
+  color: var(--rust);
+  margin-bottom: 14px;
+}
+.vb-error h2 {
+  font-weight: 300;
+  font-size: 32px;
+  line-height: 1.15;
+  font-style: italic;
+  margin-bottom: 12px;
+}
+.vb-error p {
+  font-style: italic;
+  color: var(--paper-text-mute);
+  font-size: 15px;
+  line-height: 1.55;
+  margin-bottom: 24px;
+}
+.vb-error pre {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  padding: 14px 16px;
+  background: rgba(160,74,42,0.06);
+  border-left: 1px solid var(--rust);
+  color: var(--rust);
+  white-space: pre-wrap;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+.vb-error button {
+  padding: 9px 20px;
+  border: 1px solid var(--gold);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--gold-deep);
+  font-family: 'Spectral', serif;
+  font-style: italic;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.vb-error button:hover { background: rgba(184,149,74,0.08); color: var(--ink); }
+
+/* A quiet provenance note in the bar, alongside a view-level action. */
+.bar-note {
+  font-family: 'Spectral', serif;
+  font-style: italic;
+  font-size: 12.5px;
+  color: var(--paper-text-faint);
+  margin-right: 4px;
+  white-space: nowrap;
+}
+@media (max-width: 900px) { .bar-note { display: none; } }
 
 /* =================== UTILITY =================== */
 .empty {
@@ -3511,15 +4096,6 @@ a { color: inherit; }
   top: 32px; bottom: 32px; right: 0;
   width: 1px;
   background: linear-gradient(to bottom, transparent, rgba(184,149,74,0.2) 12%, rgba(184,149,74,0.2) 88%, transparent);
-}
-.sv-nav-title {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.26em;
-  text-transform: uppercase;
-  color: var(--gold-deep);
-  margin-bottom: 22px;
-  padding-left: 14px;
 }
 .sv-nav-item {
   display: block;
@@ -3565,8 +4141,8 @@ a { color: inherit; }
 }
 .sv-h3 {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.26em;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-x);
   text-transform: uppercase;
   color: var(--gold-deep);
   margin: 36px 0 16px;
@@ -3579,19 +4155,31 @@ a { color: inherit; }
   margin-bottom: 32px;
 }
 .sv-provider-card {
-  padding: 14px 16px;
+  position: relative;
+  padding: 14px 40px 14px 16px;
   background: transparent;
   border: 1px solid rgba(184,149,74,0.18);
-  border-radius: 8px;
+  border-radius: 3px;
   cursor: pointer;
-  transition: all 0.18s;
+  transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
   text-align: left;
 }
 .sv-provider-card:hover { border-color: rgba(184,149,74,0.4); }
+.sv-provider-card:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .sv-provider-card.active {
   border-color: var(--gold);
   background: rgba(184,149,74,0.06);
-  box-shadow: 0 0 0 3px rgba(184,149,74,0.1);
+  box-shadow: inset 0 0 0 1px rgba(184,149,74,0.35);
+}
+/* The selection was carried by a slightly warmer border alone. A mark states it
+   outright, so the choice survives a glance and a colour-blind reader. */
+.sv-provider-mark {
+  position: absolute;
+  top: 13px; right: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--gold-deep);
 }
 .sv-provider-name {
   font-family: 'Spectral', serif;
@@ -3608,37 +4196,163 @@ a { color: inherit; }
   color: var(--paper-text-mute);
 }
 
-.sv-field { margin-bottom: 20px; }
+.sv-field { margin-bottom: 22px; }
+/* ---- Cover style: two options, each shown rather than described ---- */
+.sv-cover-choice {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 18px;
+  max-width: 760px;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+.sv-cover-choice legend {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-l);
+  text-transform: uppercase;
+  color: var(--gold-deep);
+  padding: 0;
+  margin-bottom: 12px;
+}
+.sv-cover-opt {
+  display: block;
+  width: 100%;
+  padding: 16px 16px 13px;
+  background: transparent;
+  border: 1px solid rgba(184,149,74,0.18);
+  border-radius: 3px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
+}
+.sv-cover-opt:hover { border-color: rgba(184,149,74,0.4); }
+.sv-cover-opt:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.sv-cover-opt.active {
+  border-color: var(--gold);
+  background: rgba(184,149,74,0.06);
+  box-shadow: inset 0 0 0 1px rgba(184,149,74,0.35);
+}
+.sv-cover-row { display: flex; gap: 10px; align-items: flex-end; }
+.sv-cover-thumb {
+  flex: 1 1 0;
+  min-width: 0;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  box-shadow: 0 8px 18px -8px rgba(60,40,10,0.32);
+}
+.sv-cover-thumb > * { width: 100%; height: 100%; display: block; }
+.sv-cover-thumb img, .sv-cover-thumb svg { width: 100%; height: 100%; object-fit: cover; }
+.sv-cover-meta {
+  position: relative;
+  margin-top: 14px;
+  padding-right: 22px;
+}
+.sv-cover-label {
+  display: block;
+  font-family: 'Spectral', serif;
+  font-size: 15px;
+  color: var(--paper-text);
+}
+.sv-cover-opt.active .sv-cover-label { color: var(--gold-deep); }
+.sv-cover-note {
+  display: block;
+  margin-top: 2px;
+  font-family: 'Spectral', serif;
+  font-style: italic;
+  font-size: 12.5px;
+  color: var(--paper-text-mute);
+}
+.sv-cover-mark {
+  position: absolute;
+  top: 2px; right: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--gold-deep);
+}
+
+/* The currency sign sits inside the field's own frame, so the frame reads as one
+   control rather than a glyph next to a box. */
+.sv-field-money { position: relative; max-width: 280px; }
+.sv-field-money > span {
+  position: absolute;
+  left: 14px; top: 50%;
+  transform: translateY(-50%);
+  font-family: 'Spectral', serif;
+  font-style: italic;
+  font-size: 14.5px;
+  color: var(--paper-text-mute);
+  pointer-events: none;
+}
+/* Specificity has to clear `.sv-field input`, which sets the padding shorthand
+   and would otherwise put the value underneath the "$". */
+.sv-field .sv-field-money input { padding-left: 31px; }
+.sv-field-hint {
+  margin-top: 7px;
+  max-width: 460px;
+  font-family: 'Spectral', serif;
+  font-style: italic;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--paper-text-faint);
+}
 .sv-field label {
   display: block;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.18em;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-l);
   text-transform: uppercase;
   color: var(--gold-deep);
   margin-bottom: 8px;
 }
+/* The <select> arrived with the platform's own chrome — a bevelled rounded box
+   with a system chevron — which read as a foreign control dropped into a paper
+   surface. appearance:none takes the paint but keeps the native popup and its
+   keyboard behaviour; the chevron is drawn to match the rest of the type. */
 .sv-field select,
 .sv-field input {
   width: 100%;
   max-width: 460px;
-  padding: 10px 12px;
+  padding: 11px 14px;
   background: #fbf7ea;
   border: 1px solid rgba(184,149,74,0.22);
-  border-radius: 6px;
+  border-radius: 2px;
   font-family: 'Spectral', serif;
-  font-size: 14px;
+  font-size: 14.5px;
   color: var(--paper-text);
   outline: none;
-  transition: border 0.18s;
+  transition: border-color 0.18s, box-shadow 0.18s;
+  box-shadow: inset 0 1px 2px rgba(120,96,48,0.05);
 }
-.sv-field select:focus,
-.sv-field input:focus { border-color: var(--gold); }
+.sv-field select {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 38px;
+  cursor: pointer;
+  /* A drawn chevron, in gold, at the hairline weight the rest of the page uses. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7' viewBox='0 0 11 7'%3E%3Cpath d='M1.2 1.3 L5.5 5.5 L9.8 1.3' fill='none' stroke='%238a6e36' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-position: right 14px center;
+  background-size: 11px 7px;
+  background-repeat: no-repeat;
+}
+.sv-field input::placeholder { color: var(--paper-text-faint); font-style: italic; }
+.sv-field select:hover { border-color: rgba(184,149,74,0.42); }
+.sv-field select:focus-visible,
+.sv-field input:focus-visible {
+  border-color: var(--gold);
+  box-shadow: inset 0 1px 2px rgba(120,96,48,0.05), 0 0 0 3px rgba(184,149,74,0.16);
+}
+/* The number input's spinner is another piece of platform chrome. */
+.sv-field input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+.sv-field input[type="number"]::-webkit-outer-spin-button,
+.sv-field input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
 .sv-budget-display {
   background: linear-gradient(135deg, rgba(184,149,74,0.07), rgba(184,149,74,0.02));
   padding: 26px 28px;
-  border-radius: 10px;
+  border-radius: 3px;
   border: 1px solid rgba(184,149,74,0.2);
   margin-bottom: 28px;
   max-width: 460px;
@@ -3665,8 +4379,8 @@ a { color: inherit; }
 }
 .sv-budget-label {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px;
-  letter-spacing: 0.18em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-l);
   text-transform: uppercase;
   color: var(--paper-text-mute);
 }
@@ -3681,15 +4395,27 @@ a { color: inherit; }
   align-items: center;
 }
 .sv-cost-name { font-family: 'Spectral', serif; font-size: 14.5px; color: var(--paper-text); }
-.sv-cost-provider { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--paper-text-mute); letter-spacing: 0.04em; }
+.sv-cost-provider { font-family: 'Spectral', serif; font-style: italic; font-size: 12.5px; color: var(--paper-text-mute); letter-spacing: 0.005em; }
 .sv-cost-val { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--gold-deep); text-align: right; }
 
 .sv-cache-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; max-width: 540px; }
-.sv-stat-card { padding: 24px 26px; background: #fbf7ea; border: 1px solid rgba(184,149,74,0.18); border-radius: 8px; }
+/* Running explanatory prose in a settings section — set at reading measure, not
+   as a caption. */
+.sv-note {
+  margin-top: 26px;
+  max-width: 58ch;
+  font-family: 'Spectral', serif;
+  font-size: 14.5px;
+  line-height: 1.72;
+  color: var(--paper-text-mute);
+  text-indent: 0;
+}
+.sv-note + .sv-note { margin-top: 14px; }
+.sv-stat-card { padding: 24px 26px; background: #fbf7ea; border: 1px solid rgba(184,149,74,0.18); border-radius: 3px; }
 .sv-stat-num { font-family: 'Spectral', serif; font-size: 40px; font-weight: 300; color: var(--paper-text); line-height: 1; margin-bottom: 12px; }
 .sv-stat-num.gold { color: var(--gold-deep); }
 .sv-stat-num small { font-size: 17px; color: var(--paper-text-mute); }
-.sv-stat-lbl { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--paper-text-mute); }
+.sv-stat-lbl { font-family: 'JetBrains Mono', monospace; font-size: var(--fs-micro); letter-spacing: var(--track-l); text-transform: uppercase; color: var(--paper-text-mute); }
 
 .sv-segmented { display: inline-flex; border: 1px solid rgba(184,149,74,0.22); border-radius: 999px; padding: 3px; background: rgba(184,149,74,0.04); }
 .sv-segmented button {
@@ -3712,50 +4438,80 @@ a { color: inherit; }
   padding: 12px 14px;
   background: transparent;
   border: 1px solid rgba(184,149,74,0.18);
-  border-radius: 8px;
+  border-radius: 3px;
   cursor: pointer;
-  transition: all 0.18s;
+  transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
   text-align: left;
 }
 .sv-lang-card:hover { border-color: rgba(184,149,74,0.4); }
-.sv-lang-card.active { border-color: var(--gold); background: rgba(184,149,74,0.06); }
-.sv-lang-code { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.14em; color: var(--gold-deep); background: rgba(184,149,74,0.08); padding: 3px 9px; border-radius: 4px; }
+.sv-lang-card:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.sv-lang-card.active { border-color: var(--gold); background: rgba(184,149,74,0.06); box-shadow: inset 0 0 0 1px rgba(184,149,74,0.35); }
+.sv-lang-code { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: var(--track-m); color: var(--gold-deep); background: rgba(184,149,74,0.08); padding: 3px 9px; border-radius: 2px; }
 .sv-lang-name { font-family: 'Spectral', serif; font-size: 14.5px; color: var(--paper-text); }
+.sv-lang-mark { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--gold-deep); }
 
 .sv-acct-card {
   display: flex; align-items: center; gap: 20px;
   padding: 24px 26px;
   background: linear-gradient(135deg, rgba(184,149,74,0.07), rgba(184,149,74,0.02));
   border: 1px solid rgba(184,149,74,0.2);
-  border-radius: 10px;
+  border-radius: 3px;
   max-width: 540px;
 }
 .sv-acct-avatar { width: 64px; height: 64px; border: 1px solid var(--gold); color: var(--gold); font-family: 'Spectral', serif; font-style: italic; font-weight: 500; display: grid; place-items: center; font-size: 24px; border-radius: 50%; flex-shrink: 0; }
 .sv-acct-name { font-family: 'Spectral', serif; font-size: 19px; font-weight: 500; color: var(--paper-text); }
 .sv-acct-handle { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--paper-text-mute); letter-spacing: 0.04em; margin-top: 2px; }
-.sv-acct-plan { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold-deep); margin-top: 10px; }
+.sv-acct-plan { font-family: 'JetBrains Mono', monospace; font-size: var(--fs-micro); letter-spacing: var(--track-l); text-transform: uppercase; color: var(--gold-deep); margin-top: 10px; }
 
-.sv-acct-actions { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 8px; }
+/* These were five identical pills, which read as a tag cloud rather than as the
+   account destinations they are — and every one of them is inert in a demo with
+   no account backend. Set as a list of destinations, hairline-ruled, with the
+   section saying plainly that they lead nowhere here. */
+.sv-acct-actions {
+  margin-top: 26px;
+  max-width: 540px;
+  border-top: 1px solid rgba(184,149,74,0.15);
+}
 .sv-btn-ghost {
-  padding: 9px 18px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 12px 2px;
   background: transparent;
-  border: 1px solid rgba(184,149,74,0.22);
-  border-radius: 999px;
-  cursor: pointer;
+  border: none;
+  border-bottom: 1px solid rgba(184,149,74,0.15);
+  cursor: default;
+  text-align: left;
   font-family: 'Spectral', serif;
+  font-size: 14px;
+  color: var(--paper-text-mute);
+}
+.sv-btn-ghost::after {
+  content: "→";
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--paper-text-faint);
+}
+.sv-signout {
+  margin-top: 4px;
+  padding: 10px 20px;
+  border: 1px solid rgba(160,74,42,0.3);
+  border-radius: 3px;
+  color: #b06a48;
   font-style: italic;
   font-size: 13.5px;
-  color: var(--paper-text);
-  transition: all 0.18s;
+  justify-content: center;
+  width: auto;
+  transition: border-color 0.18s, color 0.18s, background 0.18s;
 }
-.sv-btn-ghost:hover { border-color: var(--gold); color: var(--gold-deep); background: rgba(184,149,74,0.04); }
-.sv-signout { color: #c87c5a; border-color: rgba(160,74,42,0.3); }
-.sv-signout:hover { color: #e09075; background: rgba(160,74,42,0.06); border-color: rgba(160,74,42,0.5); }
+.sv-signout::after { content: none; }
+.sv-signout:hover { color: #8f5236; background: rgba(160,74,42,0.05); border-color: rgba(160,74,42,0.5); }
 
 @media (max-width: 800px) {
   .sv { grid-template-columns: 1fr; }
   .sv-nav { padding: 16px 20px; display: flex; gap: 4px; overflow-x: auto; }
-  .sv-nav-title { display: none; }
   .sv-nav-item { white-space: nowrap; }
   .sv-nav::after { display: none; }
   .sv-body { padding: 28px 22px 60px; }
@@ -3836,8 +4592,8 @@ a { color: inherit; }
 }
 .settings-nav-title {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.26em;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-x);
   text-transform: uppercase;
   color: var(--gold-deep);
   margin-bottom: 18px;
@@ -3889,8 +4645,8 @@ a { color: inherit; }
 }
 .settings-h3 {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.26em;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-x);
   text-transform: uppercase;
   color: var(--gold-deep);
   margin: 32px 0 14px;
@@ -3936,8 +4692,8 @@ a { color: inherit; }
 .settings-field label {
   display: block;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.18em;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-l);
   text-transform: uppercase;
   color: var(--gold-deep);
   margin-bottom: 8px;
@@ -3988,8 +4744,8 @@ a { color: inherit; }
 }
 .settings-budget-label {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px;
-  letter-spacing: 0.18em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-l);
   text-transform: uppercase;
   color: var(--paper-text-mute);
 }
@@ -4047,8 +4803,8 @@ a { color: inherit; }
 .settings-stat-num small { font-size: 16px; color: var(--paper-text-mute); }
 .settings-stat-lbl {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px;
-  letter-spacing: 0.22em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-l);
   text-transform: uppercase;
   color: var(--paper-text-mute);
 }
@@ -4100,7 +4856,7 @@ a { color: inherit; }
 .settings-lang-code {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  letter-spacing: 0.14em;
+  letter-spacing: var(--track-m);
   color: var(--gold-deep);
   background: rgba(184,149,74,0.08);
   padding: 3px 8px;
@@ -4145,8 +4901,8 @@ a { color: inherit; }
 }
 .settings-acct-plan {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px;
-  letter-spacing: 0.18em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-l);
   text-transform: uppercase;
   color: var(--gold-deep);
   margin-top: 8px;
@@ -4397,7 +5153,7 @@ a { color: inherit; }
 .tl2-title { max-width: 580px; }
 .tl2-eyebrow {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px; letter-spacing: 0.26em; text-transform: uppercase;
+  font-size: var(--fs-label); letter-spacing: var(--track-x); text-transform: uppercase;
   color: var(--gold-deep);
   margin-bottom: 8px;
 }
@@ -4433,7 +5189,7 @@ a { color: inherit; }
 .tl2-phase-pip-bar { width: 3px; height: 16px; border-radius: 2px; }
 .tl2-phase-pip-ct {
   font-family: 'JetBrains Mono', monospace; font-style: normal;
-  font-size: 10px; letter-spacing: 0.06em;
+  font-size: var(--fs-label); letter-spacing: 0.06em;
   color: var(--paper-text-faint);
 }
 .tl2-phase-pip.active .tl2-phase-pip-ct { color: var(--gold-deep); }
@@ -4488,18 +5244,18 @@ a { color: inherit; }
 .tl2-evid-rel {
   display: flex; align-items: center; gap: 10px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px;
-  letter-spacing: 0.22em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-l);
   text-transform: uppercase;
   color: var(--gold-deep);
   margin-bottom: 8px;
 }
 .tl2-evid-rel-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--gold); }
 .tl2-evid-rel-text { color: var(--gold-deep); }
-.tl2-evid-rel-cite { color: var(--paper-text-faint); letter-spacing: 0.14em; margin-left: auto; }
+.tl2-evid-rel-cite { color: var(--paper-text-faint); letter-spacing: var(--track-m); margin-left: auto; }
 .tl2-evid-rel-verified {
   display: inline-flex; align-items: center; gap: 4px;
-  color: var(--green); letter-spacing: 0.18em;
+  color: var(--green); letter-spacing: var(--track-l);
 }
 
 .tl2-evid-quote {
@@ -4533,8 +5289,8 @@ a { color: inherit; }
 .tl2-evid-conf {
   display: inline-flex; align-items: center; gap: 6px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px;
-  letter-spacing: 0.14em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-m);
 }
 .tl2-evid-conf-bar {
   display: inline-block;
@@ -4549,14 +5305,14 @@ a { color: inherit; }
   border-radius: 2px;
 }
 .tl2-evid-conf-num { font-weight: 500; }
-.tl2-evid-conf-lbl { color: var(--paper-text-faint); letter-spacing: 0.18em; text-transform: uppercase; }
+.tl2-evid-conf-lbl { color: var(--paper-text-faint); letter-spacing: var(--track-l); text-transform: uppercase; }
 
 .tl2-evid-expand {
   display: inline-flex; align-items: center; gap: 6px;
   margin-left: auto;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px;
-  letter-spacing: 0.18em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-l);
   text-transform: uppercase;
   background: transparent; border: none; cursor: pointer;
   color: var(--gold-deep);
@@ -4573,14 +5329,16 @@ a { color: inherit; }
 }
 @keyframes tl2-fade { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 
+/* No uppercasing here: the row carries a chunk key an auditor copies verbatim
+   (ch02_p000, not CH02_P000) and a localized chapter reference. */
 .tl2-evid-passage-meta {
-  display: flex; gap: 14px;
+  display: flex; gap: 14px; flex-wrap: wrap;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase;
+  font-size: var(--fs-micro); letter-spacing: 0.05em;
   color: var(--gold-deep);
   margin-bottom: 10px;
 }
-.tl2-evid-passage-meta .dim { color: var(--paper-text-faint); }
+.tl2-evid-passage-meta .dim { color: var(--paper-text-faint); user-select: all; }
 .tl2-evid-passage-body {
   font-family: 'Spectral', serif;
   font-size: 14px;
@@ -4665,7 +5423,7 @@ a { color: inherit; }
 }
 .tl2-folio-rail-phase-label {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px; letter-spacing: 0.22em; text-transform: uppercase;
+  font-size: var(--fs-micro); letter-spacing: var(--track-l); text-transform: uppercase;
   color: var(--paper-text-mute);
 }
 .tl2-folio-rail-phase-dots { display: flex; flex-direction: column; gap: 4px; }
@@ -4701,19 +5459,24 @@ a { color: inherit; }
 }
 .tl2-folio-rail-dot-ch {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: var(--fs-label);
   color: var(--paper-text-faint);
   letter-spacing: 0.08em;
 }
 .tl2-folio-rail-dot.active .tl2-folio-rail-dot-ch { color: var(--phase-color); }
+/* Event names ran to two or three ideographs past the rail and ellipsised —
+   "把墨水瓶砸向…" told a reader nothing about which event it was. Two lines is
+   plenty for every event in the corpus, and the rail is a scroll list anyway. */
 .tl2-folio-rail-dot-name {
   font-family: 'Spectral', serif;
   font-style: italic;
   font-size: 12.5px;
   color: var(--paper-text-mute);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .tl2-folio-rail-dot.active .tl2-folio-rail-dot-name { color: var(--paper-text); }
 
@@ -4736,7 +5499,7 @@ a { color: inherit; }
   display: flex; align-items: center; gap: 14px;
   padding: 22px 0 18px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px; letter-spacing: 0.26em; text-transform: uppercase;
+  font-size: var(--fs-label); letter-spacing: var(--track-x); text-transform: uppercase;
   color: var(--phase-color);
 }
 .tl2-folio-strap-roman {
@@ -4762,7 +5525,7 @@ a { color: inherit; }
 .tl2-folio-strap-num {
   margin-left: auto;
   color: var(--paper-text-faint);
-  letter-spacing: 0.18em;
+  letter-spacing: var(--track-l);
 }
 
 .tl2-folio-grid {
@@ -4788,14 +5551,6 @@ a { color: inherit; }
   overflow: hidden;
   min-width: 0;
 }
-.tl2-folio-gutter-eyebrow {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.32em;
-  color: var(--paper-text-faint);
-  text-transform: uppercase;
-  margin-bottom: 12px;
-}
 /* Roman scales by character count so XXXIV (5ch), XXXVIII (7ch) etc. always
    fit within the 200px gutter without colliding with the title column.
    Formula: each italic-serif Roman glyph ≈ 0.5× font-size wide, so for a
@@ -4810,24 +5565,16 @@ a { color: inherit; }
   line-height: 0.9;
   color: var(--phase-color);
   letter-spacing: -0.01em;
-  margin-bottom: 6px;
+  margin-bottom: 20px;
   white-space: nowrap;
   max-width: 100%;
-}
-.tl2-folio-gutter-arabic {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  letter-spacing: 0.22em;
-  color: var(--paper-text-mute);
-  margin-bottom: 18px;
 }
 .tl2-folio-gutter-cite {
   display: inline-flex; align-items: center; gap: 6px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px;
-  letter-spacing: 0.16em;
+  font-size: var(--fs-micro);
+  letter-spacing: 0.05em;
   color: var(--gold-deep);
-  text-transform: uppercase;
 }
 .tl2-folio-gutter-cite .dot {
   width: 5px; height: 5px; border-radius: 50%;
@@ -4877,7 +5624,7 @@ a { color: inherit; }
 .tl2-folio-pivot-mark {
   display: inline-block;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px; letter-spacing: 0.28em; text-transform: uppercase;
+  font-size: var(--fs-micro); letter-spacing: var(--track-x); text-transform: uppercase;
   color: var(--phase-color);
   margin-bottom: 14px;
 }
@@ -4908,8 +5655,8 @@ a { color: inherit; }
 .tl2-folio-pivot-attr {
   display: flex; flex-wrap: wrap; gap: 8px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px;
-  letter-spacing: 0.22em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-l);
   text-transform: uppercase;
   color: var(--paper-text-faint);
 }
@@ -4927,7 +5674,7 @@ a { color: inherit; }
 .tl2-folio-sect-head {
   display: flex; align-items: center; gap: 10px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px; letter-spacing: 0.26em; text-transform: uppercase;
+  font-size: var(--fs-micro); letter-spacing: var(--track-x); text-transform: uppercase;
   color: var(--gold-deep);
   margin-bottom: 14px;
 }
@@ -4937,7 +5684,7 @@ a { color: inherit; }
 }
 .tl2-folio-sect-ct {
   margin-left: 6px;
-  font-size: 9.5px;
+  font-size: var(--fs-micro);
   color: var(--paper-text-faint);
 }
 
@@ -4955,8 +5702,8 @@ a { color: inherit; }
 .tl2-folio-glucose-row:last-child { border-bottom: none; }
 .tl2-folio-glucose-dim {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.16em;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-l);
   color: var(--gold-deep);
   text-transform: uppercase;
 }
@@ -5001,7 +5748,7 @@ a { color: inherit; }
   font-family: 'Spectral', serif;
   font-style: italic;
   font-size: 16px;
-  letter-spacing: 0.36em;
+  letter-spacing: var(--track-x);
   color: var(--gold-deep);
 }
 
@@ -5045,8 +5792,8 @@ a { color: inherit; }
 .tl2-stage-progress-dot:hover { transform: translateY(-2px); }
 .tl2-stage-progress-num {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.18em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-l);
   color: var(--paper-text-faint);
 }
 .tl2-stage-progress-mark {
@@ -5067,10 +5814,14 @@ a { color: inherit; }
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--phase-color) 18%, transparent);
 }
 .tl2-stage-progress-dot.active .tl2-stage-progress-num { color: var(--phase-color); }
+/* Now carries a localized "Chapter N" rather than "ch2", so it takes the serif
+   and drops the wide mono tracking that pulls CJK apart. */
 .tl2-stage-progress-ch {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.08em;
+  font-family: 'Spectral', serif;
+  font-style: italic;
+  font-size: 11.5px;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
   color: var(--paper-text-faint);
   opacity: 0;
   transition: opacity 0.2s;
@@ -5142,8 +5893,8 @@ a { color: inherit; }
 }
 .tl2-stage-phase-label {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.26em;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-x);
   text-transform: uppercase;
   color: var(--phase-color);
   margin-bottom: 4px;
@@ -5158,14 +5909,6 @@ a { color: inherit; }
 .tl2-stage-sigil {
   text-align: right;
 }
-.tl2-stage-sigil-eyebrow {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.32em;
-  color: var(--paper-text-faint);
-  text-transform: uppercase;
-  margin-bottom: 4px;
-}
 .tl2-stage-sigil-roman {
   font-family: 'Spectral', serif;
   font-style: italic;
@@ -5178,8 +5921,8 @@ a { color: inherit; }
 }
 .tl2-stage-sigil-arabic {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.22em;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-l);
   color: var(--paper-text-mute);
   margin-top: 4px;
 }
@@ -5239,7 +5982,7 @@ a { color: inherit; }
 .tl2-stage-attr {
   display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 10px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+  font-size: var(--fs-label); letter-spacing: 0.05em;
   color: var(--paper-text-faint);
   margin-bottom: 28px;
 }
@@ -5253,7 +5996,7 @@ a { color: inherit; }
 .tl2-stage-cast-head {
   display: flex; align-items: center; justify-content: center; gap: 12px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px; letter-spacing: 0.32em; text-transform: uppercase;
+  font-size: var(--fs-micro); letter-spacing: var(--track-x); text-transform: uppercase;
   color: var(--gold-deep);
   margin-bottom: 14px;
 }
@@ -5286,8 +6029,8 @@ a { color: inherit; }
 .tl2-stage-nav-next { right: 12px; }
 .tl2-stage-nav span {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.18em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-l);
 }
 .tl2-stage-nav svg { width: 16px; height: 16px; }
 
@@ -5329,8 +6072,8 @@ a { color: inherit; }
 }
 .tl2-stage-dock-trigger-label {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.28em;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-x);
   text-transform: uppercase;
   color: var(--gold-deep);
 }
@@ -5388,7 +6131,7 @@ a { color: inherit; }
 .tl2-stage-dock-label {
   display: flex; align-items: center; justify-content: center; gap: 12px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px; letter-spacing: 0.32em; text-transform: uppercase;
+  font-size: var(--fs-label); letter-spacing: var(--track-x); text-transform: uppercase;
   color: var(--gold-deep);
   padding-bottom: 4px;
 }
@@ -5442,7 +6185,7 @@ a { color: inherit; }
 .tl2-ribbon-zoom button:hover { background: rgba(184,149,74,0.1); color: var(--gold-deep); }
 .tl2-ribbon-zoom > span {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: var(--fs-label);
   color: var(--paper-text-mute);
   padding: 0 6px;
 }
@@ -5486,7 +6229,7 @@ a { color: inherit; }
 }
 .tl2-ribbon-phaselbl .name {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px; letter-spacing: 0.24em; text-transform: uppercase;
+  font-size: var(--fs-micro); letter-spacing: var(--track-l); text-transform: uppercase;
   color: var(--phase-color);
 }
 .tl2-ribbon-empty {
@@ -5542,11 +6285,14 @@ a { color: inherit; }
   background: #fbf7ea;
   box-shadow: 0 0 0 1px var(--phase-color), 0 12px 30px -12px rgba(60,40,10,0.34);
 }
+/* Carries a localized "Chapter N" now, so it drops the mono face and the wide
+   tracking that pulls ideographs apart. */
 .tl2-ribbon-card-ch {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
+  font-family: 'Spectral', serif;
+  font-style: italic;
+  font-size: 11.5px;
   color: var(--phase-color);
-  letter-spacing: 0.22em; text-transform: uppercase;
+  letter-spacing: 0.01em;
   margin-bottom: 5px;
 }
 .tl2-ribbon-card-title {
@@ -5677,7 +6423,7 @@ a { color: inherit; }
 .tl2-ribbon-dock-phase {
   display: inline-flex; align-items: center; gap: 6px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px; letter-spacing: 0.24em; text-transform: uppercase;
+  font-size: var(--fs-micro); letter-spacing: var(--track-l); text-transform: uppercase;
   color: var(--phase-color);
   margin-bottom: 4px;
 }
@@ -5868,8 +6614,8 @@ a { color: inherit; }
 }
 .bs-switcher-active-eyebrow {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 8.5px;
-  letter-spacing: 0.30em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-x);
   color: var(--gold-deep);
   text-transform: uppercase;
   opacity: 0.65;
@@ -5985,4 +6731,283 @@ a { color: inherit; }
   .bs-switcher-active { padding: 0 18px; }
   .bs-switcher-active-title { font-size: 15px; }
   .bs-switcher-active-meta { font-size: 11px; }
+}
+
+/* ===================================================================== */
+/* =================== FOCUS VISIBILITY (floor) ======================== */
+/* ===================================================================== */
+/* Every control must show where the keyboard is. This is the baseline; the
+   controls with their own :focus-visible rule (higher specificity) keep it.
+   :focus-visible rather than :focus, so a mouse click does not leave a ring. */
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+/* The paper-side gold does not carry on ink. */
+.sb :focus-visible,
+.pv-logs :focus-visible,
+.ink :focus-visible {
+  outline-color: var(--gold-bright);
+}
+/* Rows and cards are flush with their neighbours, so an offset ring would sit
+   under the next one. Inset it instead. */
+.sb-item:focus-visible,
+.rd-ch:focus-visible,
+.ev-row:focus-visible,
+.ev-tab:focus-visible,
+.lib-card:focus-visible,
+.claim:focus-visible,
+.av-hist-item:focus-visible,
+.sv-nav-item:focus-visible {
+  outline-offset: -2px;
+}
+
+/* Skip link — off-screen until focused, then a plain paper chip at top left. */
+.skip-link {
+  position: absolute;
+  left: 12px; top: -60px;
+  z-index: 999;
+  padding: 9px 16px;
+  background: var(--paper);
+  color: var(--paper-text);
+  border: 1px solid var(--gold);
+  border-radius: 3px;
+  font-family: 'Spectral', serif;
+  font-size: 14px;
+  text-decoration: none;
+  box-shadow: 0 10px 30px -10px rgba(60,40,10,0.35);
+  transition: top 0.15s ease-out;
+}
+/* :focus, not :focus-visible — a skip link has no mouse path, so any focus
+   at all must reveal it. */
+.skip-link:focus { top: 12px; }
+/* The content region takes focus programmatically from the skip link; it must
+   not draw a ring of its own for that. */
+.main-content:focus { outline: none; }
+
+/* ===================================================================== */
+/* =================== PHONE: RAIL AS A DRAWER ========================= */
+/* ===================================================================== */
+/* Above this width the rail is a column in the grid and none of the rules below
+   apply. At 375px a 224px rail eats 60% of the screen and the content overflows
+   sideways — entity names were setting one character per line. */
+.nav-toggle { display: none; }
+.nav-scrim { display: none; }
+
+@media (max-width: 700px) {
+  .app,
+  .app.sb-collapsed { grid-template-columns: 1fr; }
+
+  .sb {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(280px, 84vw);
+    z-index: 200;
+    transform: translateX(-100%);
+    transition: transform 0.26s cubic-bezier(0.4, 0, 0.2, 1);
+    /* The rail draws a decorative bleed to its right that would show through. */
+    clip-path: none;
+    box-shadow: 0 0 40px -8px rgba(0,0,0,0.5);
+  }
+  .app.nav-open .sb { transform: translateX(0); }
+  /* Collapsed-rail rules must not apply to a drawer: it is always full width. */
+  .app.sb-collapsed .sb-item-label,
+  .app.sb-collapsed .sb-item-count { opacity: 1; max-width: none; }
+  .app.sb-collapsed .sb-name { display: revert; }
+
+  .nav-scrim {
+    display: block;
+    position: fixed; inset: 0;
+    z-index: 199;
+    background: rgba(20,16,10,0.5);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.26s;
+  }
+  .app.nav-open .nav-scrim { opacity: 1; pointer-events: auto; }
+
+  .nav-toggle {
+    display: grid; place-items: center;
+    width: 40px; height: 40px;
+    flex: 0 0 auto;
+    margin-right: 2px;
+    background: transparent;
+    border: none;
+    border-radius: 3px;
+    color: var(--paper-text-mute);
+    cursor: pointer;
+  }
+  .nav-toggle:hover { background: rgba(184,149,74,0.10); color: var(--paper-text); }
+
+  /* The bar has to fit a toggle, a breadcrumb and the language menu at 375px. */
+  .main-bar { padding-left: 8px; padding-right: 8px; gap: 4px; }
+  .crumbs { min-width: 0; overflow: hidden; }
+  .crumbs .cur { white-space: nowrap; }
+  .crumbs em,
+  .crumbs .sep,
+  .crumbs > span:last-child { display: none; }
+  .bar-note { display: none; }
+}
+
+/* Nothing animates for a reader who asked for no animation. */
+@media (prefers-reduced-motion: reduce) {
+  .sb, .nav-scrim { transition: none; }
+}
+
+/* ---- Phone master-detail: the two panes take turns ---- */
+.pane-back { display: none; }
+
+@media (max-width: 800px) {
+  .ev { grid-template-columns: 1fr; }
+  .ev-pane-list .ev-detail   { display: none; }
+  .ev-pane-detail .ev-list   { display: none; }
+  .ev-list { border-right: none; }
+
+  .pane-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    /* 44px of touch target, which is the reason for the vertical padding. */
+    min-height: 44px;
+    padding: 10px 14px 10px 2px;
+    margin-bottom: 4px;
+    background: transparent;
+    border: none;
+    font-family: 'Spectral', serif;
+    font-style: italic;
+    font-size: 14.5px;
+    color: var(--gold-deep);
+    cursor: pointer;
+  }
+  .pane-back:hover { color: var(--paper-text); }
+
+  /* The detail tabs ran off the edge at 375px — let them wrap instead of clip. */
+  .ev-detail-tabs { flex-wrap: wrap; row-gap: 2px; }
+  .ev-detail-meta-row { flex-wrap: wrap; row-gap: 8px; }
+}
+
+/* ---- Phone: the reader's TOC becomes a drawer ---- */
+.rd-toc-trigger { display: none; }
+.rd-toc-scrim { display: none; }
+
+@media (max-width: 1080px) {
+  .rd-toc-trigger {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 44px;
+    margin-bottom: 26px;
+    padding: 10px 12px;
+    background: transparent;
+    border: 1px solid var(--paper-line);
+    border-radius: 3px;
+    cursor: pointer;
+    text-align: left;
+    color: var(--paper-text-mute);
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .rd-toc-trigger:hover { border-color: var(--gold); background: rgba(184,149,74,0.05); }
+  .rd-toc-trigger-icon { font-size: 13px; color: var(--gold-deep); }
+  .rd-toc-trigger-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: var(--fs-label);
+    letter-spacing: var(--track-l);
+    text-transform: uppercase;
+    color: var(--gold-deep);
+  }
+  /* Where you are, so the control is orientation as well as a way out. */
+  .rd-toc-trigger-cur {
+    margin-left: auto;
+    font-family: 'Spectral', serif;
+    font-style: italic;
+    font-size: 13.5px;
+    color: var(--paper-text-mute);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 55%;
+  }
+
+  /* The rail was display:none at this width; it is now off-canvas instead. */
+  .rd .rd-toc {
+    display: block;
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(300px, 86vw);
+    z-index: 150;
+    background: var(--paper);
+    transform: translateX(-100%);
+    transition: transform 0.26s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 40px -8px rgba(60,40,10,0.4);
+  }
+  .rd.toc-open .rd-toc { transform: translateX(0); }
+  .rd-toc-scrim {
+    display: block;
+    position: fixed; inset: 0; z-index: 149;
+    background: rgba(20,16,10,0.42);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.26s;
+  }
+  .rd.toc-open .rd-toc-scrim { opacity: 1; pointer-events: auto; }
+  /* Chapter rows need a thumb-sized target once they are the primary control. */
+  .rd-ch { padding-top: 10px; padding-bottom: 11px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rd .rd-toc, .rd-toc-scrim { transition: none; }
+}
+
+/* The reader's highlight legend — samples drawn from the open book. */
+.rd-legend-rows {
+  font-family: 'Spectral', serif;
+  font-size: 12px;
+  line-height: 2;
+}
+.rd-legend-rows .ent { cursor: default; }
+.rd-legend-type { color: var(--paper-text-mute); margin-left: 6px; }
+
+/* ===================================================================== */
+/* =================== LOADING SKELETONS =============================== */
+/* ===================================================================== */
+/* Only where there is a real wait: a scan is fetched over the network, and the
+   3D shelf builds 85 volumes and five material textures before its first frame.
+   Nothing here stands in for data that is already in memory.
+
+   The sweep is a slow gilt highlight over board-coloured paper rather than the
+   usual grey pulse — a book that has not arrived yet, not a missing widget. */
+@keyframes lg-skeleton-sweep {
+  0%   { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
+}
+.cover-skeleton,
+.shelf-skeleton {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background:
+    linear-gradient(150deg, #2a241d, #1e1a15 60%, #17130f);
+}
+.cover-skeleton::after,
+.shelf-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg,
+    transparent 30%,
+    rgba(184,149,74,0.14) 50%,
+    transparent 70%);
+  animation: lg-skeleton-sweep 1.9s ease-in-out infinite;
+}
+/* A double gilt rule, so the placeholder already has the shape of a bound board. */
+.cover-skeleton::before {
+  content: "";
+  position: absolute;
+  inset: 9% 8%;
+  border: 1px solid rgba(184,149,74,0.16);
+  box-shadow: inset 0 0 0 3px rgba(0,0,0,0.18), inset 0 0 0 4px rgba(184,149,74,0.10);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cover-skeleton::after,
+  .shelf-skeleton::after { animation: none; opacity: 0.5; }
 }

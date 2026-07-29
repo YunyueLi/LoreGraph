@@ -29,6 +29,7 @@ const ORDER = [
   "avatars.jsx",
   "covers.jsx",
   "view-library.jsx",
+  "view-shelf3d.jsx",
   "graph-physics.jsx",
   "view-graph.jsx",
   "view-reader.jsx",
@@ -61,6 +62,7 @@ const htmlDoc = (cssName, bundleName) => `<!DOCTYPE html>
 <link rel="stylesheet" href="${cssName}" />
 <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/three@0.160.1/build/three.min.js"></script>
 </head>
 <body>
 <div id="root"></div>
@@ -103,6 +105,14 @@ async function main() {
   fs.writeFileSync(path.join(DEST, cssName), cssBuf);
   fs.writeFileSync(path.join(DEST, "index.html"), htmlDoc(cssName, bundleName));
   fs.copyFileSync(path.join(SRC, "Technical.html"), path.join(DEST, "Technical.html"));
+
+  // Static assets referenced by URL at runtime (the 3-D shelf's binding
+  // materials). Copied verbatim — these are already compressed and are fetched
+  // lazily, so they never touch the critical path.
+  const assetsSrc = path.join(SRC, "assets");
+  if (fs.existsSync(assetsSrc)) {
+    fs.cpSync(assetsSrc, path.join(DEST, "assets"), { recursive: true });
+  }
 
   // 4. GitHub Pages: skip Jekyll; route unknown paths back to the app.
   fs.writeFileSync(path.join(DEST, ".nojekyll"), "");

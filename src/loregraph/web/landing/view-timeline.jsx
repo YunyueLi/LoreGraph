@@ -241,7 +241,9 @@ function EvidenceBlock({ edge, data, locale, tt, dense, big }) {
       {open && chunk && (
         <div className="tl2-evid-passage">
           <div className="tl2-evid-passage-meta">
-            <span className="mono">CH {chunk.chapter} · ¶{chunk.seq} · {chunk.tokens} tok</span>
+            {/* Was "CH 2 · ¶0 · 142 tok" — an English abbreviation, a paragraph
+                index counted from zero, and a clipped unit. */}
+            <span className="mono">{window.friendlyChunkId(chunk.id, locale)} · {chunk.tokens} {tt("rd.tokens")}</span>
             <span className="mono dim">{chunk.id}</span>
           </div>
           <div className="tl2-evid-passage-body">
@@ -400,9 +402,11 @@ function FolioSpread({ ev, idx, total, data, entities, locale, tt, setSelectedEn
       <div className="tl2-folio-grid">
         {/* LEFT GUTTER — chapter as huge roman + page label */}
         <div className="tl2-folio-gutter">
-          <div className="tl2-folio-gutter-eyebrow">CHAPTER</div>
+          {/* Was "CHAPTER" over a roman numeral over "ch. 2" — the same fact three
+              times, the first two in English whatever the locale. The numeral is
+              the display element; the citation line below states the chapter and
+              the passage exactly, which is what a reader would quote. */}
           <div className="tl2-folio-gutter-roman">{roman}</div>
-          <div className="tl2-folio-gutter-arabic">ch. {ev.chapter}</div>
           {pivot && (
             <div className="tl2-folio-gutter-cite">
               <span className="dot" />
@@ -521,7 +525,7 @@ function StageMode({ ctx, tt, data, entities, locale, visibleEvents, setSelected
     return () => window.removeEventListener("keydown", fn);
   }, [go]);
 
-  if (!cur) return <div className="empty">No events</div>;
+  if (!cur) return <div className="empty">{tt("tl.empty.events")}</div>;
 
   const phase = _activePhases.find(p => p.id === cur.phase);
   const entity = entities.find(e => e.id === cur.id);
@@ -546,7 +550,7 @@ function StageMode({ ctx, tt, data, entities, locale, visibleEvents, setSelected
               onClick={() => setSelectedEventId(ev.id)}>
               <span className="tl2-stage-progress-num">{String(i+1).padStart(2,"0")}</span>
               <span className="tl2-stage-progress-mark" />
-              <span className="tl2-stage-progress-ch">ch{ev.chapter}</span>
+              <span className="tl2-stage-progress-ch">{window.t("rd.chapter", locale, {n: ev.chapter})}</span>
             </button>
           );
         })}
@@ -567,9 +571,10 @@ function StageMode({ ctx, tt, data, entities, locale, visibleEvents, setSelected
             const stageRoman = toRoman(cur.chapter);
             return (
               <div className="tl2-stage-sigil" style={{"--roman-chars": stageRoman.length}}>
-                <div className="tl2-stage-sigil-eyebrow">CHAPTER</div>
                 <div className="tl2-stage-sigil-roman">{stageRoman}</div>
-                <div className="tl2-stage-sigil-arabic">ch. {cur.chapter}</div>
+                {/* Stage mode has no citation line, so the numeral needs the
+                    chapter spelled out under it — localized, once. */}
+                <div className="tl2-stage-sigil-arabic">{tt("rd.chapter", {n: cur.chapter})}</div>
               </div>
             );
           })()}
@@ -597,7 +602,7 @@ function StageMode({ ctx, tt, data, entities, locale, visibleEvents, setSelected
             <span className="dim">·</span>
             <span>{window.friendlyChunkId(pivot.chunk, locale)}</span>
             <span className="dim">·</span>
-            <span className="conf">conf {(pivot.conf*100).toFixed(0)}</span>
+            <span className="conf">{tt("gv.conf")} {(pivot.conf*100).toFixed(0)}%</span>
             {pivot.verified && <>
               <span className="dim">·</span>
               <span className="ok">{tt("gv.verifiedBy")}</span>
@@ -832,7 +837,7 @@ function RibbonMode({ ctx, tt, data, entities, locale, visibleEvents, selectedEv
                 <span className="tl2-ribbon-conn" style={connStyle} />
                 <span className="tl2-ribbon-dot" />
                 <div className="tl2-ribbon-card" style={cardStyle}>
-                  <div className="tl2-ribbon-card-ch">CH {ev.chapter}</div>
+                  <div className="tl2-ribbon-card-ch">{window.t("rd.chapter", locale, {n: ev.chapter})}</div>
                   <div className="tl2-ribbon-card-title"><em>{name}</em></div>
                 </div>
               </div>
@@ -840,7 +845,7 @@ function RibbonMode({ ctx, tt, data, entities, locale, visibleEvents, selectedEv
           })}
           {!n && (
             <div className="tl2-ribbon-empty" style={{top: AXIS_Y}}>
-              {locale === "en" ? "No events in this phase" : locale === "zh-CN" ? "本阶段暂无事件" : locale === "zh-TW" ? "本階段暫無事件" : locale === "ja" ? "この段階にイベントはありません" : locale === "ko" ? "이 단계에 이벤트가 없습니다" : locale === "fr" ? "Aucun événement dans cette phase" : locale === "es" ? "Sin eventos en esta fase" : "Keine Ereignisse in dieser Phase"}
+              {window.t("tl.empty.phase", locale)}
             </div>
           )}
         </div>

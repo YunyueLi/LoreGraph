@@ -365,22 +365,11 @@ function ViewGraph({ ctx }) {
           onPointerDown={startDrag('left')}
           onDoubleClick={() => { setLeftCollapsed(c => !c); if (leftCollapsed) setLeftW(260); }} />
         <div className="gv-left-content">
-          {/* Mode switcher */}
-          <div className="gv-section-label" style={{marginBottom:10}}>{tt("gv.view")}</div>
-          <div className="gv-mode-switch">
-            {[
-              { k: "social", en: "Social", "zh-CN": "人物关系", "zh-TW":"人物關係", ja: "人間関係", ko: "사회", fr: "Social", es: "Social", de: "Sozial" },
-              { k: "themes", en: "Themes", "zh-CN": "主题图", "zh-TW":"主題圖", ja: "テーマ", ko: "주제", fr: "Thèmes", es: "Temas", de: "Themen" },
-            ].map(m => (
-              <button key={m.k}
-                className={"gv-mode-btn " + (viewMode === m.k ? "active" : "")}
-                onClick={() => { setViewMode(m.k); setSelectedEdgeId(null); }}>
-                {m[locale] || m.en}
-              </button>
-            ))}
-          </div>
-
-          <div className="gv-section-label" style={{marginTop:22, marginBottom:10}}>{tt("gv.edgeTypes")}</div>
+          {/* The social / themes switch lives in the topbar pill bar. It used to
+              be duplicated here as well, which left the same choice offered
+              twice on one screen under two different names (人物 / 主题 above,
+              人物关系 / 主题图 here) and ate the rail's first 60px. */}
+          <div className="gv-section-label" style={{marginBottom:10}}>{tt("gv.edgeTypes")}</div>
           {["STRUCTURAL","INTERACTS","ASSERTS","INFLUENCES","PREDICTS","SYMBOLIZES"].map(r => (
             <label key={r} className="gv-filter-row">
               <input type="checkbox" checked={edgeFilter[r]} onChange={() => toggleEdge(r)} />
@@ -1021,11 +1010,19 @@ function GraphCanvas({ visibleEntities, visibleEdges, positions, setLivePosition
                   <path fill="none" stroke={color}
                     strokeWidth={isSel ? 5 : 4} opacity="0.12" strokeLinecap="round" />
                 )}
+                {/* Casing: the canvas colour laid under the stroke so crossings
+                    read as over/under rather than dissolving into each other. */}
+                {!isMute && (
+                  <path fill="none" stroke="var(--gv-casing)"
+                    strokeWidth={((isSel || isHovered) ? baseW + 1.0 : baseW) + 2.6}
+                    strokeLinecap="round" opacity="0.9" vectorEffect="non-scaling-stroke" />
+                )}
                 <path fill="none" stroke={color}
+                  vectorEffect="non-scaling-stroke"
                   strokeWidth={(isSel || isHovered) ? baseW + 1.0 : baseW}
                   strokeDasharray={(isSel || isHovered) ? null : dash}
                   strokeLinecap="round"
-                  opacity={isMute ? 0.16 : ((isSel || isHovered) ? 1 : 0.42)}
+                  opacity={isMute ? 0.2 : ((isSel || isHovered) ? 1 : 0.72)}
                   markerEnd={hasArrow ? (isSel ? "url(#arr-sel)" : isMute ? "url(#arr-mute)" : `url(#arr-${edge.rel})`) : null}
                   style={{transition: "stroke-width 0.2s, opacity 0.2s"}} />
                 {isDouble && !isMute && (
@@ -1122,22 +1119,34 @@ const GraphNode = React.memo(function GraphNode({ entity, name, sel, mute, dragg
   const baseR = nodeRadius(entity);
   const r = baseR * (dragging ? 1.1 : sel ? 1.06 : hover ? 1.04 : 1);
   const opacity = mute ? 0.35 : 1;
-  const stroke = (sel || dragging) ? "#b8954a" : (hover ? "#8a6e36" : "#a08758");
-  const strokeWidth = (sel || dragging) ? 2.4 : 1.2;
-  const fill = (sel || dragging) ? "#fbf3dc" : "#fbf7ea";
+  // A real ink outline, not a wash. The old #a08758 hairline over a fill that
+  // matched the canvas exactly is why the graph read as a faint smudge.
+  const stroke = (sel || dragging) ? "#8a6e36" : (hover ? "#6a5a3a" : "var(--gv-node-ink)");
+  const strokeWidth = (sel || dragging) ? 2.6 : (hover ? 1.9 : 1.7);
+  const fill = (sel || dragging) ? "#fff9e8" : "var(--gv-node-fill)";
 
-  let shape;
-  if (entity.type === "agent") {
-    shape = <circle cx="0" cy="0" r={r} fill={fill} stroke={stroke} strokeWidth={strokeWidth} />;
-  } else if (entity.type === "object") {
-    shape = <rect x={-r} y={-r} width={r*2} height={r*2} rx="3" fill={fill} stroke={stroke} strokeWidth={strokeWidth} />;
-  } else if (entity.type === "event") {
-    shape = <rect x={-r} y={-r} width={r*2} height={r*2} rx="3" fill={fill} stroke={stroke} strokeWidth={strokeWidth} transform="rotate(45)" />;
-  } else if (entity.type === "concept") {
-    const w = r*1.05, h = r*1.2;
-    const pts = [`0,${-h}`,`${w*0.95},${-h/2}`,`${w*0.95},${h/2}`,`0,${h}`,`${-w*0.95},${h/2}`,`${-w*0.95},${-h/2}`].join(" ");
-    shape = <polygon points={pts} fill={fill} stroke={stroke} strokeWidth={strokeWidth} />;
-  }
+  // Same silhouette drawn twice: once fat in the canvas colour as a casing, so
+  // edges passing behind are cut cleanly and the node reads as being on top.
+  const silhouette = (props) => {
+    if (entity.type === "agent") return <circle cx="0" cy="0" r={r} {...props} />;
+    if (entity.type === "object") return <rect x={-r} y={-r} width={r*2} height={r*2} rx="3" {...props} />;
+    if (entity.type === "event")  return <rect x={-r} y={-r} width={r*2} height={r*2} rx="3" transform="rotate(45)" {...props} />;
+    if (entity.type === "concept") {
+      const w = r*1.05, h = r*1.2;
+      const pts = [`0,${-h}`,`${w*0.95},${-h/2}`,`${w*0.95},${h/2}`,`0,${h}`,`${-w*0.95},${h/2}`,`${-w*0.95},${-h/2}`].join(" ");
+      return <polygon points={pts} {...props} />;
+    }
+    return null;
+  };
+  // non-scaling-stroke keeps outlines at their intended pixel weight at every
+  // zoom. Without it the graph opens around 40% and a 1.7px ink line lands at
+  // two thirds of a pixel — which is exactly why the whole view looked washed.
+  const shape = (
+    <>
+      {silhouette({ fill: "var(--gv-casing)", stroke: "var(--gv-casing)", strokeWidth: 5, vectorEffect: "non-scaling-stroke" })}
+      {silhouette({ fill, stroke, strokeWidth, vectorEffect: "non-scaling-stroke" })}
+    </>
+  );
 
   const halo = sel && (
     <circle cx="0" cy="0" r={r + 14} fill="none" stroke="#b8954a" strokeWidth="0.6" opacity="0.4">
@@ -1193,7 +1202,7 @@ function PanelEntity({ entity, ctx, selectedEdgeId, setSelectedEdgeId }) {
   const { useState } = React;
   const [tab, setTab] = useState("outgoing");
 
-  if (!entity) return <div className="empty">No entity selected</div>;
+  if (!entity) return <div className="empty">{tt("gv.empty.noEntity")}</div>;
   const safeAliases = Array.isArray(entity.aliases) ? entity.aliases : [];
   const safeChapters = Array.isArray(entity.chapters) ? entity.chapters : [];
   const loc = window.entityLocale(entity.id, locale);
@@ -1228,7 +1237,7 @@ function PanelEntity({ entity, ctx, selectedEdgeId, setSelectedEdgeId }) {
             <div className="gv-panel-name"><em>{localizedName}</em></div>
             {locale !== "en" && entity.name !== localizedName && (
               <div style={{fontFamily:"'JetBrains Mono', monospace", fontSize:11, color:"var(--paper-text-mute)", letterSpacing:".06em", marginTop:2}}>
-                <span style={{color:"var(--gold-deep)", letterSpacing:".16em", textTransform:"uppercase", marginRight:6, fontSize:9.5}}>EN</span>{entity.name}
+                <span style={{color:"var(--gold-deep)", letterSpacing:"var(--track-l)", textTransform:"uppercase", marginRight:6, fontSize:"var(--fs-micro)"}}>EN</span>{entity.name}
               </div>
             )}
           </div>
@@ -1258,16 +1267,16 @@ function PanelEntity({ entity, ctx, selectedEdgeId, setSelectedEdgeId }) {
         <div className="gv-summary">{localizedGloss}</div>
 
         {tab === "outgoing" && out.map(e => <ClaimItem key={e.id} edge={e} ctx={ctx} selected={e.id === selectedEdgeId} onClick={() => setSelectedEdgeId(e.id)} dir="out" />)}
-        {tab === "outgoing" && out.length === 0 && <Empty msg="No outgoing claims" />}
+        {tab === "outgoing" && out.length === 0 && <Empty msg={tt("gv.empty.outgoing")} />}
 
         {tab === "incoming" && inc.map(e => <ClaimItem key={e.id} edge={e} ctx={ctx} selected={e.id === selectedEdgeId} onClick={() => setSelectedEdgeId(e.id)} dir="in" />)}
-        {tab === "incoming" && inc.length === 0 && <Empty msg="No incoming claims" />}
+        {tab === "incoming" && inc.length === 0 && <Empty msg={tt("gv.empty.incoming")} />}
 
         {tab === "glucose" && glucose.map((g, i) => (
           <div key={i} className="claim" style={{cursor:"default"}}>
             <div className="claim-rel">
               <span style={{fontFamily:"'Spectral', serif", fontStyle:"italic", textTransform:"none", letterSpacing:0, fontSize:12, color:"var(--paper-text)"}}>{g.dim}</span>
-              <span style={{marginLeft:10, fontSize:9}}>{g.depth}</span>
+              <span style={{marginLeft:10, fontSize:"var(--fs-micro)"}}>{g.depth}</span>
             </div>
             <div className="claim-text">{g.text}</div>
             <EvidPeek>
@@ -1279,7 +1288,7 @@ function PanelEntity({ entity, ctx, selectedEdgeId, setSelectedEdgeId }) {
             </div>
           </div>
         ))}
-        {tab === "glucose" && glucose.length === 0 && <Empty msg="No GLUCOSE facts for this entity" />}
+        {tab === "glucose" && glucose.length === 0 && <Empty msg={tt("gv.empty.glucose")} />}
 
         {tab === "mentions" && (
           <div>
@@ -1292,7 +1301,7 @@ function PanelEntity({ entity, ctx, selectedEdgeId, setSelectedEdgeId }) {
                 return <div key={n} title={`ch${n}`} style={{
                   aspectRatio:"1", border:"1px solid var(--paper-line)",
                   background: isActive ? "var(--gold)" : "transparent",
-                  fontFamily:"'JetBrains Mono', monospace", fontSize: 9,
+                  fontFamily:"'JetBrains Mono', monospace", fontSize: "var(--fs-micro)",
                   display:"grid", placeItems:"center",
                   color: isActive ? "var(--ink)" : "var(--paper-text-mute)",
                 }}>{n}</div>;
@@ -1311,23 +1320,24 @@ function ClaimItem({ edge, ctx, selected, onClick, dir }) {
   const dst = entities.find(e => e.id === edge.dst);
   const sLoc = window.entityLocale(edge.src, locale)?.name || src?.name;
   const dLoc = window.entityLocale(edge.dst, locale)?.name || dst?.name;
-  // edge.claim carries the English predicate ("X — converses with — Y"). For
-  // non-English locales the predicate verb isn't translated, so reconstruct the
-  // claim from localized names + the localized relation type instead of showing
-  // raw English. English keeps the specific predicate verb.
-  const claimText = locale === "en"
-    ? edge.claim
-    : `${sLoc} — ${window.t("rel."+edge.rel)} — ${dLoc}`;
+  // Stated once, matching the Index view: the extracted predicate (edge.label,
+  // in the source's own words) between the two entities, with the category the
+  // pipeline filed the edge under as a tag. This card used to print the triple
+  // twice — as a relation line, then again as a sentence made of the same parts.
+  const predicate = edge.label || window.t("rel." + edge.rel);
+  const arrow = dir === "out" ? "→" : "←";
   return (
-    <div className="claim" onClick={onClick} style={{borderLeftColor: selected ? "var(--gold)" : undefined}}>
+    <div className={"claim " + (selected ? "selected" : "")}
+         {...window.clickable(onClick)}
+         aria-pressed={selected}>
       <div className="claim-rel">
         <span className="src" onClick={(e) => { e.stopPropagation(); gotoEntity(edge.src); }}>{sLoc}</span>
-        <span className="arrow">{dir === "out" ? "→" : "←"}</span>
-        {window.t("rel."+edge.rel)}
-        <span className="arrow">{dir === "out" ? "→" : "←"}</span>
+        <span className="arrow">{arrow}</span>
+        <span className="pred">{predicate}</span>
+        <span className="arrow">{arrow}</span>
         <span className="dst" onClick={(e) => { e.stopPropagation(); gotoEntity(edge.dst); }}>{dLoc}</span>
+        <span className="cat">{window.t("rel." + edge.rel)}</span>
       </div>
-      <div className="claim-text">{claimText}</div>
       <EvidPeek>
         <div className="evid">{edge.evidence}</div>
       </EvidPeek>
