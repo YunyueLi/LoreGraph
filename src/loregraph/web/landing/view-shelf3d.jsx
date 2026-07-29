@@ -1120,6 +1120,8 @@ function BookShelf3D({ books, activeId, ctx, onOpen }) {
         lift: 0,          // 0..1 hover
         fly: 0,           // 0..1 flown out
         coverLoaded: false,
+        bh,               // this volume's own height — books are not all one size
+        thick: p.w,       // …nor one thickness; the framing solver needs both
       });
       raycastMeshes.push(mesh);
     });
@@ -1489,6 +1491,92 @@ function BookShelf3D({ books, activeId, ctx, onOpen }) {
       return cur + (target - cur) * (1 - Math.exp(-lambda * dt));
     }
 
+    // ---- where a volume is presented ----
+    // The framing used to be world constants: fly to 52% of the camera distance,
+    // shift left by 30% of the frustum, scale up 28%. That fixes the volume's
+    // size in WORLD units, so how large it actually landed on screen was
+    // whatever the stage's shape made it — small and adrift in a wide, short
+    // stage, clipped at the top in a tall one — and the sideways shift was a
+    // guess at where the info panel wasn't.
+    //
+    // Solved instead: measure the area the panel leaves free, pick the distance
+    // at which the volume fills a set share of THAT, and centre it there. Size
+    // and position then read the same at any viewport, and the panel can move
+    // without this needing to know where it went.
+    const PRESENT_FILL_H = 0.80;   // of the free area's height…
+    const PRESENT_FILL_W = 0.74;   // …and its width, whichever binds first
+    const PRESENT_TILT = 0.34;     // radians turned off face-on, so a sliver of spine shows
+    const PRESENT_TIP = 0.06;      // …and tipped back, which adds board depth to its height
+
+    function freeArea(stage) {
+      const box = { l: 0, t: 0, r: stage.width, b: stage.height };
+      const panel = mount.parentElement && mount.parentElement.querySelector(".shelf3d-panel");
+      if (!panel || stage.width <= 0) return box;
+      const p = panel.getBoundingClientRect();
+      const gap = 20;
+      // The panel is docked against one edge — the right of the stage on a wide
+      // screen, the bottom on a narrow one. Give up whichever side it holds.
+      if (p.bottom - stage.top > stage.height - 40) {
+        box.b = Math.max(stage.height * 0.34, p.top - stage.top - gap);
+      } else {
+        box.r = Math.max(stage.width * 0.34, p.left - stage.left - gap);
+      }
+      return box;
+    }
+
+    function presentAt(entry) {
+      const stage = mount.getBoundingClientRect();
+      const halfFov = Math.tan((camera.fov * Math.PI) / 360);
+      const box = freeArea(stage);
+      const fw = Math.max(1, box.r - box.l);
+      const fh = Math.max(1, box.b - box.t);
+
+      // How large the volume actually projects, which is not its nominal size.
+      // Volumes vary in height and thickness, they are turned to show a sliver
+      // of spine, and they are tipped back slightly — so the board's own depth
+      // adds to what the frame has to hold. Measuring the real volume is also
+      // what makes a short book and a tall one present at the same size instead
+      // of the short one arriving smaller.
+      const wide = S3D.BOOK_DEPTH * Math.cos(PRESENT_TILT) + entry.thick * Math.sin(PRESENT_TILT);
+      const tall = entry.bh * Math.cos(PRESENT_TIP) + S3D.BOOK_DEPTH * Math.sin(PRESENT_TIP);
+
+      // At distance d the frame is 2·halfFov·d tall, of which the free area is
+      // fh/stage.height. Solve each axis for the distance that fills its share,
+      // and take the farther — the axis that binds first.
+      //
+      // Solved at the volume's NEAR face, not its centre. A book is 0.62 deep and
+      // is presented barely a unit from a 52° lens, so the corner closest to the
+      // camera is magnified by around a sixth over the middle. Measured from the
+      // centre, a volume asked to fill four fifths of the frame rendered at
+      // ninety-two percent and all but touched the bottom edge. Adding the near
+      // half-depth to the distance solves the same equation where the geometry
+      // actually is.
+      const near = (entry.thick * Math.cos(PRESENT_TILT) + S3D.BOOK_DEPTH * Math.sin(PRESENT_TILT)) / 2;
+      const dH = near + (tall * stage.height) / (2 * halfFov * PRESENT_FILL_H * fh);
+      const dW = near + (wide * stage.width) / (2 * halfFov * camera.aspect * PRESENT_FILL_W * fw);
+      const want = Math.max(dH, dW);
+
+      // …but it can only come as far forward as the shelf allows: the camera sits
+      // close on a wide, short stage — close enough that the distance the framing
+      // asks for would put the volume back inside the row it came out of. Cap the
+      // distance there and take the rest out of scale. Apparent size goes as
+      // scale/distance, so shrinking both by the same factor holds the framing
+      // exactly. Without this the volume simply overflowed a short stage, cropped
+      // top and bottom.
+      const room = Math.max(0.6, cam.z - S3D.BOOK_DEPTH / 2 - 0.45);
+      const d = Math.min(want, room);
+
+      const halfH = halfFov * d;
+      const cx = (box.l + box.r) / 2;
+      const cy = (box.t + box.b) / 2;
+      return {
+        tx: cam.tx + ((2 * cx) / stage.width - 1) * halfH * camera.aspect,
+        ty: cam.ty + (1 - (2 * cy) / stage.height) * halfH,
+        tz: cam.z - d,
+        scale: d / want,
+      };
+    }
+
     function lerp(a, b, t) { return a + (b - a) * t; }
     function smoothstep(a, b, x) {
       const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
@@ -1520,18 +1608,7 @@ function BookShelf3D({ books, activeId, ctx, onOpen }) {
         e.lift = damp(e.lift, isHover ? 1 : 0, 10, dt);
 
         if (e.fly > 0.001) {
-          // Target: clear of the shelf face and well in front of it, on the near
-          // side of the camera. This used to be a fixed 2.7 units back from the
-          // camera, which was fine when the camera sat ~10 units out — but once
-          // the framing moved to fill-the-frame (~3 units out) it dropped the
-          // volume 0.2 units off the shelf, so it intersected its neighbours.
-          const front = S3D.BOOK_DEPTH / 2;
-          const reach = Math.max(0.55, (cam.z - front) * 0.52);
-          const tz = front + reach;
-          // Offset left of centre so the info panel on the right never covers it.
-          const halfH = Math.tan((camera.fov * Math.PI) / 360) * (cam.z - tz);
-          const tx = cam.tx - halfH * camera.aspect * 0.3;
-          const ty = cam.ty + halfH * 0.04;
+          const { tx, ty, tz, scale } = presentAt(e);
 
           // The volume is DRAWN OFF THE SHELF before it turns. Moving, turning
           // and scaling on one shared progress sent it swinging sideways through
@@ -1546,10 +1623,13 @@ function BookShelf3D({ books, activeId, ctx, onOpen }) {
           e.group.position.z = damp(e.group.position.z, lerp(e.base.z, tz, out), 26, dt);
           e.group.position.x = damp(e.group.position.x, lerp(e.base.x, tx, move), 26, dt);
           e.group.position.y = damp(e.group.position.y, lerp(e.base.y, ty, move), 26, dt);
-          e.group.rotation.y = damp(e.group.rotation.y, turn * (-Math.PI / 2 + 0.34), 22, dt);
-          e.group.rotation.x = damp(e.group.rotation.x, turn * -0.06, 22, dt);
+          e.group.rotation.y = damp(e.group.rotation.y, turn * (-Math.PI / 2 + PRESENT_TILT), 22, dt);
+          e.group.rotation.x = damp(e.group.rotation.x, turn * -PRESENT_TIP, 22, dt);
           e.group.rotation.z = damp(e.group.rotation.z, e.base.rz * (1 - out), 22, dt);
-          e.group.scale.setScalar(damp(e.group.scale.x, 1 + move * 0.28, 22, dt));
+          // Scale is the framing solver's, not a flourish: it is 1 whenever the
+          // volume can simply be placed at the right distance, and only drops
+          // when the shelf is too close behind it for that.
+          e.group.scale.setScalar(damp(e.group.scale.x, lerp(1, scale, move), 22, dt));
         } else {
           // rest / hover: lift toward the room (+Z) and up a touch
           e.group.position.x = damp(e.group.position.x, e.base.x, 18, dt);
