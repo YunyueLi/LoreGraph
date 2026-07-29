@@ -16,12 +16,24 @@ change it on the generating side and re-export.
 Because a hand edit here would not survive that re-export, the fixes the current
 export still needs live in [`../marketing-patch.cjs`](../marketing-patch.cjs) and
 are applied as the build copies each page. Read that file for the full list and
-the reasoning; in short it rewrites the site's own URL (the export was built
-against the old GitHub Pages address), lazy-loads the fifteen plates below the
-fold, darkens the two palette tones that fell under 4.5:1 contrast where they
-carry text, drops `.html` from internal links so navigation stops paying a
-redirect, and points the two corpus cards that were `href="#"` at the README
-section they quote.
+the measurements behind each one. In short:
+
+- **The site's own URL.** The export was built against the old GitHub Pages
+  address, so `canonical` pointed crawlers at a stale mirror and `og:image` at a
+  404 — no social card image on any of the four pages.
+- **A phone layout.** `.hero-stats` was `flex-wrap: nowrap`, so its 524px
+  min-content sized the hero grid's only column and floored the whole document at
+  541px wide: every phone scrolled sideways. The header also hid its links *and*
+  its call to action below 1080px with no menu in their place.
+- **A way into the app.** The only links to it were five 28px arrows starting
+  6396px down a 16000px page; the most prominent button on the site was "Star on
+  GitHub". The app is now the primary action in the header and the hero, in all
+  four languages.
+- **Contrast.** Two palette tones and three filled buttons sat under 4.5:1.
+- **Weight.** The fifteen plates below the fold are lazy; the hero preloads.
+- **Links.** `.html` dropped from internal links, so navigation stops paying a
+  redirect; the two corpus cards that were `href="#"` now open the README section
+  they quote.
 
 **Every patch asserts it matched.** If a future export changes the markup out
 from under one, the build fails rather than shipping the page with the bug back
