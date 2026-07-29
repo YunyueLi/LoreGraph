@@ -99,6 +99,18 @@ const CORRECTIONS = `
  * separating and the four links ran together. */
 .lang-switch { gap: 14px; }
 
+/* The corpus section's 90px against every other section's 130px is not an
+ * inconsistency and is deliberately left alone: it wraps the dark panel, which
+ * carries 110px of its own, so 90 + 110 comes out ahead of a plain 130. The
+ * class is called .tight for that reason.
+ *
+ * The radii are a system: 50% for every ring, 999px for every pill,
+ * 18px for both card types, 12px for the image frame inside a card, 4px for the
+ * small chips, and 32px for the one big panel. Two values sit 2px off the family
+ * they belong to and nowhere else — an image frame at 14 and a chip at 6. */
+.lab-img { border-radius: 12px; }
+.hero-art .index { border-radius: 4px; }
+
 /* The bibliography row moved here from the section that used to restate the rule.
  * It was laid out inside a narrow copy column; here it spans the section, so it
  * gets its own breathing room and the partner list can use the width. */
