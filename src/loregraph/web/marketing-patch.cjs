@@ -114,12 +114,23 @@ const CORRECTIONS = `
   .lang-switch { flex-wrap: wrap; }
 }
 
-/* Art frames that hang past their column. The plates are capped at 600-620px
- * and the containers are narrower than that below desktop. */
+/* These four frames took their width from their content, which is one lazy
+ * plate. Until that plate loads its intrinsic size is 0x0, so the frame
+ * collapsed to 0 wide — and each frame anchors an absolutely-positioned caption,
+ * which then had nothing to be positioned against and printed straight over the
+ * body copy in the next column. That is the overlap of
+ * "Closed-world extraction: every claim goes back to a line in the book" across
+ * "It is told, explicitly, to forget the Elizabeth Bennet it already knows."
+ *
+ * Sizing them from the column instead of from the image fixes the cause: the
+ * frame is the right size before the plate arrives, so the caption has a box to
+ * sit in and the plate fades into a space already reserved for it. (The earlier
+ * pass was wrong to conclude no image needed dimensions — true for .lab-img and
+ * the card frames, which set their own aspect-ratio, false for these four.) */
 .about-art,
 .capabilities-art,
 .cta-art,
-.testimonial-art { max-width: 100%; }
+.testimonial-art { width: 100%; max-width: 100%; }
 
 /* The footer keeps three columns down to the smallest phone. Their min-content
  * adds to 292px inside a 278px track once the two 40px gaps are taken, so the
@@ -174,21 +185,23 @@ const CORRECTIONS = `
 }
 
 @media (max-width: 1080px) {
-  /* Rotated ornament pinned 32-42px outside the art frame. There is no margin
-   * to hang it in below desktop, and vertical 10px type is not read on a phone. */
+  /* Rotated ornament pinned 32-42px outside the art frame, with no margin to
+   * hang it in below desktop. Hiding it also clears a real overlap: the closing
+   * section's "VIII" numeral sat on top of the "LOREGRAPH · APACHE-2.0" ribbon. */
   .capabilities-art .ribbon,
   .cta-art .ribbon { display: none; }
-
-  /* This one is real copy, so it flows into the column instead of hanging
-   * outside it. */
-  .about-side-note {
-    position: static;
-    max-width: none;
-    text-align: left;
-    margin-top: 18px;
-  }
-  .about-side-note b { margin: 0 auto 10px 0; }
 }
+
+/* NOTHING here repositions .about-side-note, and that is deliberate. An earlier
+ * pass made it position:static below 1080px to stop it hanging 20px past the
+ * viewport — but that 20px was measured mid-transition, while the reveal was
+ * still animating, and does not exist in the settled layout. The rule was
+ * therefore fixing nothing, and it dropped the note into .about-art's flow
+ * directly on top of the absolutely-positioned .about-caption: four overlapping
+ * text runs, "It is told, explicitly, to forget the Elizabeth Bennet it already
+ * knows" printed straight through "Closed-world extraction: every claim goes
+ * back to a line in the book." Measure the settled layout, and measure overlap
+ * as well as overflow. */
 
 /* White on the bright coral is 2.99:1, under the 4.5:1 floor — and these are
  * the two buttons carrying the page's main actions. The darker tone reads the
