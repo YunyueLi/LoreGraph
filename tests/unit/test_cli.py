@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -10,6 +11,21 @@ from typer.testing import CliRunner
 from loregraph.cli.main import app
 
 runner = CliRunner()
+
+_ANSI = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def plain(output: str) -> str:
+    """Output with SGR escapes removed, for asserting on what a reader sees.
+
+    Rich styles option names inside an error panel, and it emits those styles
+    mid-token: `--frontend-id` can come through as `frontend\x1b[0m…-id`, so a
+    substring test against the raw text fails even though the message is right
+    there on screen. Whether it does depends on the Rich version and on whether
+    it thinks it is writing to a terminal, which is why this passed locally and
+    failed on CI. Assert on the text, not on the colour.
+    """
+    return _ANSI.sub("", output)
 
 
 @pytest.mark.unit
@@ -40,4 +56,4 @@ def test_export_command_delegates_to_exporter(tmp_path: object) -> None:
 def test_factions_only_requires_frontend_id() -> None:
     result = runner.invoke(app, ["factions", "--book-id", "1", "--factions-only"])
     assert result.exit_code != 0
-    assert "frontend-id" in result.output.lower()
+    assert "frontend-id" in plain(result.output).lower()
