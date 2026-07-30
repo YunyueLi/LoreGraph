@@ -111,6 +111,67 @@ const COPY_EDITS = JSON.parse(
   fs.readFileSync(path.join(__dirname, "marketing-copy-edits.json"), "utf8"),
 );
 
+// Remove CSS comments from a stylesheet, keeping the rules byte-for-byte.
+//
+// Quote-aware rather than a bare /\/\*[\s\S]*?\*\//g, because these stylesheets
+// carry an SVG data URL inside url("…") and a future rule could carry a string
+// with /* in it — a naive strip would swallow everything to the next */ and take
+// live rules with it. And self-checking, because that failure is invisible: the
+// page still builds, still validates, and is simply missing a rule until someone
+// notices the layout. Counting braces inside the comments as they are skipped
+// makes the check exact instead of a heuristic about size.
+function stripCssComments(css) {
+  const pass = (src) => {
+    let out = "";
+    let quote = null;
+    let bracesInComments = 0;
+    for (let i = 0; i < src.length; i++) {
+      const ch = src[i];
+      if (quote) {
+        out += ch;
+        if (ch === "\\") out += src[++i] ?? "";
+        else if (ch === quote) quote = null;
+        continue;
+      }
+      if (ch === '"' || ch === "'") {
+        quote = ch;
+        out += ch;
+        continue;
+      }
+      if (ch === "/" && src[i + 1] === "*") {
+        const end = src.indexOf("*/", i + 2);
+        if (end < 0) throw new Error("marketing-patch strip-css-comments: unterminated comment");
+        for (let j = i; j < end; j++) if (src[j] === "{" || src[j] === "}") bracesInComments++;
+        i = end + 1;
+        continue;
+      }
+      out += ch;
+    }
+    if (quote) throw new Error("marketing-patch strip-css-comments: unterminated string");
+    return { out, bracesInComments };
+  };
+
+  const { out, bracesInComments } = pass(css);
+  const braces = (s) => (s.match(/[{}]/g) || []).length;
+  if (braces(out) !== braces(css) - bracesInComments) {
+    throw new Error(
+      `marketing-patch strip-css-comments: ${braces(css) - bracesInComments} braces expected, ${braces(out)} left — a rule was eaten`,
+    );
+  }
+  // Idempotence is the check that nothing comment-shaped survived, and it is the
+  // quote-aware one: a bare search for /* in the output would fire on the legal
+  // `content: "/*"` that the pass above deliberately preserves.
+  if (pass(out).out !== out) {
+    throw new Error("marketing-patch strip-css-comments: a comment survived the strip");
+  }
+  // What the comments leave behind: their indentation, and the blank lines that
+  // separated them from the rules they explained.
+  return out
+    .replace(/[ \t]+$/gm, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/^\s+/, "");
+}
+
 const IMG_RE = /<img\b[^>]*>/g;
 
 // The stylesheet documents itself with prose, and that prose contains tag-shaped
@@ -816,6 +877,27 @@ const PATCHES = [
           return `${head}href='${CORPUS_URL}' ${LINK_ATTRS}`;
         }),
       );
+      return { html: out, count };
+    },
+  },
+  {
+    // Last, so it also strips the corrections this build just inlined.
+    name: "strip-css-comments",
+    why: "23% of every page's bytes were CSS comments — 28 KB of build notes in the head",
+    // The prose is the point of these stylesheets: nearly every rule records the
+    // measurement behind it, and the corrections file is 70% comment by weight.
+    // It belongs in the repo. It does not belong in the bytes eight pages hand
+    // every reader, in the <head>, on the critical path, before anything paints.
+    // The export's own stylesheet documents itself the same way and keeps its
+    // prose in marketing/, so it can ship without it too.
+    run(html) {
+      let count = 0;
+      const out = html.replace(/(<style[^>]*>)([\s\S]*?)(<\/style>)/g, (m, open, css, close) => {
+        const stripped = stripCssComments(css);
+        if (stripped === css) return m;
+        count++;
+        return open + stripped + close;
+      });
       return { html: out, count };
     },
   },

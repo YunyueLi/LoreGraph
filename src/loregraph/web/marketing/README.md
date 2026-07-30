@@ -103,6 +103,13 @@ short:
   single JSON file of `{en, zh, ja, fr}` strings; these edits are exact-string
   replacements standing in for it. Move them into the deck and delete the patch.
 
+- **Weight, again.** Both stylesheets document themselves in prose — nearly every
+  rule records the measurement behind it, and the corrections file is 70% comment
+  by weight. That belongs in the repo, not in the `<head>` of eight pages: 28 KB
+  of build notes per page, 23% of every byte a reader downloads, ahead of anything
+  that paints. The pages now ship without it and the prose stays here. English `/`
+  went from 119 KB to 92 KB, and from 30 KB to 19 KB over the wire.
+
 **Every patch asserts it matched.** If a future export changes the markup out
 from under one, the build fails rather than shipping the page with the bug back
 in it — so a patch that stops matching is either already fixed upstream (delete
@@ -115,11 +122,13 @@ caught two mistakes while it was being written — a guard that mistook the cred
 pages for landing pages, and a French colon preceded by U+202F rather than a
 plain space.
 
-One more assertion guards a fix that would otherwise fail invisibly: the header's
+Two more assertions guard fixes that would otherwise fail invisibly. The header's
 copy of the paper texture is compared against the export's own `body::before`
 rather than trusted, because the two live in different files now and an export
 that re-tuned its texture would leave the copy quietly mismatched — the tone seam
-back, one shade smaller and much harder to see.
+back, one shade smaller and much harder to see. And the comment stripper is
+quote-aware and checked for idempotence: a bare regex would swallow a live rule
+if a stylesheet ever carried `content: "/*"`, and the page would still build.
 
 Two things the patch step is careful *not* to do. The Chinese and Japanese pages
 carry their own adaptation block — CJK font stacks, `font-synthesis-style: none`
