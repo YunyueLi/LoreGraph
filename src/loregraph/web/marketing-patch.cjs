@@ -99,6 +99,100 @@ function assertHeaderTextureMatchesGround(html) {
   }
 }
 
+// Every collage plate on the page sits in a frame that declares its own
+// aspect-ratio, and object-fit: cover then quietly discards whatever does not fit.
+// Two of the seven frames were the wrong shape for the plates they hold, and the
+// corrections give them the plates' shape instead. That fix is only correct as long
+// as both sides stay put, and neither side is under this repo's control: the plates
+// are re-exported from the design project and the frames are declared in the
+// exported stylesheet.
+//
+// So the build reads the real pixel dimensions out of the WebP files and compares
+// them with the ratio each frame declares. A re-export that changes either one
+// fails here instead of silently cropping the artwork again.
+const PLATE_FRAMES = [
+  { frame: ".about-art", plates: ["about.webp"] },
+  { frame: ".capabilities-art", plates: ["capabilities.webp"] },
+  { frame: ".testimonial-art", plates: ["testimonial.webp"] },
+  { frame: ".cta-art", plates: ["cta.webp"] },
+  { frame: ".method-step .img", plates: ["method-1.webp", "method-2.webp", "method-3.webp", "method-4.webp"] },
+  { frame: ".lab-img", plates: ["lab-1.webp", "lab-2.webp", "lab-3.webp", "lab-4.webp", "lab-5.webp"] },
+  { frame: ".work-card .img", plates: ["work-1.webp", "work-2.webp"] },
+];
+
+// Intrinsic size from a WebP header — the three container forms a plate can take.
+// Cheaper and more honest than trusting a filename convention or a note in a
+// comment, and it needs no image library on the build machine.
+function webpSize(buf) {
+  if (buf.length < 30 || buf.toString("ascii", 0, 4) !== "RIFF" || buf.toString("ascii", 8, 12) !== "WEBP") {
+    return null;
+  }
+  let at = 12;
+  while (at + 8 <= buf.length) {
+    const tag = buf.toString("ascii", at, at + 4);
+    const size = buf.readUInt32LE(at + 4);
+    const body = at + 8;
+    if (tag === "VP8X") return { w: (buf.readUIntLE(body + 4, 3) & 0xffffff) + 1, h: (buf.readUIntLE(body + 7, 3) & 0xffffff) + 1 };
+    if (tag === "VP8 ") {
+      // 3-byte frame tag, then the 3-byte sync code, then two 16-bit fields whose
+      // low 14 bits are the dimensions.
+      if (buf.readUIntBE(body + 3, 3) !== 0x9d012a) return null;
+      return { w: buf.readUInt16LE(body + 6) & 0x3fff, h: buf.readUInt16LE(body + 8) & 0x3fff };
+    }
+    if (tag === "VP8L") {
+      const bits = buf.readUInt32LE(body + 1);
+      return { w: (bits & 0x3fff) + 1, h: ((bits >> 14) & 0x3fff) + 1 };
+    }
+    at = body + size + (size % 2); // chunks are padded to an even length
+  }
+  return null;
+}
+
+// The ratio a frame ends up with: the corrections are appended after the export's
+// stylesheet, so a declaration there wins.
+function declaredRatio(css, frame) {
+  let found = null;
+  let at = -1;
+  while ((at = css.indexOf(frame + " {", at + 1)) >= 0) {
+    const block = css.slice(at, css.indexOf("}", at));
+    const m = block.match(/aspect-ratio:\s*([\d.]+)\s*\/\s*([\d.]+)/);
+    if (m) found = Number(m[1]) / Number(m[2]);
+  }
+  return found;
+}
+
+const PLATES_DIR = path.join(__dirname, "marketing", "assets");
+
+function assertPlateFramesFitTheirPlates(html) {
+  const css = html + "\n" + CORRECTIONS;
+  const wrong = [];
+  for (const { frame, plates } of PLATE_FRAMES) {
+    const declared = declaredRatio(css, frame);
+    if (declared == null) {
+      throw new Error(`marketing-patch plate-frames: ${frame} no longer declares an aspect-ratio`);
+    }
+    for (const file of plates) {
+      const size = webpSize(fs.readFileSync(path.join(PLATES_DIR, file)));
+      if (!size) throw new Error(`marketing-patch plate-frames: cannot read the size of ${file}`);
+      const real = size.w / size.h;
+      if (Math.abs(real - declared) > 0.005) {
+        const lost =
+          real < declared
+            ? `${Math.round((1 - real / declared) * 100)}% of its height`
+            : `${Math.round((1 - declared / real) * 100)}% of its width`;
+        wrong.push(`${frame} declares ${declared.toFixed(3)}, ${file} is ${size.w}×${size.h} (${real.toFixed(3)}) — cover throws away ${lost}`);
+      }
+    }
+  }
+  if (wrong.length) {
+    throw new Error(
+      "marketing-patch plate-frames: a frame is the wrong shape for the plates it holds.\n  " +
+        wrong.join("\n  ") +
+        "\nGive the frame the plates' ratio in marketing-corrections.css, or re-export the plates.",
+    );
+  }
+}
+
 // Exact-string copy edits, per page language, in marketing-copy-edits.json. Data
 // rather than code, because that is what they are: the copy deck upstream is one
 // JSON file of {en, zh, ja, fr} strings, and these pairs are edits to it that
@@ -700,6 +794,9 @@ const PATCHES = [
     run(html) {
       if (!html.includes("</head>")) return { html, count: 0 };
       assertHeaderTextureMatchesGround(html);
+      // The plate frames only exist on the landing pages; the credits pages carry
+      // the same <head> but none of the sections.
+      if (html.includes("<section class='hero'")) assertPlateFramesFitTheirPlates(html);
       const tag = `<style>\n${CORRECTIONS}</style>\n`;
       return { html: html.replace("</head>", tag + "</head>"), count: 1 };
     },

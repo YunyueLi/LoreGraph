@@ -654,3 +654,25 @@ html[lang='ja'] .work-copy h2 { line-height: 1.2; }
   .foot-grid .foot-col:nth-child(4),
   .foot-grid .foot-col:nth-child(5) { display: block; }
 }
+
+/* Every plate on the page is one of two shapes: 1024×1024 or 768×1024. Five of
+ * the seven frames declare the ratio their plates actually are. Two do not, and
+ * object-fit: cover then throws away the difference without saying so.
+ *
+ *   .work-card .img   4 / 3 around a 3 / 4 plate — 44% of the HEIGHT gone. Not a
+ *                     trim: a landscape window onto a portrait picture, filled by
+ *                     scaling the plate up 1.78× and cutting 22% off each end.
+ *                     The Botticelli sheet loses all three figures' heads and
+ *                     shows a band of drapery; the fan-shaped calligraphy is
+ *                     enlarged until it touches the edges. In both cases the
+ *                     mount, the margins and the registration marks — the whole
+ *                     reason these are plates and not stock photos — are outside
+ *                     the frame.
+ *   .lab-img          4 / 5 around a 3 / 4 plate — 6% of the height, which is
+ *                     exactly where the corner registration marks sit. Five
+ *                     plates in a row, each with its top and bottom marks clipped.
+ *
+ * So the frames take the plates' own ratio and cover has nothing left to cut.
+ * The corpus cards get taller, which is what a portrait plate shown whole is. */
+.work-card .img { aspect-ratio: 3 / 4; }
+.lab-img { aspect-ratio: 3 / 4; }

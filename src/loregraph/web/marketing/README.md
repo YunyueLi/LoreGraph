@@ -110,6 +110,17 @@ short:
   that paints. The pages now ship without it and the prose stays here. English `/`
   went from 119 KB to 92 KB, and from 30 KB to 19 KB over the wire.
 
+- **Frames the shape of the plates in them.** Every plate is 1024×1024 or
+  768×1024, and five of the seven frames declare the ratio their plates actually
+  are. Two did not, and `object-fit: cover` discarded the difference without
+  saying so. `.work-card .img` was 4/3 around a 3/4 plate — not a trim but a
+  landscape window onto a portrait picture, the plate scaled up 1.78× and 22% cut
+  off each end: the Botticelli sheet lost all three figures' heads and showed a
+  band of drapery, and the fan-shaped calligraphy was enlarged until it touched
+  the edges. `.lab-img` was 4/5 around the same 3/4 shape — 6% of the height,
+  which is exactly where the corner registration marks sit, on five plates in a
+  row. The frames now take the plates' ratio and `cover` has nothing left to cut.
+
 **Every patch asserts it matched.** If a future export changes the markup out
 from under one, the build fails rather than shipping the page with the bug back
 in it — so a patch that stops matching is either already fixed upstream (delete
@@ -122,13 +133,38 @@ caught two mistakes while it was being written — a guard that mistook the cred
 pages for landing pages, and a French colon preceded by U+202F rather than a
 plain space.
 
-Two more assertions guard fixes that would otherwise fail invisibly. The header's
-copy of the paper texture is compared against the export's own `body::before`
-rather than trusted, because the two live in different files now and an export
-that re-tuned its texture would leave the copy quietly mismatched — the tone seam
-back, one shade smaller and much harder to see. And the comment stripper is
-quote-aware and checked for idempotence: a bare regex would swallow a live rule
-if a stylesheet ever carried `content: "/*"`, and the page would still build.
+Three more assertions guard fixes that would otherwise fail invisibly. The
+header's copy of the paper texture is compared against the export's own
+`body::before` rather than trusted, because the two live in different files now
+and an export that re-tuned its texture would leave the copy quietly mismatched —
+the tone seam back, one shade smaller and much harder to see. Every plate's real
+pixel dimensions are read out of its WebP header and compared with the ratio its
+frame declares, because that fix depends on two things this repo does not control:
+the plates come from the design project, the frames from the exported stylesheet.
+A re-export that changes either fails the build with the arithmetic — "cover
+throws away 44% of its height" — instead of cropping the artwork again in silence.
+And the comment stripper is quote-aware and checked for idempotence: a bare regex
+would swallow a live rule if a stylesheet ever carried `content: "/*"`, and the
+page would still build.
+
+## Measured, and deliberately not fixed here
+
+The reading room's five plates hold objects of very different visual weight. Ink
+covers 58% of the first plate's area, 49% of the second, then 28%, 23% and 22% — a
+2.6× spread across one row, which is why the row reads as unfinished next to the
+rest of the page.
+
+CSS cannot honestly close that gap. Two of the five objects are landscape — a
+hanging scroll and a type specimen — inside a portrait frame, and a third is a wide
+krater. Scaling any of them until its ink matched the manuscript leaf's would push
+it past the frame's sides and cut the object itself rather than its mount; matching
+by ink area instead of height does the same to the scroll. The fix is to re-mount
+those plates larger on their sheet, upstream, where the crop takes paper.
+
+It is also the one correction that could not assert itself if it were done by eye.
+Per-plate zoom factors are tuned to particular pictures, and a re-export would
+apply the old numbers to new images with nothing to catch it. The ratio rule can be
+checked, so the ratio rule is what lives here.
 
 Two things the patch step is careful *not* to do. The Chinese and Japanese pages
 carry their own adaptation block — CJK font stacks, `font-synthesis-style: none`
