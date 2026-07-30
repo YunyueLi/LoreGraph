@@ -637,6 +637,65 @@ html[lang='ja'] .work-copy h2 { line-height: 1.2; }
 }
 `;
 
+// Exact-string copy edits, per page language. Every pair must match exactly once
+// on its page or the build fails — these are sentences, and a near-miss would
+// silently ship half an edit. See the copy-edits patch for what each one is for.
+const SPAN = "<code class='code-inline'>evidence_span</code>";
+const COPY_EDITS = {
+  en: [
+    [
+      `Every claim carries an ${SPAN}, a literal substring of the source. Click any relation and you land on the sentence it came from.`,
+      `Every claim carries an ${SPAN}, so clicking any relation lands you on the sentence it came from.`,
+    ],
+    ["Source text stays in its original script. Entity resolution runs on", "Entity resolution runs on"],
+    [
+      "The engineering was researched against Splink, ComEM and GraphRAG:",
+      "Reading Splink, ComEM and GraphRAG settled four things:",
+    ],
+    ["Pride and Prejudice, 西游记, Crime and Punishment", "Pride and Prejudice, Journey to the West, Crime and Punishment"],
+  ],
+  "zh-CN": [
+    [
+      `每条断言都带一个 ${SPAN}，也就是原文里的一段字面文本。点开任意一条关系，就落到它出处的那一句。`,
+      `每条断言都带一个 ${SPAN}，点开任意一条关系就落到它出处的那一句。`,
+    ],
+    ["源文保留原文字。实体消解跑在", "实体消解跑在"],
+    ["工程实现参考了 Splink、ComEM 与 GraphRAG：", "读 Splink、ComEM 与 GraphRAG 定下了四件事："],
+  ],
+  ja: [
+    [
+      `どの主張にも ${SPAN}、つまり原文そのままの文字列が付きます。関係をクリックすれば、その出典の一文に着きます。`,
+      `どの主張にも ${SPAN} が付くので、関係をクリックすればその出典の一文に着きます。`,
+    ],
+    ["原文はもとの文字体系のまま保つ。実体解決は", "実体解決は"],
+    [
+      "エンジニアリングは Splink・ComEM・GraphRAG を参照して設計した。",
+      "Splink・ComEM・GraphRAG を読んで、四つのことが決まった。",
+    ],
+  ],
+  fr: [
+    [
+      `Chaque assertion porte un ${SPAN}, une sous-chaîne littérale de la source. Cliquez sur une relation, vous atterrissez sur la phrase dont elle vient.`,
+      `Chaque assertion porte un ${SPAN}, donc un clic sur une relation vous mène à la phrase dont elle vient.`,
+    ],
+    [
+      "Le texte source reste dans son écriture d’origine. La résolution d’entités tourne sur",
+      "La résolution d’entités tourne sur",
+    ],
+    // The export sets French punctuation properly: a narrow no-break space
+    // before the colon, U+202F, not a plain one. Escaped so it stays visible
+    // here, and kept in the replacement.
+    [
+      "L\u2019ing\u00e9nierie s\u2019appuie sur les travaux de Splink, ComEM et GraphRAG\u202f:",
+      "Lire Splink, ComEM et GraphRAG a r\u00e9gl\u00e9 quatre points\u202f:",
+    ],
+    [
+      "Orgueil et Préjugés, 西游记, Crime et Châtiment",
+      "Orgueil et Préjugés, La Pérégrination vers l’Ouest, Crime et Châtiment",
+    ],
+  ],
+};
+
 const IMG_RE = /<img\b[^>]*>/g;
 
 // The stylesheet documents itself with prose, and that prose contains tag-shaped
@@ -895,6 +954,68 @@ const PATCHES = [
           );
         }),
       );
+      return { html: out, count };
+    },
+  },
+  {
+    name: "copy-edits",
+    why: "one 10-word clause and one 7-word clause were each on the page twice, verbatim",
+    // The page carries 594 words of body copy across 24 blocks — lean for seven
+    // sections, so the problem was never length. It was repetition, and it was
+    // measurable: two clauses appeared twice each, word for word.
+    //
+    //   "claim carries an evidence_span, a literal substring of the source"
+    //       hero lead + the rule section's lead
+    //   "source text stays in its original script"
+    //       the alias card + the reference-set card
+    //
+    // Each clause stays where it belongs and goes everywhere else. The rule
+    // section owns the definition, because defining the rule is what that
+    // section is for; the hero states the consequence instead, which also folds
+    // its third sentence into its second — those two said the same thing, once
+    // abstractly and once concretely. The reference-set card owns "original
+    // script, nothing transliterated", because that is a fact about the corpus;
+    // the alias card was using it as a run-up to its own subject.
+    //
+    // Two more, not about repetition:
+    //
+    // The engineering lead promised one thing with its colon and delivered
+    // another — "researched against Splink, ComEM and GraphRAG:" followed by
+    // four features of LoreGraph, not four points of comparison. Naming what
+    // the list is fixes the grammar without touching the hedge: the project read
+    // those papers, it does not implement them.
+    //
+    // And the reference set localised four of its five titles per language but
+    // left 西游记 in Chinese on the English and French pages, while translating
+    // Crime and Punishment out of Russian on both. Five titles, two different
+    // rules. The other three pages localise all five, so the exception joins
+    // them. The English page still demonstrates CJK where it earns its place —
+    // "forget the Elizabeth Bennet or 孫悟空 it already knows" — so nothing is
+    // lost by not proving it with a book title.
+    //
+    // This belongs in the copy deck upstream, which is one JSON file of
+    // {en, zh, ja, fr} strings. It is here because the deck lives outside this
+    // repo; move it there and delete this patch.
+    run(html) {
+      // Landing pages only. The credits pages reuse the head and the chrome but
+      // carry none of this prose — and they do have a .lead of their own, so the
+      // hero section is the marker, not that class.
+      if (!html.includes("<section class='hero'")) return { html, count: 0 };
+      const lang = (html.match(/<html[^>]*lang=['"]([^'"]+)/) || [])[1] || "en";
+      const pairs = COPY_EDITS[lang];
+      if (!pairs) throw new Error(`marketing-patch copy-edits: no edits for lang '${lang}'`);
+      let out = html;
+      let count = 0;
+      for (const [from, to] of pairs) {
+        const hits = out.split(from).length - 1;
+        if (hits !== 1) {
+          throw new Error(
+            `marketing-patch copy-edits (${lang}): expected exactly 1 match, found ${hits}:\n  ${from}`,
+          );
+        }
+        out = out.split(from).join(to);
+        count++;
+      }
       return { html: out, count };
     },
   },

@@ -79,11 +79,33 @@ the measurements behind each one. In short:
   "在 GitHub 上 Star" became "Star · 5" a moment after load on three of the four
   pages.
 
+- **Copy said two things twice.** The page carries 594 words of body copy across
+  24 blocks, which is lean for seven sections — so the problem was never length.
+  It was that one 10-word clause ("claim carries an `evidence_span`, a literal
+  substring of the source") and one 7-word clause ("source text stays in its
+  original script") each appeared twice, word for word, in different sections.
+  Each clause now stays where it belongs and goes everywhere else. Two more, not
+  about repetition: the engineering lead's colon promised four points of
+  comparison and delivered four LoreGraph features, and the reference set
+  localised four of its five book titles per language but left 西游记 in Chinese
+  on the English and French pages while translating *Crime and Punishment* out of
+  Russian on both.
+
+  **This one belongs upstream more than any of the others.** The copy deck is a
+  single JSON file of `{en, zh, ja, fr}` strings; these edits are exact-string
+  replacements standing in for it. Move them into the deck and delete the patch.
+
 **Every patch asserts it matched.** If a future export changes the markup out
 from under one, the build fails rather than shipping the page with the bug back
 in it — so a patch that stops matching is either already fixed upstream (delete
 it) or broken (rewrite it). Fixing any of these on the generating side is the
 better outcome; deleting the corresponding patch is then the whole job.
+
+The copy edits assert harder: each replacement must match **exactly once** on its
+page, because these are sentences and a near-miss would ship half an edit. That
+caught two mistakes while it was being written — a guard that mistook the credits
+pages for landing pages, and a French colon preceded by U+202F rather than a
+plain space.
 
 Two things the patch step is careful *not* to do. The Chinese and Japanese pages
 carry their own adaptation block — CJK font stacks, `font-synthesis-style: none`
