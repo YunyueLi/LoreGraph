@@ -3,6 +3,57 @@
 
 const { useState, useEffect, useMemo, useRef } = React;
 
+// ---- a book's graph, on demand ----
+//
+// The exported books' graphs are big — 1.8 MB for Alice, 9.4 MB for 西游记 — and
+// they used to be merged into window.LG_DATA by a generated 11 MB script that was
+// 90% of the app's bundle and parsed before the first paint. Two books out of 85,
+// and the app opens on the library grid, which draws neither of their graphs.
+//
+// So the grid gets the shelf metadata (data-exports.js, 11 KB) and a book's graph
+// arrives when that book is opened. Nothing needs a loading state: 82 of the 85
+// books have no graph at all and every view already renders them, so a book whose
+// file is still in flight looks exactly like one of those, for as long as it takes.
+const bookLoads = new Map();
+const bookLoaded = new Set();
+
+// Whether a graph is still on its way, answered synchronously so a view can tell
+// "loading" from "this work has never been through the pipeline" — which is what
+// 82 of the 85 books on the shelf are, and a different thing to say.
+window.LG_BOOK_PENDING = (bookId) =>
+  (window.LG_BOOK_EXPORTS || []).includes(bookId) && !bookLoaded.has(bookId);
+
+window.LG_LOAD_BOOK = function (bookId) {
+  if (!bookId || !(window.LG_BOOK_EXPORTS || []).includes(bookId)) return Promise.resolve(false);
+  if (bookLoads.has(bookId)) return bookLoads.get(bookId);
+  // Relative, so it resolves under /app, /app.html and a project-path deploy alike.
+  const load = fetch(`assets/exports/${encodeURIComponent(bookId)}.json`)
+    .then((r) => {
+      if (!r.ok) throw new Error(`assets/exports/${bookId}.json: HTTP ${r.status}`);
+      return r.json();
+    })
+    .then((detail) => {
+      const D = window.LG_DATA;
+      for (const key of ["entities", "edges", "glucose", "chunks"]) {
+        Array.prototype.push.apply(D[key], detail[key] || []);
+      }
+      if (window.LG_ENTITY_LOCALE) Object.assign(window.LG_ENTITY_LOCALE, detail.entityLocale || {});
+      // The two per-entity layouts travel with the graph, not the shelf metadata.
+      const book = D.books.find((b) => b.id === bookId);
+      if (book) {
+        book.socialPos = detail.socialPos || {};
+        book.themesPos = detail.themesPos || {};
+      }
+      bookLoaded.add(bookId);
+      return true;
+    });
+  // A failed fetch must not be cached as "loading forever": the reader can switch
+  // away and back, and the retry should be allowed to succeed.
+  load.catch(() => bookLoads.delete(bookId));
+  bookLoads.set(bookId, load);
+  return load;
+};
+
 // Most of this interface's controls are <div onClick> — rows, cards, chips,
 // tabs, TOC entries. They work with a mouse and are unreachable by keyboard,
 // which made the whole app unusable without one: even the sidebar that switches
@@ -136,6 +187,11 @@ function App() {
   // Phone-width navigation drawer. Not the same thing as sbCollapsed, which
   // narrows the rail in place; here it is off-canvas entirely.
   const [navOpen, setNavOpen] = useState(false);
+  // Bumped when a book's graph finishes loading — see the effect below and
+  // LG_LOAD_BOOK above. Its job is to re-render the tree after LG_DATA has been
+  // mutated in place, which React cannot see on its own; it goes into ctx so a
+  // view that memoizes an expensive layout has something to key on.
+  const [bookDataVersion, setBookDataVersion] = useState(0);
 
   // Mirror the locale onto <html lang>. Besides being correct for screen readers
   // and line-breaking, the stylesheet keys its letter-spacing tokens off this:
@@ -157,6 +213,24 @@ function App() {
     return () => document.removeEventListener("keydown", onKey);
   }, [navOpen]);
   useEffect(() => { setNavOpen(false); }, [activeView]);
+  // Fetch the active book's graph if it has one and we have not already. LG_DATA
+  // is mutated in place, which React cannot see, so the counter is what re-renders
+  // the tree once the file lands.
+  useEffect(() => {
+    let live = true;
+    window.LG_LOAD_BOOK(activeBookId).then(
+      (merged) => {
+        if (live && merged) setBookDataVersion((v) => v + 1);
+      },
+      // Nothing to report: the book renders as one without a graph, and selecting
+      // it again retries.
+      () => {},
+    );
+    return () => {
+      live = false;
+    };
+  }, [activeBookId]);
+
   // Promote the active book to the head of the MRU list whenever it changes.
   useEffect(() => {
     if (!activeBookId) return;
@@ -189,7 +263,7 @@ function App() {
     if (view) setActiveView(view);
   };
 
-  const ctx = { data, locale, setLocale, tt, activeView, setActiveView, activeBook, setActiveBookId, bookMru, entities, edges, chunks, glucose, conversations, selectedEntityId, setSelectedEntityId, gotoEntity, selectedConvId, setSelectedConvId, settingsSection, setSettingsSection, coverStyle, setCoverStyle, graphViewMode, setGraphViewMode, graphLeftHidden, setGraphLeftHidden, graphRightHidden, setGraphRightHidden, tlMode, setTlMode };
+  const ctx = { data, locale, setLocale, tt, activeView, setActiveView, activeBook, setActiveBookId, bookMru, bookDataVersion, entities, edges, chunks, glucose, conversations, selectedEntityId, setSelectedEntityId, gotoEntity, selectedConvId, setSelectedConvId, settingsSection, setSettingsSection, coverStyle, setCoverStyle, graphViewMode, setGraphViewMode, graphLeftHidden, setGraphLeftHidden, graphRightHidden, setGraphRightHidden, tlMode, setTlMode };
 
   return (
     <div className={"app" + (sbCollapsed ? " sb-collapsed" : "") + (navOpen ? " nav-open" : "")}>

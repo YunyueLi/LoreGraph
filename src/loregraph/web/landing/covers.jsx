@@ -39,7 +39,11 @@ function CoverImage({ src, alt, fallback }) {
       background: "#1a1714",
     }}>
       {!loaded && <div className="cover-skeleton" aria-hidden="true" />}
-      <img src={src} alt={alt}
+      {/* The library grid is 85 of these, and four are on screen. Eager, they were
+          85 cross-origin requests to Wikimedia before the first paint, for 81
+          scans nobody had scrolled to. The skeleton above is what a not-yet-loaded
+          board already looks like, so laziness costs nothing visually. */}
+      <img src={src} alt={alt} loading="lazy" decoding="async"
         onError={() => setErrored(true)}
         onLoad={() => setLoaded(true)}
         style={{
