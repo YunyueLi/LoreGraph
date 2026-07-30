@@ -178,6 +178,42 @@ window.LG_COVER_IMAGES = {
   soledad:    "https://upload.wikimedia.org/wikipedia/commons/7/79/Aracataca%27s_church_where_Garcia_Marquez_was_baptized.JPG",
 };
 
+// Those are the full-size originals, and the library grid draws them at 212×297.
+// Measured on the live site: 28 covers on the first screen, 58.2 MB — one of them
+// 20.9 MB on its own, four more over 2 MB, and the first card's scan 1867×3016 for
+// a 212px box. So every URL above is rewritten to a Wikimedia thumbnail.
+//
+// The width is not a free choice: since 2025 the thumbnailer serves an allow-list
+// and 400s on anything else. 500 is on it; 640, 480 and 220 are not — checked
+// against the service, one width at a time. 500 covers the card at 2× and the
+// spine texture the 3-D shelf paints, and it is the widest of the small sizes, so
+// a future larger card does not immediately need 1280.
+//
+// Five of the URLs are already thumbnails, four of them at 3840px, which is how an
+// 11 MB "thumbnail" got onto the first screen. Those keep their generated filename
+// — one of them is a .webp rendered to .png — and only the number changes.
+const SCAN_WIDTH = 500;
+const WIKIMEDIA_UPLOAD =
+  /^(https:\/\/upload\.wikimedia\.org\/wikipedia\/[^/]+\/)(thumb\/)?([0-9a-f])\/([0-9a-f]{2})\/([^/]+)(?:\/\d+px-(.+))?$/;
+
+window.scanThumb = function (url, width) {
+  const m = WIKIMEDIA_UPLOAD.exec(url || "");
+  if (!m) return url; // not a Wikimedia upload — hand it back untouched
+  const [, root, isThumb, a, ab, file, generated] = m;
+  const w = width || SCAN_WIDTH;
+  if (isThumb) {
+    if (!generated) return url; // a /thumb/ path we do not recognise: leave it alone
+    return `${root}thumb/${a}/${ab}/${file}/${w}px-${generated}`;
+  }
+  // Formats the thumbnailer cannot serve in kind get a raster extension appended.
+  const rendered = /\.(svg|tiff?|webp)$/i.test(file) ? `${file}.png` : file;
+  return `${root}thumb/${a}/${ab}/${file}/${w}px-${rendered}`;
+};
+
+for (const id of Object.keys(window.LG_COVER_IMAGES)) {
+  window.LG_COVER_IMAGES[id] = window.scanThumb(window.LG_COVER_IMAGES[id]);
+}
+
 window.LG_COVERS = {
 
   // ============== Pride and Prejudice ==============
