@@ -35,6 +35,7 @@ const ORDER = [
   "data-exports.js",
   "avatars.jsx",
   "covers.jsx",
+  "book-empty.jsx",
   "view-library.jsx",
   "view-shelf3d.jsx",
   "graph-physics.jsx",

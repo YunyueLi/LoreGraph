@@ -4101,6 +4101,33 @@ a { color: inherit; }
   color: var(--gold);
   margin-bottom: 14px;
 }
+/* A whole view's worth of empty, rather than one panel's: it carries a sentence,
+   so it needs a measure and a heading that is not set in the italic the small
+   empties use. */
+.book-empty { align-content: center; gap: 0; }
+.book-empty-title {
+  font-family: 'Spectral', serif;
+  font-style: normal;
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--paper-text);
+  margin: 0 0 10px;
+}
+.book-empty-body {
+  font-style: normal;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  line-height: 1.65;
+  max-width: 46ch;
+  margin: 0 auto;
+}
+/* .empty's 80px of padding is sized for a one-line message. On a phone it leaves
+   this one's sentence 230px to sit in — seven lines, none of them full. */
+@media (max-width: 620px) {
+  .book-empty { padding: 56px 24px; }
+  .book-empty .glyph { font-size: 44px; }
+  .book-empty-title { font-size: 20px; }
+}
 
 /* =================== SETTINGS VIEW (in-app, not a modal) =================== */
 .sv {
