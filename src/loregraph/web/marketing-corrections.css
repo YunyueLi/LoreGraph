@@ -696,3 +696,39 @@ html[lang='ja'] .work-copy h2 { line-height: 1.2; }
 .work-card p { font-size: 14px; }
 
 .about .lead { font-size: 16px; }
+
+/* The keyboard's way past the header. The page has a header, a footer and eight
+ * sections and no main landmark, so there was nothing to jump to and nothing to
+ * point a skip link at: tabbing in meant eleven controls before the h1, on all
+ * four pages, every time. The patch wraps the sections in <main id='main'> and
+ * puts this in front of the header, so it is the first tab stop.
+ *
+ * Off-screen rather than display:none or a 1px clip, because it has to stay
+ * focusable and it has to be able to come back. :target already carries the
+ * sticky header's offset, so the jump lands below the chrome and not behind it. */
+.skip-link {
+  position: absolute;
+  left: 16px;
+  top: 8px;
+  z-index: 100;
+  translate: 0 -140%;
+  padding: 10px 16px;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: translate 0.14s ease-out;
+}
+.skip-link:focus-visible { translate: 0 0; }
+@media (prefers-reduced-motion: reduce) {
+  .skip-link { transition: none; }
+}
+
+/* The skip target takes tabindex='-1' so focus actually moves there, and that
+ * makes it focusable — which would otherwise draw a ring around the entire page
+ * the first time anyone used the link. */
+main[tabindex]:focus { outline: none; }

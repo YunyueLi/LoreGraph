@@ -55,6 +55,15 @@ function appLabel(html) {
   return APP_LABEL[lang] || APP_LABEL.en;
 }
 
+// The app's own wording for the same link, from landing/i18n.js — one phrase, and
+// no reason for the two halves of the site to say it differently.
+const SKIP_LABEL = {
+  en: "Skip to content",
+  "zh-CN": "跳到正文",
+  ja: "本文へスキップ",
+  fr: "Aller au contenu",
+};
+
 // Every rule the corrections stylesheet carries fixes something measured, and
 // nothing in it restyles the design for its own sake. It is authored as real CSS
 // in marketing-corrections.css, so it lints, diffs and reads like a stylesheet
@@ -595,6 +604,52 @@ const PATCHES = [
     },
   },
   {
+    name: "main-landmark-and-skip-link",
+    why: "eleven tab stops stand between the keyboard and the page's first heading, with no way past them",
+    // The page has a header, a footer and eight sections, and no main landmark at
+    // all — so there is nothing for a screen reader to jump to and nothing for a
+    // skip link to point at. Tabbing in means eleven controls before the h1, on
+    // every one of the four pages, every time.
+    //
+    // The eight sections become the main region and a skip link goes in front of
+    // the header, in the same words the app already uses for its own. Wrapping is
+    // safe here: the sections are plain blocks in normal flow and nothing in
+    // either stylesheet selects a direct child of .shell.
+    run(html) {
+      if (!html.includes("<section class='hero'")) return { html, count: 0 };
+      const lang = (html.match(/<html[^>]*lang=['"]([^'"]+)/) || [])[1] || "en";
+      const label = SKIP_LABEL[lang];
+      if (!label) throw new Error(`marketing-patch skip-link: no label for lang '${lang}'`);
+
+      const headerEnd = html.indexOf("</header>");
+      const footerAt = html.indexOf("<footer");
+      if (headerEnd < 0 || footerAt < 0 || footerAt < headerEnd) {
+        throw new Error("marketing-patch main-landmark: cannot find </header> … <footer> to wrap");
+      }
+      const after = headerEnd + "</header>".length;
+      // tabindex='-1' is what makes the skip link actually skip: without it the
+      // browser scrolls to the target but leaves focus on the link, so the next Tab
+      // carries on through the header and the reader is back where they started.
+      html =
+        html.slice(0, after) +
+        "\n<main id='main' tabindex='-1'>" +
+        html.slice(after, footerAt) +
+        "</main>\n" +
+        html.slice(footerAt);
+
+      // In front of everything, so it is the first tab stop.
+      const shellAt = html.indexOf("<div class='shell'>");
+      if (shellAt < 0) throw new Error("marketing-patch skip-link: no .shell to put the link in front of");
+      const insertAt = shellAt + "<div class='shell'>".length;
+      html =
+        html.slice(0, insertAt) +
+        `\n  <a class='skip-link' href='#main'>${label}</a>` +
+        html.slice(insertAt);
+
+      return { html, count: 2 };
+    },
+  },
+  {
     name: "drop-restated-labels",
     why: "a status column with one value in it, five chips restating the heading below them, and one tagline three times",
     // Three things the page says more than it needs to. All three are structural,
@@ -715,6 +770,24 @@ const PATCHES = [
         const end = balanced(html, pillsAt, "div");
         if (end > 0) {
           html = html.slice(0, pillsAt) + html.slice(end);
+          count++;
+        }
+      }
+
+      // 1b. the corpus section's two 46px arrow buttons, which are the same thing
+      //     again: no handler anywhere in the bundle, and nothing to page through —
+      //     the cards they sit under are a three-column grid, not a scroller. They
+      //     are also the page's only two controls with no accessible name, so a
+      //     screen reader announces "button, button" and a keyboard user Tabs onto
+      //     two dead ends. Labelling them would be labelling nothing.
+      const arrowsAt = html.indexOf("<div class='work-arrows'");
+      if (arrowsAt >= 0) {
+        if (/nav-btn[\s\S]{0,400}addEventListener/.test(html)) {
+          throw new Error("marketing-patch: .work-arrows now has a handler — wire them up rather than dropping them");
+        }
+        const end = balanced(html, arrowsAt, "div");
+        if (end > 0) {
+          html = html.slice(0, arrowsAt) + html.slice(end);
           count++;
         }
       }

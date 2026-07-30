@@ -140,6 +140,17 @@ short:
   at four different times. And the section lead was 16px in three sections and
   17px in one. Both are now one value.
 
+- **A way past the header.** The page had a header, a footer and eight sections and
+  no `main` landmark, so a screen reader had nothing to jump to and a skip link had
+  nothing to point at. Tabbing in meant eleven controls before the `h1`, on all
+  four pages, every time. The sections are now `<main id='main' tabindex='-1'>` —
+  the `tabindex` is what makes the skip actually skip, since without it focus stays
+  on the link and the next Tab carries on through the header — and a skip link goes
+  in front of everything, in the words the app already uses. And the corpus
+  section's two 46px arrow buttons went the way of the filter pills: no handler
+  anywhere in the bundle, nothing to page through (the cards are a three-column
+  grid, not a scroller), and the page's only two controls with no accessible name.
+
 **Every patch asserts it matched.** If a future export changes the markup out
 from under one, the build fails rather than shipping the page with the bug back
 in it — so a patch that stops matching is either already fixed upstream (delete
@@ -197,6 +208,24 @@ The type scale's small end is also still busier than it needs to be: 13px and
 13.5px both survive outside the card copy, on footer links and a "read more". Those
 are different roles from card body copy, so they were not swept up with it, but
 there is no reason for the page to hold both.
+
+Forced-colours mode (Windows high contrast) is untested. Nothing here declares a
+`forced-colors` block, and the two things most likely to need one are the paper
+texture, which the mode drops harmlessly, and the filled buttons, whose affordance
+is a background colour the mode replaces. It probably degrades acceptably; nobody
+has looked.
+
+## What was checked and is already right
+
+Worth recording so it does not get re-investigated: `prefers-reduced-motion` is
+honoured properly, in the stylesheet and again in the reveal script, which marks
+every element revealed and never constructs the observer. The keyboard focus ring
+is the browser's own — nothing in either stylesheet sets `outline: none`, and
+measuring it with a scripted `.focus()` will say otherwise, because `:focus-visible`
+does not match a programmatic focus. All 56 links and every button have an
+accessible name, every plate has alt text, the language switcher carries `hreflang`
+and `lang` on each link so a screen reader pronounces 日本語 in Japanese, and the
+heading outline is `h1` then `h2`/`h3` with no skips, in all four languages.
 
 Two things the patch step is careful *not* to do. The Chinese and Japanese pages
 carry their own adaptation block — CJK font stacks, `font-synthesis-style: none`
