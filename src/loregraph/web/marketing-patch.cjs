@@ -641,6 +641,10 @@ html[lang='ja'] .work-copy h2 { line-height: 1.2; }
 // on its page or the build fails — these are sentences, and a near-miss would
 // silently ship half an edit. See the copy-edits patch for what each one is for.
 const SPAN = "<code class='code-inline'>evidence_span</code>";
+// The spec strip closed four fragments with four full stops, none of them a
+// sentence — the same tic as the interpuncts, with a different glyph. Spacing
+// separates them, the way it now does everywhere else on the page.
+const GAP = "&nbsp;&nbsp;&nbsp;";
 const COPY_EDITS = {
   en: [
     [
@@ -653,8 +657,17 @@ const COPY_EDITS = {
       "Reading Splink, ComEM and GraphRAG settled four things:",
     ],
     ["Pride and Prejudice, 西游记, Crime and Punishment", "Pride and Prejudice, Journey to the West, Crime and Punishment"],
+    [
+      "<span>Closed world. Literal match. Multilingual. Resumable.</span>",
+      `<span>Closed world${GAP}Literal match${GAP}Multilingual${GAP}Resumable</span>`,
+    ],
   ],
   "zh-CN": [
+    [
+      "<span>闭世界。字面匹配。多语种。可续跑。</span>",
+      `<span>闭世界${GAP}字面匹配${GAP}多语种${GAP}可续跑</span>`,
+    ],
+
     [
       `每条断言都带一个 ${SPAN}，也就是原文里的一段字面文本。点开任意一条关系，就落到它出处的那一句。`,
       `每条断言都带一个 ${SPAN}，点开任意一条关系就落到它出处的那一句。`,
@@ -663,6 +676,11 @@ const COPY_EDITS = {
     ["工程实现参考了 Splink、ComEM 与 GraphRAG：", "读 Splink、ComEM 与 GraphRAG 定下了四件事："],
   ],
   ja: [
+    [
+      "<span>閉世界。文字列一致。多言語。再開可能。</span>",
+      `<span>閉世界${GAP}文字列一致${GAP}多言語${GAP}再開可能</span>`,
+    ],
+
     [
       `どの主張にも ${SPAN}、つまり原文そのままの文字列が付きます。関係をクリックすれば、その出典の一文に着きます。`,
       `どの主張にも ${SPAN} が付くので、関係をクリックすればその出典の一文に着きます。`,
@@ -674,6 +692,11 @@ const COPY_EDITS = {
     ],
   ],
   fr: [
+    [
+      "<span>Monde clos. Correspondance littérale. Multilingue. Reprise possible.</span>",
+      `<span>Monde clos${GAP}Correspondance littérale${GAP}Multilingue${GAP}Reprise possible</span>`,
+    ],
+
     [
       `Chaque assertion porte un ${SPAN}, une sous-chaîne littérale de la source. Cliquez sur une relation, vous atterrissez sur la phrase dont elle vient.`,
       `Chaque assertion porte un ${SPAN}, donc un clic sur une relation vous mène à la phrase dont elle vient.`,
