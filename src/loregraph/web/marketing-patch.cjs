@@ -453,12 +453,21 @@ section[id],
 .work-card .small-label,
 .work-rule { font-size: 11px; }
 
-/* .nav-links a .num is NOT in that list, and was wrongly put there once. It is
- * an absolutely-positioned superscript counter at top:-7px right:-16px — pure
- * ornament, not running copy — and those offsets are drawn around a 9px glyph.
- * At 11px the counter grew past them and printed into the neighbouring link.
- * The floor is for text a reader has to read; this is a tick mark. */
-.nav-links a .num { font-size: 9px; }
+/* The four superscript counters on the nav links go, at every width.
+ *
+ * They cannot be decoded. 04 counts the engineering cards, 05 the reading-room
+ * views, 08 the pipeline passes, 85 the corpus works — four different units, no
+ * labels, so 85 reads as the same kind of number as 04. Only four of the five
+ * links carry one, so it is not a system either. And every count is already
+ * stated where it means something: the hero's stats row, "five views" in the
+ * reading room, the numbered passes themselves.
+ *
+ * They also cost the nav its rhythm. Each one is absolutely positioned at
+ * right: -16px, outside its link's box and inside the following gap, so the
+ * spacing between links reads as uneven. Removing them makes the 28px gap the
+ * real gap, and makes the desktop nav match the phone one, where an earlier
+ * pass had already hidden them. */
+.nav-links a .num { display: none; }
 
 /* Seven section headlines came out at seven sizes — 64, 66, 68, 72, 74.9, 77.8
  * and 95px at 1440 — because each one got its own clamp() ramp: three of them
@@ -687,7 +696,6 @@ html[lang='ja'] .work-copy h2 { line-height: 1.2; }
   .nav-links::-webkit-scrollbar { display: none; }
   .nav-links li { flex: 0 0 auto; }
   .nav-links a { white-space: nowrap; }
-  .nav-links a .num { display: none; }
 }
 
 /* Below 1080px the footer hid its fourth and fifth columns outright, so every
@@ -1104,6 +1112,88 @@ const PATCHES = [
         count++;
       }
       return { html: out, count };
+    },
+  },
+  {
+    name: "drop-dead-and-duplicate-furniture",
+    why: "five buttons that filter nothing, and five section rules that repeat the label 57px below them",
+    // Two kinds of furniture that carry no information.
+    //
+    // The reading room's five filter pills — All 05, Text 01, Graph 01, Time 01,
+    // Catalogue 02 — are <button>s with no handler anywhere in the bundle, and the
+    // cards they would filter carry no category data at all. Clicking one leaves
+    // all five cards visible. The counts do map cleanly onto the cards, so the
+    // intent is legible and they could be wired; they should not be. A filter over
+    // five items that all fit on one row and are all already visible is not a
+    // control, it is decoration shaped like one.
+    //
+    // And five of the six section rules open with the section's own name, which
+    // the coral label repeats verbatim 57px below: "The rule" over "The rule",
+    // "Engineering" over "Engineering", and so on. The label is the one that
+    // belongs — it sits directly above the headline and names the section there.
+    // The rule keeps its annotation, which is the part that says something the
+    // label does not: docs/8-pass-pipeline.md, src/loregraph, eight passes. Only
+    // the hero's rule is left whole, because its two halves differ.
+    run(html) {
+      let count = 0;
+      const balanced = (src, at, tag) => {
+        const open = `<${tag}`, close = `</${tag}>`;
+        let depth = 0, p = at;
+        while (p < src.length) {
+          if (src.startsWith(open, p)) depth++;
+          else if (src.startsWith(close, p)) {
+            depth--;
+            if (depth === 0) return p + close.length;
+          }
+          p++;
+        }
+        return -1;
+      };
+      const strip = (frag) => frag.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().toLowerCase();
+
+      // 1. the pills
+      const pillsAt = html.indexOf("<div class='pills'");
+      if (pillsAt >= 0) {
+        const end = balanced(html, pillsAt, "div");
+        if (end > 0) {
+          html = html.slice(0, pillsAt) + html.slice(end);
+          count++;
+        }
+      }
+
+      // 2. the duplicated name in each section rule. The corpus section is the
+      //    odd one out: its rule is .work-rule and its middle group is an
+      //    inline-styled span rather than .meta-grp, but it repeats its label the
+      //    same way — "The corpus" over "The corpus".
+      html = html.replace(/<section class='[^']*'[^>]*>[\s\S]*?<\/section>/g, (sec) => {
+        let ruleAt = sec.indexOf("<div class='sec-rule'");
+        let grpMark = "<span class='meta-grp'>";
+        if (ruleAt < 0) {
+          ruleAt = sec.indexOf("<div class='work-rule'");
+          grpMark = "<span style='display:inline-flex;gap:24px;'>";
+        }
+        const labelAt = sec.indexOf("<span class='label'");
+        if (ruleAt < 0 || labelAt < 0) return sec;
+        const grpAt = sec.indexOf(grpMark, ruleAt);
+        if (grpAt < 0) return sec;
+        const grpEnd = balanced(sec, grpAt, "span");
+        const firstAt = sec.indexOf("<span", grpAt + grpMark.length);
+        if (grpEnd < 0 || firstAt < 0 || firstAt > grpEnd) return sec;
+        const firstEnd = balanced(sec, firstAt, "span");
+        if (firstEnd < 0) return sec;
+        const labelEnd = balanced(sec, labelAt, "span");
+        if (labelEnd < 0) return sec;
+        if (strip(sec.slice(firstAt, firstEnd)) !== strip(sec.slice(labelAt, labelEnd))) return sec;
+        // take the separator element with it if one is still there
+        let cut = firstEnd;
+        const after = sec.slice(cut);
+        const sep = after.match(/^\s*<span (?:class='dot-mark'|style='color:var\(--coral\);')>[\s\S]*?<\/span>/);
+        if (sep) cut += sep[0].length;
+        count++;
+        return sec.slice(0, firstAt) + sec.slice(cut);
+      });
+
+      return { html, count };
     },
   },
   {
