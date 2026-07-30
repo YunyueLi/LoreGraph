@@ -11,9 +11,9 @@
 // quietly shipping the page with the bug back in it. A patch that stops matching
 // is either fixed upstream — delete it here — or broken, and both need a human.
 //
-// Anything editorial (heading levels that would need their CSS selectors moved
-// with them, alt text that is too long to hear read aloud) is deliberately NOT
-// here. Those want a decision on the generating side, not a regex.
+// Anything that needs a judgement call rather than a rule belongs on the
+// generating side, not here. What is left in that category is the copy voice
+// itself; the copy-edits patch only removes repetition it can point at.
 const fs = require("fs");
 const path = require("path");
 
@@ -58,6 +58,15 @@ function appLabel(html) {
 // Every rule here fixes something measured, and nothing here restyles the design
 // for its own sake. Appended after the export's own stylesheet so it wins on
 // order without needing !important.
+// The page's ground is paper seen through a fixed noise-and-gradient layer that
+// body::before paints at z-index 1 under .shell's 2. Anything inside .shell that
+// fills itself with the paper colour therefore comes out lighter and flatter than
+// the ground around it. These are the exact three layers, reused so a copy cannot
+// drift from the original.
+const TEXTURE_LAYERS = `radial-gradient(circle at 12% 18%, rgba(106, 92, 56, 0.07) 0, transparent 28%),
+    radial-gradient(circle at 88% 72%, rgba(106, 92, 56, 0.06) 0, transparent 32%),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.18  0 0 0 0 0.16  0 0 0 0 0.12  0 0 0 0.06 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")`;
+
 const CORRECTIONS = `
 /* ---------------------------------------------------------------------------
  * Build-time corrections. See src/loregraph/web/marketing-patch.cjs — edit
@@ -93,6 +102,30 @@ const CORRECTIONS = `
 @media (max-width: 700px) {
   .hero-stats { flex-wrap: wrap; row-gap: 16px; }
   .hero-actions { flex-wrap: wrap; row-gap: 12px; }
+}
+
+/* Same defect as the numerals, and a whole band of it: the sticky header fills
+ * itself with the paper colour, so at rest there is a hard tone seam along its
+ * bottom edge — flat paper above, textured ground below. It has to stay opaque,
+ * because content scrolls under it, so it takes the texture instead.
+ *
+ * background-attachment: fixed anchors all three layers to the viewport, the same
+ * frame body::before uses, so the noise tiles and both gradients line up rather
+ * than restarting inside the header. z-index: -1 inside .nav's own stacking
+ * context (position: sticky, z-index: 50) puts the overlay above the header's
+ * background and below its content, so the wordmark, the links and the filled
+ * button are not multiplied along with it. */
+.nav::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: ${TEXTURE_LAYERS};
+  background-size: auto, auto, 240px 240px;
+  background-attachment: fixed;
+  mix-blend-mode: multiply;
+  opacity: 0.92;
 }
 
 /* With the interpuncts gone, the language switcher's 7px gap was doing all the
@@ -490,6 +523,37 @@ html[lang='ja'] .work-copy h2 { line-height: 1.2; }
  * swallowed the rule. It has to keep shrinking to its own glyphs. */
 .method-step .num { align-self: flex-start; }
 
+/* …and that hole was visible as a pale box behind every numeral.
+ *
+ * The page's ground is not the paper colour. body::before is a fixed noise-and-
+ * gradient layer at z-index 1, multiply, 0.92 — and .shell sits at z-index 2, so
+ * everything you read as "background" is paper seen through that texture, a few
+ * units darker and warmer. The numeral's knockout paints flat #efe7d2 inside
+ * .shell, above the texture, so it was the one patch of undarkened paper on the
+ * page. Nothing can match it back: the texture varies across the page, so no
+ * flat colour is right in more than one spot.
+ *
+ * So the hole goes and the rule stops short instead. Each step draws its own
+ * segment from a fixed 110px in — clear of the widest numeral, 95px, with air to
+ * spare — across the 50px gap into the next column. Segments start at the same
+ * x in every column, which is steadier than a line hugging four glyphs of
+ * different widths, and the last one stops at the grid edge. Above 880 only,
+ * which is where the export drew the rule at all. */
+.method-step .num { background: none; padding-right: 0; }
+@media (min-width: 881px) {
+  .method-grid::before { display: none; }
+  .method-step::after {
+    content: '';
+    position: absolute;
+    top: 60px;
+    right: -50px;
+    width: calc(100% - 110px);
+    height: 1px;
+    background: var(--line-soft);
+  }
+  .method-step:last-child::after { right: 0; width: calc(100% - 110px); }
+}
+
 /* Each section rule is a three-part row — roman numeral, plate caption,
  * counter — flexed with align-items:center. Below ~700px the caption wraps to
  * two lines and the numeral centres itself against both of them, landing in the
@@ -636,6 +700,88 @@ html[lang='ja'] .work-copy h2 { line-height: 1.2; }
   .foot-grid .foot-col:nth-child(5) { display: block; }
 }
 `;
+
+// Exact-string copy edits, per page language. Every pair must match exactly once
+// on its page or the build fails — these are sentences, and a near-miss would
+// silently ship half an edit. See the copy-edits patch for what each one is for.
+const SPAN = "<code class='code-inline'>evidence_span</code>";
+// The spec strip closed four fragments with four full stops, none of them a
+// sentence — the same tic as the interpuncts, with a different glyph. Spacing
+// separates them, the way it now does everywhere else on the page.
+const GAP = "&nbsp;&nbsp;&nbsp;";
+const COPY_EDITS = {
+  en: [
+    [
+      `Every claim carries an ${SPAN}, a literal substring of the source. Click any relation and you land on the sentence it came from.`,
+      `Every claim carries an ${SPAN}, so clicking any relation lands you on the sentence it came from.`,
+    ],
+    ["Source text stays in its original script. Entity resolution runs on", "Entity resolution runs on"],
+    [
+      "The engineering was researched against Splink, ComEM and GraphRAG:",
+      "Reading Splink, ComEM and GraphRAG settled four things:",
+    ],
+    ["Pride and Prejudice, 西游记, Crime and Punishment", "Pride and Prejudice, Journey to the West, Crime and Punishment"],
+    [
+      "<span>Closed world. Literal match. Multilingual. Resumable.</span>",
+      `<span>Closed world${GAP}Literal match${GAP}Multilingual${GAP}Resumable</span>`,
+    ],
+  ],
+  "zh-CN": [
+    [
+      "<span>闭世界。字面匹配。多语种。可续跑。</span>",
+      `<span>闭世界${GAP}字面匹配${GAP}多语种${GAP}可续跑</span>`,
+    ],
+
+    [
+      `每条断言都带一个 ${SPAN}，也就是原文里的一段字面文本。点开任意一条关系，就落到它出处的那一句。`,
+      `每条断言都带一个 ${SPAN}，点开任意一条关系就落到它出处的那一句。`,
+    ],
+    ["源文保留原文字。实体消解跑在", "实体消解跑在"],
+    ["工程实现参考了 Splink、ComEM 与 GraphRAG：", "读 Splink、ComEM 与 GraphRAG 定下了四件事："],
+  ],
+  ja: [
+    [
+      "<span>閉世界。文字列一致。多言語。再開可能。</span>",
+      `<span>閉世界${GAP}文字列一致${GAP}多言語${GAP}再開可能</span>`,
+    ],
+
+    [
+      `どの主張にも ${SPAN}、つまり原文そのままの文字列が付きます。関係をクリックすれば、その出典の一文に着きます。`,
+      `どの主張にも ${SPAN} が付くので、関係をクリックすればその出典の一文に着きます。`,
+    ],
+    ["原文はもとの文字体系のまま保つ。実体解決は", "実体解決は"],
+    [
+      "エンジニアリングは Splink・ComEM・GraphRAG を参照して設計した。",
+      "Splink・ComEM・GraphRAG を読んで、四つのことが決まった。",
+    ],
+  ],
+  fr: [
+    [
+      "<span>Monde clos. Correspondance littérale. Multilingue. Reprise possible.</span>",
+      `<span>Monde clos${GAP}Correspondance littérale${GAP}Multilingue${GAP}Reprise possible</span>`,
+    ],
+
+    [
+      `Chaque assertion porte un ${SPAN}, une sous-chaîne littérale de la source. Cliquez sur une relation, vous atterrissez sur la phrase dont elle vient.`,
+      `Chaque assertion porte un ${SPAN}, donc un clic sur une relation vous mène à la phrase dont elle vient.`,
+    ],
+    [
+      "Le texte source reste dans son écriture d’origine. La résolution d’entités tourne sur",
+      "La résolution d’entités tourne sur",
+    ],
+    // The export sets French punctuation properly: a narrow no-break space
+    // before the colon, U+202F, not a plain one. Escaped so it stays visible
+    // here, and kept in the replacement.
+    [
+      "L\u2019ing\u00e9nierie s\u2019appuie sur les travaux de Splink, ComEM et GraphRAG\u202f:",
+      "Lire Splink, ComEM et GraphRAG a r\u00e9gl\u00e9 quatre points\u202f:",
+    ],
+    [
+      "Orgueil et Préjugés, 西游记, Crime et Châtiment",
+      "Orgueil et Préjugés, La Pérégrination vers l’Ouest, Crime et Châtiment",
+    ],
+  ],
+};
 
 const IMG_RE = /<img\b[^>]*>/g;
 
@@ -896,6 +1042,119 @@ const PATCHES = [
         }),
       );
       return { html: out, count };
+    },
+  },
+  {
+    name: "copy-edits",
+    why: "one 10-word clause and one 7-word clause were each on the page twice, verbatim",
+    // The page carries 594 words of body copy across 24 blocks — lean for seven
+    // sections, so the problem was never length. It was repetition, and it was
+    // measurable: two clauses appeared twice each, word for word.
+    //
+    //   "claim carries an evidence_span, a literal substring of the source"
+    //       hero lead + the rule section's lead
+    //   "source text stays in its original script"
+    //       the alias card + the reference-set card
+    //
+    // Each clause stays where it belongs and goes everywhere else. The rule
+    // section owns the definition, because defining the rule is what that
+    // section is for; the hero states the consequence instead, which also folds
+    // its third sentence into its second — those two said the same thing, once
+    // abstractly and once concretely. The reference-set card owns "original
+    // script, nothing transliterated", because that is a fact about the corpus;
+    // the alias card was using it as a run-up to its own subject.
+    //
+    // Two more, not about repetition:
+    //
+    // The engineering lead promised one thing with its colon and delivered
+    // another — "researched against Splink, ComEM and GraphRAG:" followed by
+    // four features of LoreGraph, not four points of comparison. Naming what
+    // the list is fixes the grammar without touching the hedge: the project read
+    // those papers, it does not implement them.
+    //
+    // And the reference set localised four of its five titles per language but
+    // left 西游记 in Chinese on the English and French pages, while translating
+    // Crime and Punishment out of Russian on both. Five titles, two different
+    // rules. The other three pages localise all five, so the exception joins
+    // them. The English page still demonstrates CJK where it earns its place —
+    // "forget the Elizabeth Bennet or 孫悟空 it already knows" — so nothing is
+    // lost by not proving it with a book title.
+    //
+    // This belongs in the copy deck upstream, which is one JSON file of
+    // {en, zh, ja, fr} strings. It is here because the deck lives outside this
+    // repo; move it there and delete this patch.
+    run(html) {
+      // Landing pages only. The credits pages reuse the head and the chrome but
+      // carry none of this prose — and they do have a .lead of their own, so the
+      // hero section is the marker, not that class.
+      if (!html.includes("<section class='hero'")) return { html, count: 0 };
+      const lang = (html.match(/<html[^>]*lang=['"]([^'"]+)/) || [])[1] || "en";
+      const pairs = COPY_EDITS[lang];
+      if (!pairs) throw new Error(`marketing-patch copy-edits: no edits for lang '${lang}'`);
+      let out = html;
+      let count = 0;
+      for (const [from, to] of pairs) {
+        const hits = out.split(from).length - 1;
+        if (hits !== 1) {
+          throw new Error(
+            `marketing-patch copy-edits (${lang}): expected exactly 1 match, found ${hits}:\n  ${from}`,
+          );
+        }
+        out = out.split(from).join(to);
+        count++;
+      }
+      return { html: out, count };
+    },
+  },
+  {
+    name: "heading-levels",
+    why: "the outline jumped h2 to h4 three times, so heading navigation gave a broken tree",
+    // Nine h4s and four h5s sit directly under an h2 with no h3 between them:
+    // the five reading-room cards, the four pipeline steps, and the four footer
+    // columns. Someone navigating by heading gets a tree with two levels missing
+    // and no way to tell whether they have skipped something.
+    //
+    // An earlier pass left this alone on the grounds that the styling is bound to
+    // the tag name, so moving the tag would mean copying its declarations into
+    // the corrections sheet — a copy that goes stale silently the next time the
+    // export changes them. That was wrong: the stylesheet is inline in the same
+    // file this patch already rewrites, so the selector moves with the tag and
+    // nothing is duplicated.
+    run(html) {
+      let count = 0;
+      const selector = (from, to, expect) => {
+        const hits = html.split(from).length - 1;
+        if (hits !== expect) {
+          throw new Error(
+            `marketing-patch heading-levels: expected ${expect} of '${from}', found ${hits}`,
+          );
+        }
+        html = html.split(from).join(to);
+        count += hits;
+      };
+      selector(".lab h4", ".lab h3", 1);
+      selector(".method-step h4", ".method-step h3", 2);
+      selector(".method-step:last-child h4", ".method-step:last-child h3", 1);
+      selector(".foot-col h5", ".foot-col h3", 1);
+
+      // Tags only — mapMarkup steps over <style>, <script> and comments, so the
+      // selectors just renamed above are not touched again.
+      let tags = 0;
+      html = mapMarkup(html, (chunk) =>
+        chunk.replace(/<(\/?)h[45]\b/g, (m, slash) => {
+          tags++;
+          return `<${slash}h3`;
+        }),
+      );
+      // The credits pages carry the same stylesheet — so the selectors above are
+      // there — but none of these headings, so they legitimately rewrite nothing.
+      const expectTags = html.includes("<section class='hero'") ? 26 : 0;
+      if (tags !== expectTags) {
+        throw new Error(
+          `marketing-patch heading-levels: expected ${expectTags} h4/h5 tags, found ${tags}`,
+        );
+      }
+      return { html, count: count + tags };
     },
   },
   {
