@@ -58,6 +58,15 @@ function appLabel(html) {
 // Every rule here fixes something measured, and nothing here restyles the design
 // for its own sake. Appended after the export's own stylesheet so it wins on
 // order without needing !important.
+// The page's ground is paper seen through a fixed noise-and-gradient layer that
+// body::before paints at z-index 1 under .shell's 2. Anything inside .shell that
+// fills itself with the paper colour therefore comes out lighter and flatter than
+// the ground around it. These are the exact three layers, reused so a copy cannot
+// drift from the original.
+const TEXTURE_LAYERS = `radial-gradient(circle at 12% 18%, rgba(106, 92, 56, 0.07) 0, transparent 28%),
+    radial-gradient(circle at 88% 72%, rgba(106, 92, 56, 0.06) 0, transparent 32%),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.18  0 0 0 0 0.16  0 0 0 0 0.12  0 0 0 0.06 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")`;
+
 const CORRECTIONS = `
 /* ---------------------------------------------------------------------------
  * Build-time corrections. See src/loregraph/web/marketing-patch.cjs — edit
@@ -93,6 +102,30 @@ const CORRECTIONS = `
 @media (max-width: 700px) {
   .hero-stats { flex-wrap: wrap; row-gap: 16px; }
   .hero-actions { flex-wrap: wrap; row-gap: 12px; }
+}
+
+/* Same defect as the numerals, and a whole band of it: the sticky header fills
+ * itself with the paper colour, so at rest there is a hard tone seam along its
+ * bottom edge — flat paper above, textured ground below. It has to stay opaque,
+ * because content scrolls under it, so it takes the texture instead.
+ *
+ * background-attachment: fixed anchors all three layers to the viewport, the same
+ * frame body::before uses, so the noise tiles and both gradients line up rather
+ * than restarting inside the header. z-index: -1 inside .nav's own stacking
+ * context (position: sticky, z-index: 50) puts the overlay above the header's
+ * background and below its content, so the wordmark, the links and the filled
+ * button are not multiplied along with it. */
+.nav::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: ${TEXTURE_LAYERS};
+  background-size: auto, auto, 240px 240px;
+  background-attachment: fixed;
+  mix-blend-mode: multiply;
+  opacity: 0.92;
 }
 
 /* With the interpuncts gone, the language switcher's 7px gap was doing all the
@@ -489,6 +522,37 @@ html[lang='ja'] .work-copy h2 { line-height: 1.2; }
  * it a flex item, which stretches — so the hole became the full column width and
  * swallowed the rule. It has to keep shrinking to its own glyphs. */
 .method-step .num { align-self: flex-start; }
+
+/* …and that hole was visible as a pale box behind every numeral.
+ *
+ * The page's ground is not the paper colour. body::before is a fixed noise-and-
+ * gradient layer at z-index 1, multiply, 0.92 — and .shell sits at z-index 2, so
+ * everything you read as "background" is paper seen through that texture, a few
+ * units darker and warmer. The numeral's knockout paints flat #efe7d2 inside
+ * .shell, above the texture, so it was the one patch of undarkened paper on the
+ * page. Nothing can match it back: the texture varies across the page, so no
+ * flat colour is right in more than one spot.
+ *
+ * So the hole goes and the rule stops short instead. Each step draws its own
+ * segment from a fixed 110px in — clear of the widest numeral, 95px, with air to
+ * spare — across the 50px gap into the next column. Segments start at the same
+ * x in every column, which is steadier than a line hugging four glyphs of
+ * different widths, and the last one stops at the grid edge. Above 880 only,
+ * which is where the export drew the rule at all. */
+.method-step .num { background: none; padding-right: 0; }
+@media (min-width: 881px) {
+  .method-grid::before { display: none; }
+  .method-step::after {
+    content: '';
+    position: absolute;
+    top: 60px;
+    right: -50px;
+    width: calc(100% - 110px);
+    height: 1px;
+    background: var(--line-soft);
+  }
+  .method-step:last-child::after { right: 0; width: calc(100% - 110px); }
+}
 
 /* Each section rule is a three-part row — roman numeral, plate caption,
  * counter — flexed with align-items:center. Below ~700px the caption wraps to
