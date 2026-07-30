@@ -28,6 +28,37 @@ window.__lgHasWebGL = function () {
   }
 };
 
+// ---- three, on demand ----
+//
+// The library opens in grid mode. The shelf is a mode you switch to, and this is
+// the only view that needs three at all — 670 KB of it, which used to be a
+// <script> in the <head> of every load, ahead of the app's own code, for a view
+// most readers never open. It is fetched the first time a shelf actually renders.
+//
+// Everything here degrades rather than waits: ViewLibrary draws the 2-D CSS shelf
+// until the promise resolves, which is the same thing it draws when WebGL is
+// missing, so there is no loading state to design and nothing new can break.
+const THREE_SRC = "https://unpkg.com/three@0.160.1/build/three.min.js";
+let threePromise = null;
+window.__lgLoadThree = function () {
+  if (window.THREE) return Promise.resolve(window.THREE);
+  if (threePromise) return threePromise;
+  threePromise = new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = THREE_SRC;
+    s.crossOrigin = "anonymous";
+    s.onload = () => (window.THREE ? resolve(window.THREE) : reject(new Error("three loaded but window.THREE is missing")));
+    s.onerror = () => reject(new Error("could not load " + THREE_SRC));
+    document.head.appendChild(s);
+  });
+  // A failed load must not poison the promise forever: the reader may switch away
+  // and back, and a second attempt on a recovered connection should be allowed.
+  threePromise.catch(() => {
+    threePromise = null;
+  });
+  return threePromise;
+};
+
 // Binding palette by coverTone — a superset of the flat shelf's SPINE_PALETTE so
 // every tone in the data (incl. moss / yellow / deep) has a binding.
 //
@@ -116,6 +147,16 @@ const S3D = {
   WOOD: "#3a2a1c",
   WOOD_DARK: "#241a12",
   GOLD: "#d1ac5e",
+  // Spine and cover lettering, painted into a canvas texture. The CJK entries are
+  // the platform serifs the app's own .serif class already falls back to — Spectral
+  // has no Han, Kana or Hangul, and every platform we run on ships a serif that
+  // does. This used to name Noto Serif SC and JP, which meant the app requested
+  // four Noto CJK families at four weights each: 1828 @font-face rules, 1.79 MB of
+  // stylesheet, 466 KB over the wire, render-blocking in the <head> — for two
+  // strings drawn into a canvas on a view that is not the default. Nothing in the
+  // DOM ever named them.
+  SERIF_STACK:
+    "'Spectral', 'Songti SC', 'Hiragino Mincho ProN', 'Yu Mincho', 'AppleMyungjo', 'Noto Serif CJK SC', serif",
 };
 S3D.ROW_HEIGHT = S3D.BOOK_HEIGHT + S3D.PLANK_T + S3D.AIR;
 
@@ -203,7 +244,7 @@ function makeSpineCanvas(book, locale) {
   canvas.height = H;
   const g = canvas.getContext("2d");
 
-  const serif = "'Spectral', 'Noto Serif SC', 'Noto Serif JP', serif";
+  const serif = S3D.SERIF_STACK;
   const mono = "'JetBrains Mono', monospace";
   const title = (window.bookTitle ? window.bookTitle(book, locale) : book.title) || book.title || "";
   const author = (window.bookAuthor ? window.bookAuthor(book, locale) : book.author) || book.author || "";
@@ -445,7 +486,7 @@ function makeCoverCanvas(book, locale, scan) {
   const canvas = document.createElement("canvas");
   canvas.width = W; canvas.height = H;
   const g = canvas.getContext("2d");
-  const serif = "'Spectral', 'Noto Serif SC', 'Noto Serif JP', serif";
+  const serif = S3D.SERIF_STACK;
   const mono = "'JetBrains Mono', monospace";
 
   g.fillStyle = pal.bg;

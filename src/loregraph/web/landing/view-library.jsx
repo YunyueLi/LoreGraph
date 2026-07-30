@@ -126,7 +126,7 @@ function ViewLibrary({ ctx }) {
           </div>
         </div>
       ) : (
-        renderShelf(filtered, activeBook, ctx, openBook)
+        <Shelf books={filtered} activeBook={activeBook} ctx={ctx} openBook={openBook} />
       )}
     </div>
   );
@@ -134,13 +134,32 @@ function ViewLibrary({ ctx }) {
 
 // Shelf mode: real 3D closet (WebGL) with the flat CSS shelf as a graceful
 // fallback — mirrors the Ovid reader's own no-WebGL degradation.
-function renderShelf(books, activeBook, ctx, openBook) {
+//
+// three is 670 KB and this is the only view that wants it, so it is fetched here
+// rather than in the <head>. The flat shelf covers the wait, which is the same
+// thing it covers when WebGL is missing: one code path, no loading state.
+function Shelf({ books, activeBook, ctx, openBook }) {
+  const { useState, useEffect } = React;
+  const canWebGL = !!(window.__lgHasWebGL && window.__lgHasWebGL());
+  const [three, setThree] = useState(() => (canWebGL ? window.THREE || null : null));
+  useEffect(() => {
+    if (!canWebGL || three || !window.__lgLoadThree) return;
+    let live = true;
+    window.__lgLoadThree().then(
+      (t) => live && setThree(t),
+      // Nothing to report: the flat shelf on screen is a working shelf, and the
+      // next switch into this mode tries again.
+      () => {},
+    );
+    return () => {
+      live = false;
+    };
+  }, [canWebGL, three]);
+
   const Shelf3D = window.BookShelf3D;
-  const canWebGL = window.__lgHasWebGL && window.__lgHasWebGL();
-  if (Shelf3D && canWebGL) {
-    return <Shelf3D books={books} activeId={activeBook && activeBook.id} ctx={ctx} onOpen={openBook} />;
-  }
-  return <BookShelf books={books} activeId={activeBook && activeBook.id} ctx={ctx} onOpen={openBook} />;
+  const props = { books, activeId: activeBook && activeBook.id, ctx, onOpen: openBook };
+  if (Shelf3D && canWebGL && three) return <Shelf3D {...props} />;
+  return <BookShelf {...props} />;
 }
 
 function BookCard({ book, active, onClick, ctx }) {

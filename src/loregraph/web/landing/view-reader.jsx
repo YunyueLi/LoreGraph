@@ -79,7 +79,18 @@ function chapterHead(text) {
   return { ord, parts: title ? splitCouplet(title) : [], lines };
 }
 
+// A work with no passages has no reader: the body below reads straight into the
+// current chunk's text, which used to throw and hand the whole view to the error
+// boundary. That happened for all 82 books on the shelf that have never been
+// through the pipeline, and now also for the moment before a lazily fetched graph
+// lands. Split in two so the guard runs before any hook — an early return past
+// them would change the hook count between the empty and the loaded render.
 function ViewReader({ ctx }) {
+  if (!ctx.chunks.length) return <window.LGBookEmpty ctx={ctx} />;
+  return <Reader ctx={ctx} />;
+}
+
+function Reader({ ctx }) {
   const { tt, data, entities, locale, selectedEntityId, setSelectedEntityId, chunks, activeBook } = ctx;
   const { useState, useMemo, useEffect } = React;
 

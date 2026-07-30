@@ -15,8 +15,16 @@ change it on the generating side and re-export.
 
 Because a hand edit here would not survive that re-export, the fixes the current
 export still needs live in [`../marketing-patch.cjs`](../marketing-patch.cjs) and
-are applied as the build copies each page. Read that file for the full list and
-the measurements behind each one. In short:
+are applied as the build copies each page. Two of them are large enough to be
+their own files, in the shape they would take upstream:
+
+| File | What it is |
+|---|---|
+| [`../marketing-corrections.css`](../marketing-corrections.css) | the corrections stylesheet, inlined into each `<head>` after the export's own |
+| [`../marketing-copy-edits.json`](../marketing-copy-edits.json) | the copy edits, keyed by language, the same shape as the upstream copy deck |
+
+Read the patch file for the full list and the measurements behind each one. In
+short:
 
 - **The site's own URL.** The export was built against the old GitHub Pages
   address, so `canonical` pointed crawlers at a stale mirror and `og:image` at a
@@ -60,6 +68,21 @@ the measurements behind each one. In short:
 - **Navigation on a phone.** The header dropped all five section links below
   1080px with nothing in their place, and the footer hid two whole columns —
   the repository, the issues, the changelog and the licence.
+- **The header's tone, engine-independently.** The sticky header fills itself with
+  the paper colour, so at rest its bottom edge was a hard tone seam: flat paper
+  above, textured ground below. The first fix gave it a copy of the ground's three
+  layers with `background-attachment: fixed`, and real iOS Safari showed that to be
+  wrong. `.nav` carries `transform: translateY(0)` and `will-change: transform`,
+  which makes it a containing block, and inside one `fixed` attachment resolves
+  against the element rather than the viewport — so WebKit laid the two radial
+  gradients across the header's own box. Measured on an iPhone 16 Pro: the header
+  ran 6 levels lighter than the ground on the left and 5 darker on the right, the
+  seam replaced by a gradient running the wrong way. It now takes the ground's
+  colour rather than its recipe — `#eae2cc`, the mean of 300 samples of pure ground
+  — which leaves a worst-case step of 4.5 levels against a ground whose own
+  gradients swing ±4. Chrome's more forgiving reading of `fixed` was the thing that
+  hid this; nothing depends on it now.
+
 - **One header, not two bands.** The top bar and the header had the same
   background, the same width and the same 11px tracked caps, separated by one
   hairline, so they read as a single 124px beige block with a stray line through
@@ -95,6 +118,54 @@ the measurements behind each one. In short:
   single JSON file of `{en, zh, ja, fr}` strings; these edits are exact-string
   replacements standing in for it. Move them into the deck and delete the patch.
 
+- **Weight, again.** Both stylesheets document themselves in prose — nearly every
+  rule records the measurement behind it, and the corrections file is 70% comment
+  by weight. That belongs in the repo, not in the `<head>` of eight pages: 28 KB
+  of build notes per page, 23% of every byte a reader downloads, ahead of anything
+  that paints. The pages now ship without it and the prose stays here. English `/`
+  went from 119 KB to 92 KB, and from 30 KB to 19 KB over the wire.
+
+- **Frames the shape of the plates in them.** Every plate is 1024×1024 or
+  768×1024, and five of the seven frames declare the ratio their plates actually
+  are. Two did not, and `object-fit: cover` discarded the difference without
+  saying so. `.work-card .img` was 4/3 around a 3/4 plate — not a trim but a
+  landscape window onto a portrait picture, the plate scaled up 1.78× and 22% cut
+  off each end: the Botticelli sheet lost all three figures' heads and showed a
+  band of drapery, and the fan-shaped calligraphy was enlarged until it touched
+  the edges. `.lab-img` was 4/5 around the same 3/4 shape — 6% of the height,
+  which is exactly where the corner registration marks sit, on five plates in a
+  row. The frames now take the plates' ratio and `cover` has nothing left to cut.
+
+- **Things said more than once.** Five reading-room cards each carried the same
+  status word — "Shipped", "已上线", "実装済み", "Livré" — a column whose every cell
+  holds one value, which is a fact about the set and not about any row. The set's
+  own annotation takes it instead: "Five views" became "Five views, all built".
+  Each plate also carried a chip (Text, Graph, Time, Index, Ask) 12px above a
+  heading reading Reader, Graph, Timeline, Index, Ask — four the same word twice
+  and two *nearly* the same, which is worse, because the reader has to work out
+  whether "Text" and "Reader" are one view or two. And "eight passes, one gate"
+  appeared three times as an ornament in a metadata slot, on a page that already
+  states the fact twice where it is doing work: the hero's stat block and the
+  pipeline section's own heading.
+
+- **One size for the same job.** Card body copy — a short paragraph inside a card
+  — was 13px in the reading room, 13.5px in the pipeline steps and the capability
+  cards, and 14px in the corpus cards. Nobody reads a half-pixel as a distinction,
+  so the difference carried no meaning; it recorded that four sections were drawn
+  at four different times. And the section lead was 16px in three sections and
+  17px in one. Both are now one value.
+
+- **A way past the header.** The page had a header, a footer and eight sections and
+  no `main` landmark, so a screen reader had nothing to jump to and a skip link had
+  nothing to point at. Tabbing in meant eleven controls before the `h1`, on all
+  four pages, every time. The sections are now `<main id='main' tabindex='-1'>` —
+  the `tabindex` is what makes the skip actually skip, since without it focus stays
+  on the link and the next Tab carries on through the header — and a skip link goes
+  in front of everything, in the words the app already uses. And the corpus
+  section's two 46px arrow buttons went the way of the filter pills: no handler
+  anywhere in the bundle, nothing to page through (the cards are a three-column
+  grid, not a scroller), and the page's only two controls with no accessible name.
+
 **Every patch asserts it matched.** If a future export changes the markup out
 from under one, the build fails rather than shipping the page with the bug back
 in it — so a patch that stops matching is either already fixed upstream (delete
@@ -107,6 +178,72 @@ caught two mistakes while it was being written — a guard that mistook the cred
 pages for landing pages, and a French colon preceded by U+202F rather than a
 plain space.
 
+Two more assertions guard fixes that would otherwise fail invisibly. Every plate's
+real pixel dimensions are read out of its WebP header and compared with the ratio
+its frame declares, because that fix depends on two things this repo does not
+control: the plates come from the design project, the frames from the exported
+stylesheet. A re-export that changes either fails the build with the arithmetic —
+"cover throws away 44% of its height" — instead of cropping the artwork again in
+silence. And the comment stripper is quote-aware and checked for idempotence: a
+bare regex would swallow a live rule if a stylesheet ever carried `content: "/*"`,
+and the page would still build.
+
+## Measured, and deliberately not fixed here
+
+The reading room's five plates hold objects of very different visual weight. Ink
+covers 58% of the first plate's area, 49% of the second, then 28%, 23% and 22% — a
+2.6× spread across one row, which is why the row reads as unfinished next to the
+rest of the page.
+
+CSS cannot honestly close that gap. Two of the five objects are landscape — a
+hanging scroll and a type specimen — inside a portrait frame, and a third is a wide
+krater. Scaling any of them until its ink matched the manuscript leaf's would push
+it past the frame's sides and cut the object itself rather than its mount; matching
+by ink area instead of height does the same to the scroll. The fix is to re-mount
+those plates larger on their sheet, upstream, where the crop takes paper.
+
+It is also the one correction that could not assert itself if it were done by eye.
+Per-plate zoom factors are tuned to particular pictures, and a re-export would
+apply the old numbers to new images with nothing to catch it. The ratio rule can be
+checked, so the ratio rule is what lives here.
+
+The spacing scale is undisciplined and is left alone. There are 26 distinct gap
+values between 3px and 80px, seven of them used exactly once and sitting next to a
+well-used neighbour — 7 beside 8, 9 beside 10, 38 beside 36 and 40, 48 beside 50.
+Rounding a single-use 7px gap to 8px is a change no reader can see, and it would
+add seven more values that must not drift, on a page where every change has to be
+re-measured at every width in four languages. This is a design-token decision for
+the generating side, not a build patch.
+
+The type scale's small end is also still busier than it needs to be: 13px and
+13.5px both survive outside the card copy, on footer links and a "read more". Those
+are different roles from card body copy, so they were not swept up with it, but
+there is no reason for the page to hold both.
+
+Forced-colours mode (Windows high contrast) is untested. Nothing here declares a
+`forced-colors` block, and the two things most likely to need one are the paper
+texture, which the mode drops harmlessly, and the filled buttons, whose affordance
+is a background colour the mode replaces. It probably degrades acceptably; nobody
+has looked.
+
+Firefox and Android Chrome are untested too. iOS Safari is not: the pages have been
+measured on an iPhone 16 Pro simulator, which is where the header-texture defect
+above came from. What was checked there and works — the fade that says the nav
+row scrolls sideways, the punctuation tucked against the inline code chips, the
+plate frames, the CJK adaptation on `/zh`, the whole reading room and quick start.
+
+## What was checked and is already right
+
+Worth recording so it does not get re-investigated: `prefers-reduced-motion` is
+honoured properly, in the stylesheet and again in the reveal script, which marks
+every element revealed and never constructs the observer. The keyboard focus ring
+is the browser's own — nothing in either stylesheet sets `outline: none`, and
+measuring it with a scripted `.focus()` will say otherwise, because `:focus-visible`
+does not match a programmatic focus. All 56 links and every button have an
+accessible name, every plate has alt text, the language switcher carries `hreflang`
+and `lang` on each link so a screen reader pronounces 日本語 in Japanese, and the
+heading outline is `h1` then `h2`/`h3` with no skips, in all four languages.
+
 Two things the patch step is careful *not* to do. The Chinese and Japanese pages
 carry their own adaptation block — CJK font stacks, `font-synthesis-style: none`
 so an `<em>` gets no synthetic oblique, and 1.2 leading because a Han glyph fills
@@ -114,10 +251,6 @@ its em box where a Latin lowercase fills half of it. The corrections are appende
 after that block, so anything they set has to re-state the CJK value or it
 silently undoes it. And the interpunct removal leaves two dots alone: Japanese's
 中点 inside a word list and Chinese's 间隔号 inside a transliterated name.
-
-Deliberately not patched, because it wants a decision rather than a regex: the
-heading levels that skip from `h2` to `h4`, whose CSS selectors would have to
-move with them.
 
 ## Where it comes from
 

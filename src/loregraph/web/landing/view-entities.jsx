@@ -1,7 +1,18 @@
 // LoreGraph — Entities view
 // Left: list (search + type tabs) · Right: detail (summary + outgoing/incoming/glucose/mentions).
 
+// An index of nothing has no detail pane to fill: the body below reads straight
+// into the selected entity's id, which used to throw and hand the whole view to
+// the error boundary. That happened for all 82 books on the shelf that have never
+// been through the pipeline, and now also for the moment before a lazily fetched
+// graph lands. Split in two so the guard runs before any hook — an early return
+// past them would change the hook count between the empty and the loaded render.
 function ViewEntities({ ctx }) {
+  if (!ctx.entities.length) return <window.LGBookEmpty ctx={ctx} />;
+  return <Entities ctx={ctx} />;
+}
+
+function Entities({ ctx }) {
   const { tt, data, entities, edges, locale, selectedEntityId, setSelectedEntityId, glucose: bookGlucose } = ctx;
   const { useState } = React;
   const [search, setSearch] = useState("");

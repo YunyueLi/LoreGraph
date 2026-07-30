@@ -35,6 +35,7 @@ const ORDER = [
   "data-exports.js",
   "avatars.jsx",
   "covers.jsx",
+  "book-empty.jsx",
   "view-library.jsx",
   "view-shelf3d.jsx",
   "graph-physics.jsx",
@@ -49,8 +50,15 @@ const ORDER = [
   "app.jsx",
 ];
 
+// Three families, not seven. This also asked for Noto Serif SC, TC, JP and KR at
+// four weights each: 1828 @font-face rules, a 1.79 MB stylesheet (466 KB over the
+// wire, 1.4 s) blocking render in the <head> — and not one element on the page
+// named any of them. The app sets CJK in the platform serif, which is what
+// .serif's own fallback has always done; the only place the Noto names appeared
+// was the 3-D shelf's canvas font string, and it now names platform serifs too.
+// The request is 37 KB.
 const FONTS =
-  "https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&family=Noto+Serif+SC:wght@300;400;500;600&family=Noto+Serif+TC:wght@300;400;500;600&family=Noto+Serif+JP:wght@300;400;500;600&family=Noto+Serif+KR:wght@300;400;500;600&display=swap";
+  "https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap";
 
 // Asset URLs are content-hashed (cssName / bundleName), so a new build always
 // has a new URL — caches (browser + GitHub Pages CDN) can never serve a stale
@@ -69,7 +77,8 @@ const htmlDoc = (cssName, bundleName) => `<!DOCTYPE html>
 <link rel="stylesheet" href="${cssName}" />
 <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
-<script crossorigin src="https://unpkg.com/three@0.160.1/build/three.min.js"></script>
+<!-- three.js is fetched on demand by view-shelf3d.jsx, not here: 670 KB for one
+     mode of one view, and the library opens in grid mode. -->
 </head>
 <body>
 <div id="root"></div>
