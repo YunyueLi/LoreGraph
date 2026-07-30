@@ -19,6 +19,10 @@
     [
       "<span>Closed world. Literal match. Multilingual. Resumable.</span>",
       "<span>Closed world&nbsp;&nbsp;&nbsp;Literal match&nbsp;&nbsp;&nbsp;Multilingual&nbsp;&nbsp;&nbsp;Resumable</span>"
+    ],
+    [
+      "<b>Five views</b>",
+      "<b>Five views, all built</b>"
     ]
   ],
   "zh-CN": [
@@ -37,6 +41,10 @@
     [
       "工程实现参考了 Splink、ComEM 与 GraphRAG：",
       "读 Splink、ComEM 与 GraphRAG 定下了四件事："
+    ],
+    [
+      "<b>五个视图</b>",
+      "<b>五个视图，都已上线</b>"
     ]
   ],
   "ja": [
@@ -55,6 +63,10 @@
     [
       "エンジニアリングは Splink・ComEM・GraphRAG を参照して設計した。",
       "Splink・ComEM・GraphRAG を読んで、四つのことが決まった。"
+    ],
+    [
+      "<b>五つのビュー</b>",
+      "<b>五つのビュー、すべて実装済み</b>"
     ]
   ],
   "fr": [
@@ -77,6 +89,10 @@
     [
       "Orgueil et Préjugés, 西游记, Crime et Châtiment",
       "Orgueil et Préjugés, La Pérégrination vers l’Ouest, Crime et Châtiment"
+    ],
+    [
+      "<b>Cinq vues</b>",
+      "<b>Cinq vues, toutes livrées</b>"
     ]
   ]
 }

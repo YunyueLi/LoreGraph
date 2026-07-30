@@ -595,6 +595,84 @@ const PATCHES = [
     },
   },
   {
+    name: "drop-restated-labels",
+    why: "a status column with one value in it, five chips restating the heading below them, and one tagline three times",
+    // Three things the page says more than it needs to. All three are structural,
+    // so this reads the shape rather than the words and works on all four
+    // languages without knowing any of them.
+    //
+    // 1. The five reading-room cards each carry a status: "Shipped", "已上线",
+    //    "実装済み", "Livré" — the same word five times. A column whose every cell
+    //    holds the same value says nothing per row; it is a fact about the set. So
+    //    the cells go and the set's own annotation takes it, in the copy edits:
+    //    "Five views" becomes "Five views, all built". Same claim, one fifth of
+    //    the ink, and no column of identical values.
+    //
+    // 2. Each plate carries a chip — Text, Graph, Time, Index, Ask — and the
+    //    heading 12px below it reads Reader, Graph, Timeline, Index, Ask. Four are
+    //    the same word twice; the other two differ, which is worse than a
+    //    duplicate, because the reader has to work out whether "Text" and "Reader"
+    //    are the same view. The heading names the view. The chip goes.
+    //
+    // 3. "eight passes, one gate" appears three times, in the hero footer, the
+    //    call to action's footer and the page footer — as an ornament in a metadata
+    //    slot each time, never as a claim being made. The page states the fact
+    //    twice more where it is doing work: the hero's stat block ("8 passes, one
+    //    of them a gate") and the pipeline section's own heading. Six statements of
+    //    one fact on one page; the three ornaments go.
+    run(html) {
+      if (!html.includes("<section class='hero'")) return { html, count: 0 };
+      let count = 0;
+
+      // 1. The status cells, asserted to be a constant column before removing it.
+      const rows = [...html.matchAll(/<div class='num-row'><span>\d+<\/span><span>([^<]*)<\/span><\/div>/g)];
+      if (rows.length !== 5) {
+        throw new Error(`marketing-patch drop-restated-labels: expected 5 .num-row cards, found ${rows.length}`);
+      }
+      const statuses = new Set(rows.map((m) => m[1]));
+      if (statuses.size !== 1) {
+        throw new Error(
+          `marketing-patch drop-restated-labels: the status column is no longer one value — ${[...statuses].join(", ")}. It now carries information; leave it alone.`,
+        );
+      }
+      html = html.replace(/(<div class='num-row'><span>\d+<\/span>)<span>[^<]*<\/span>(<\/div>)/g, (m, head, tail) => {
+        count++;
+        return head + tail;
+      });
+
+      // 2. The plate chips.
+      const chips = (html.match(/<span class='badge'>[^<]*<\/span>/g) || []).length;
+      if (chips !== 5) {
+        throw new Error(`marketing-patch drop-restated-labels: expected 5 plate badges, found ${chips}`);
+      }
+      html = html.replace(/<span class='badge'>[^<]*<\/span>/g, () => {
+        count++;
+        return "";
+      });
+
+      // 3. The tagline, keyed off the hero footer's own copy so the words come from
+      //    the page rather than from a list here.
+      const coord = html.match(/<span class='coord'>([^<]+)<\/span>/);
+      if (!coord) throw new Error("marketing-patch drop-restated-labels: no .coord in the hero footer");
+      const tagline = coord[1];
+      const hits = html.split(`>${tagline}<`).length - 1;
+      if (hits !== 3) {
+        throw new Error(
+          `marketing-patch drop-restated-labels: expected the tagline "${tagline}" 3 times, found ${hits}`,
+        );
+      }
+      html = html.replace(
+        new RegExp(`[ \\t]*<span(?: [^>]*)?>${tagline.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}</span>\\n?`, "g"),
+        () => {
+          count++;
+          return "";
+        },
+      );
+
+      return { html, count };
+    },
+  },
+  {
     name: "drop-dead-and-duplicate-furniture",
     why: "five buttons that filter nothing, and five section rules that repeat the label 57px below them",
     // Two kinds of furniture that carry no information.

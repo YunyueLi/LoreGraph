@@ -121,6 +121,25 @@ short:
   which is exactly where the corner registration marks sit, on five plates in a
   row. The frames now take the plates' ratio and `cover` has nothing left to cut.
 
+- **Things said more than once.** Five reading-room cards each carried the same
+  status word — "Shipped", "已上线", "実装済み", "Livré" — a column whose every cell
+  holds one value, which is a fact about the set and not about any row. The set's
+  own annotation takes it instead: "Five views" became "Five views, all built".
+  Each plate also carried a chip (Text, Graph, Time, Index, Ask) 12px above a
+  heading reading Reader, Graph, Timeline, Index, Ask — four the same word twice
+  and two *nearly* the same, which is worse, because the reader has to work out
+  whether "Text" and "Reader" are one view or two. And "eight passes, one gate"
+  appeared three times as an ornament in a metadata slot, on a page that already
+  states the fact twice where it is doing work: the hero's stat block and the
+  pipeline section's own heading.
+
+- **One size for the same job.** Card body copy — a short paragraph inside a card
+  — was 13px in the reading room, 13.5px in the pipeline steps and the capability
+  cards, and 14px in the corpus cards. Nobody reads a half-pixel as a distinction,
+  so the difference carried no meaning; it recorded that four sections were drawn
+  at four different times. And the section lead was 16px in three sections and
+  17px in one. Both are now one value.
+
 **Every patch asserts it matched.** If a future export changes the markup out
 from under one, the build fails rather than shipping the page with the bug back
 in it — so a patch that stops matching is either already fixed upstream (delete
@@ -165,6 +184,19 @@ It is also the one correction that could not assert itself if it were done by ey
 Per-plate zoom factors are tuned to particular pictures, and a re-export would
 apply the old numbers to new images with nothing to catch it. The ratio rule can be
 checked, so the ratio rule is what lives here.
+
+The spacing scale is undisciplined and is left alone. There are 26 distinct gap
+values between 3px and 80px, seven of them used exactly once and sitting next to a
+well-used neighbour — 7 beside 8, 9 beside 10, 38 beside 36 and 40, 48 beside 50.
+Rounding a single-use 7px gap to 8px is a change no reader can see, and it would
+add seven more values that must not drift, on a page where every change has to be
+re-measured at every width in four languages. This is a design-token decision for
+the generating side, not a build patch.
+
+The type scale's small end is also still busier than it needs to be: 13px and
+13.5px both survive outside the card copy, on footer links and a "read more". Those
+are different roles from card body copy, so they were not swept up with it, but
+there is no reason for the page to hold both.
 
 Two things the patch step is careful *not* to do. The Chinese and Japanese pages
 carry their own adaptation block — CJK font stacks, `font-synthesis-style: none`

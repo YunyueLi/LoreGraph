@@ -676,3 +676,23 @@ html[lang='ja'] .work-copy h2 { line-height: 1.2; }
  * The corpus cards get taller, which is what a portrait plate shown whole is. */
 .work-card .img { aspect-ratio: 3 / 4; }
 .lab-img { aspect-ratio: 3 / 4; }
+
+/* One size for the same job, twice over.
+ *
+ * Card body copy — a short paragraph inside a card — is set at three sizes
+ * depending on which section built the card: 13px in the reading room, 13.5px in
+ * the pipeline steps and the capability cards, 14px in the corpus cards. Nobody
+ * reads a half-pixel as a distinction, so the difference carries no meaning; it
+ * records that four sections were drawn at four different times. 14px is the one
+ * of the three the page already uses most, and the columns are fixed width, so
+ * the measure barely moves: the narrowest card goes from 32 characters a line to
+ * 31, the widest from 39 to 36.
+ *
+ * And the section lead is 16px in the hero, the corpus and the call to action,
+ * and 17px in one section. Same role, one outlier, 1px. */
+.lab p,
+.method-step p,
+.card p,
+.work-card p { font-size: 14px; }
+
+.about .lead { font-size: 16px; }
