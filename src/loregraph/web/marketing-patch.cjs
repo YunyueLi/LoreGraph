@@ -73,41 +73,6 @@ const SKIP_LABEL = {
 // !important.
 const CORRECTIONS = fs.readFileSync(path.join(__dirname, "marketing-corrections.css"), "utf8");
 
-// The page's ground is paper seen through a fixed noise-and-gradient layer that
-// body::before paints at z-index 1, under .shell's 2. Anything inside .shell that
-// fills itself with the paper colour therefore comes out lighter and flatter than
-// the ground around it, which is why the corrections give the sticky header those
-// same three layers — otherwise its bottom edge is a tone seam across the page.
-//
-// The header's copy of the layers has to stay identical to the original, and the
-// two now live in different files. So compare them rather than trusting them: if a
-// future export re-tunes its texture, an un-updated copy would stop matching
-// silently and bring the seam back one shade smaller and far harder to see.
-function assertHeaderTextureMatchesGround(html) {
-  const layers = (css, rule, label) => {
-    const start = css.indexOf(rule);
-    if (start < 0) throw new Error(`marketing-patch texture-copy: no ${rule} in ${label}`);
-    const from = css.indexOf("background-image:", start);
-    const to = css.indexOf("background-size:", from);
-    if (from < 0 || to < 0 || to < from) {
-      throw new Error(`marketing-patch texture-copy: ${rule} in ${label} no longer declares background-image then background-size`);
-    }
-    return css
-      .slice(from + "background-image:".length, to)
-      .replace(/\s+/g, " ")
-      .replace(/;\s*$/, "")
-      .trim();
-  };
-  const ground = layers(html, "body::before {", "the export");
-  const header = layers(CORRECTIONS, ".nav::after {", "marketing-corrections.css");
-  if (ground !== header) {
-    throw new Error(
-      "marketing-patch texture-copy: .nav::after no longer paints the same layers as body::before.\n" +
-        `  body::before   ${ground}\n  .nav::after    ${header}`,
-    );
-  }
-}
-
 // Every collage plate on the page sits in a frame that declares its own
 // aspect-ratio, and object-fit: cover then quietly discards whatever does not fit.
 // Two of the seven frames were the wrong shape for the plates they hold, and the
@@ -944,7 +909,6 @@ const PATCHES = [
     why: "the export has no working phone layout — the document floors at 541px wide",
     run(html) {
       if (!html.includes("</head>")) return { html, count: 0 };
-      assertHeaderTextureMatchesGround(html);
       // The plate frames only exist on the landing pages; the credits pages carry
       // the same <head> but none of the sections.
       if (html.includes("<section class='hero'")) assertPlateFramesFitTheirPlates(html);

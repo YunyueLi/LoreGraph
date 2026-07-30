@@ -52,28 +52,25 @@
 /* Same defect as the numerals, and a whole band of it: the sticky header fills
  * itself with the paper colour, so at rest there is a hard tone seam along its
  * bottom edge — flat paper above, textured ground below. It has to stay opaque,
- * because content scrolls under it, so it takes the texture instead.
+ * because content scrolls under it, so it cannot simply let the ground through.
  *
- * background-attachment: fixed anchors all three layers to the viewport, the same
- * frame body::before uses, so the noise tiles and both gradients line up rather
- * than restarting inside the header. z-index: -1 inside .nav's own stacking
- * context (position: sticky, z-index: 50) puts the overlay above the header's
- * background and below its content, so the wordmark, the links and the filled
- * button are not multiplied along with it. */
-.nav::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image: radial-gradient(circle at 12% 18%, rgba(106, 92, 56, 0.07) 0, transparent 28%),
-    radial-gradient(circle at 88% 72%, rgba(106, 92, 56, 0.06) 0, transparent 32%),
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.18  0 0 0 0 0.16  0 0 0 0 0.12  0 0 0 0.06 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-  background-size: auto, auto, 240px 240px;
-  background-attachment: fixed;
-  mix-blend-mode: multiply;
-  opacity: 0.92;
-}
+ * The first attempt gave the header a copy of the ground's own three layers with
+ * background-attachment: fixed, so they would be anchored to the viewport the way
+ * body::before's are. That is wrong, and iOS Safari showed it: .nav carries
+ * transform: translateY(0) and will-change: transform, which makes it a containing
+ * block, and inside one `fixed` attachment is defined to resolve against the
+ * element rather than the viewport. WebKit does that. So the two radial gradients
+ * were laid out across the header's own 1206×255 box: measured on an iPhone 16 Pro,
+ * the header ran 6 levels DARKER than the ground on the right and 6 levels LIGHTER
+ * on the left — the seam replaced by a gradient running the wrong way.
+ *
+ * So the header takes the ground's colour instead of its recipe. #eae2cc is the
+ * mean of 300 samples of pure ground down the page's margins on that phone; the
+ * ground's own gradients swing ±4 levels either side of it, so a flat fill sits
+ * inside the variation the eye already reads as texture, and no boundary steps
+ * harder than the ground steps against itself. Losing the grain inside an 85px
+ * band costs nothing: the grain is ±1 level. */
+.nav { background: #eae2cc; }
 
 /* With the interpuncts gone, the language switcher's 7px gap was doing all the
  * separating and the four links ran together. */

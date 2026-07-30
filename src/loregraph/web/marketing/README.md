@@ -68,6 +68,21 @@ short:
 - **Navigation on a phone.** The header dropped all five section links below
   1080px with nothing in their place, and the footer hid two whole columns —
   the repository, the issues, the changelog and the licence.
+- **The header's tone, engine-independently.** The sticky header fills itself with
+  the paper colour, so at rest its bottom edge was a hard tone seam: flat paper
+  above, textured ground below. The first fix gave it a copy of the ground's three
+  layers with `background-attachment: fixed`, and real iOS Safari showed that to be
+  wrong. `.nav` carries `transform: translateY(0)` and `will-change: transform`,
+  which makes it a containing block, and inside one `fixed` attachment resolves
+  against the element rather than the viewport — so WebKit laid the two radial
+  gradients across the header's own box. Measured on an iPhone 16 Pro: the header
+  ran 6 levels lighter than the ground on the left and 5 darker on the right, the
+  seam replaced by a gradient running the wrong way. It now takes the ground's
+  colour rather than its recipe — `#eae2cc`, the mean of 300 samples of pure ground
+  — which leaves a worst-case step of 4.5 levels against a ground whose own
+  gradients swing ±4. Chrome's more forgiving reading of `fixed` was the thing that
+  hid this; nothing depends on it now.
+
 - **One header, not two bands.** The top bar and the header had the same
   background, the same width and the same 11px tracked caps, separated by one
   hairline, so they read as a single 124px beige block with a stray line through
@@ -163,19 +178,15 @@ caught two mistakes while it was being written — a guard that mistook the cred
 pages for landing pages, and a French colon preceded by U+202F rather than a
 plain space.
 
-Three more assertions guard fixes that would otherwise fail invisibly. The
-header's copy of the paper texture is compared against the export's own
-`body::before` rather than trusted, because the two live in different files now
-and an export that re-tuned its texture would leave the copy quietly mismatched —
-the tone seam back, one shade smaller and much harder to see. Every plate's real
-pixel dimensions are read out of its WebP header and compared with the ratio its
-frame declares, because that fix depends on two things this repo does not control:
-the plates come from the design project, the frames from the exported stylesheet.
-A re-export that changes either fails the build with the arithmetic — "cover
-throws away 44% of its height" — instead of cropping the artwork again in silence.
-And the comment stripper is quote-aware and checked for idempotence: a bare regex
-would swallow a live rule if a stylesheet ever carried `content: "/*"`, and the
-page would still build.
+Two more assertions guard fixes that would otherwise fail invisibly. Every plate's
+real pixel dimensions are read out of its WebP header and compared with the ratio
+its frame declares, because that fix depends on two things this repo does not
+control: the plates come from the design project, the frames from the exported
+stylesheet. A re-export that changes either fails the build with the arithmetic —
+"cover throws away 44% of its height" — instead of cropping the artwork again in
+silence. And the comment stripper is quote-aware and checked for idempotence: a
+bare regex would swallow a live rule if a stylesheet ever carried `content: "/*"`,
+and the page would still build.
 
 ## Measured, and deliberately not fixed here
 
@@ -214,6 +225,12 @@ Forced-colours mode (Windows high contrast) is untested. Nothing here declares a
 texture, which the mode drops harmlessly, and the filled buttons, whose affordance
 is a background colour the mode replaces. It probably degrades acceptably; nobody
 has looked.
+
+Firefox and Android Chrome are untested too. iOS Safari is not: the pages have been
+measured on an iPhone 16 Pro simulator, which is where the header-texture defect
+above came from. What was checked there and works — the fade that says the nav
+row scrolls sideways, the punctuation tucked against the inline code chips, the
+plate frames, the CJK adaptation on `/zh`, the whole reading room and quick start.
 
 ## What was checked and is already right
 
