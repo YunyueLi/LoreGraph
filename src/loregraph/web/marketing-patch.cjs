@@ -11,9 +11,9 @@
 // quietly shipping the page with the bug back in it. A patch that stops matching
 // is either fixed upstream — delete it here — or broken, and both need a human.
 //
-// Anything editorial (heading levels that would need their CSS selectors moved
-// with them, alt text that is too long to hear read aloud) is deliberately NOT
-// here. Those want a decision on the generating side, not a regex.
+// Anything that needs a judgement call rather than a rule belongs on the
+// generating side, not here. What is left in that category is the copy voice
+// itself; the copy-edits patch only removes repetition it can point at.
 const fs = require("fs");
 const path = require("path");
 
@@ -1040,6 +1040,57 @@ const PATCHES = [
         count++;
       }
       return { html: out, count };
+    },
+  },
+  {
+    name: "heading-levels",
+    why: "the outline jumped h2 to h4 three times, so heading navigation gave a broken tree",
+    // Nine h4s and four h5s sit directly under an h2 with no h3 between them:
+    // the five reading-room cards, the four pipeline steps, and the four footer
+    // columns. Someone navigating by heading gets a tree with two levels missing
+    // and no way to tell whether they have skipped something.
+    //
+    // An earlier pass left this alone on the grounds that the styling is bound to
+    // the tag name, so moving the tag would mean copying its declarations into
+    // the corrections sheet — a copy that goes stale silently the next time the
+    // export changes them. That was wrong: the stylesheet is inline in the same
+    // file this patch already rewrites, so the selector moves with the tag and
+    // nothing is duplicated.
+    run(html) {
+      let count = 0;
+      const selector = (from, to, expect) => {
+        const hits = html.split(from).length - 1;
+        if (hits !== expect) {
+          throw new Error(
+            `marketing-patch heading-levels: expected ${expect} of '${from}', found ${hits}`,
+          );
+        }
+        html = html.split(from).join(to);
+        count += hits;
+      };
+      selector(".lab h4", ".lab h3", 1);
+      selector(".method-step h4", ".method-step h3", 2);
+      selector(".method-step:last-child h4", ".method-step:last-child h3", 1);
+      selector(".foot-col h5", ".foot-col h3", 1);
+
+      // Tags only — mapMarkup steps over <style>, <script> and comments, so the
+      // selectors just renamed above are not touched again.
+      let tags = 0;
+      html = mapMarkup(html, (chunk) =>
+        chunk.replace(/<(\/?)h[45]\b/g, (m, slash) => {
+          tags++;
+          return `<${slash}h3`;
+        }),
+      );
+      // The credits pages carry the same stylesheet — so the selectors above are
+      // there — but none of these headings, so they legitimately rewrite nothing.
+      const expectTags = html.includes("<section class='hero'") ? 26 : 0;
+      if (tags !== expectTags) {
+        throw new Error(
+          `marketing-patch heading-levels: expected ${expectTags} h4/h5 tags, found ${tags}`,
+        );
+      }
+      return { html, count: count + tags };
     },
   },
   {
