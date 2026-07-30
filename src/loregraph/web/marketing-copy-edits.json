@@ -1,0 +1,82 @@
+{
+  "en": [
+    [
+      "Every claim carries an <code class='code-inline'>evidence_span</code>, a literal substring of the source. Click any relation and you land on the sentence it came from.",
+      "Every claim carries an <code class='code-inline'>evidence_span</code>, so clicking any relation lands you on the sentence it came from."
+    ],
+    [
+      "Source text stays in its original script. Entity resolution runs on",
+      "Entity resolution runs on"
+    ],
+    [
+      "The engineering was researched against Splink, ComEM and GraphRAG:",
+      "Reading Splink, ComEM and GraphRAG settled four things:"
+    ],
+    [
+      "Pride and Prejudice, 西游记, Crime and Punishment",
+      "Pride and Prejudice, Journey to the West, Crime and Punishment"
+    ],
+    [
+      "<span>Closed world. Literal match. Multilingual. Resumable.</span>",
+      "<span>Closed world&nbsp;&nbsp;&nbsp;Literal match&nbsp;&nbsp;&nbsp;Multilingual&nbsp;&nbsp;&nbsp;Resumable</span>"
+    ]
+  ],
+  "zh-CN": [
+    [
+      "<span>闭世界。字面匹配。多语种。可续跑。</span>",
+      "<span>闭世界&nbsp;&nbsp;&nbsp;字面匹配&nbsp;&nbsp;&nbsp;多语种&nbsp;&nbsp;&nbsp;可续跑</span>"
+    ],
+    [
+      "每条断言都带一个 <code class='code-inline'>evidence_span</code>，也就是原文里的一段字面文本。点开任意一条关系，就落到它出处的那一句。",
+      "每条断言都带一个 <code class='code-inline'>evidence_span</code>，点开任意一条关系就落到它出处的那一句。"
+    ],
+    [
+      "源文保留原文字。实体消解跑在",
+      "实体消解跑在"
+    ],
+    [
+      "工程实现参考了 Splink、ComEM 与 GraphRAG：",
+      "读 Splink、ComEM 与 GraphRAG 定下了四件事："
+    ]
+  ],
+  "ja": [
+    [
+      "<span>閉世界。文字列一致。多言語。再開可能。</span>",
+      "<span>閉世界&nbsp;&nbsp;&nbsp;文字列一致&nbsp;&nbsp;&nbsp;多言語&nbsp;&nbsp;&nbsp;再開可能</span>"
+    ],
+    [
+      "どの主張にも <code class='code-inline'>evidence_span</code>、つまり原文そのままの文字列が付きます。関係をクリックすれば、その出典の一文に着きます。",
+      "どの主張にも <code class='code-inline'>evidence_span</code> が付くので、関係をクリックすればその出典の一文に着きます。"
+    ],
+    [
+      "原文はもとの文字体系のまま保つ。実体解決は",
+      "実体解決は"
+    ],
+    [
+      "エンジニアリングは Splink・ComEM・GraphRAG を参照して設計した。",
+      "Splink・ComEM・GraphRAG を読んで、四つのことが決まった。"
+    ]
+  ],
+  "fr": [
+    [
+      "<span>Monde clos. Correspondance littérale. Multilingue. Reprise possible.</span>",
+      "<span>Monde clos&nbsp;&nbsp;&nbsp;Correspondance littérale&nbsp;&nbsp;&nbsp;Multilingue&nbsp;&nbsp;&nbsp;Reprise possible</span>"
+    ],
+    [
+      "Chaque assertion porte un <code class='code-inline'>evidence_span</code>, une sous-chaîne littérale de la source. Cliquez sur une relation, vous atterrissez sur la phrase dont elle vient.",
+      "Chaque assertion porte un <code class='code-inline'>evidence_span</code>, donc un clic sur une relation vous mène à la phrase dont elle vient."
+    ],
+    [
+      "Le texte source reste dans son écriture d’origine. La résolution d’entités tourne sur",
+      "La résolution d’entités tourne sur"
+    ],
+    [
+      "L’ingénierie s’appuie sur les travaux de Splink, ComEM et GraphRAG :",
+      "Lire Splink, ComEM et GraphRAG a réglé quatre points :"
+    ],
+    [
+      "Orgueil et Préjugés, 西游记, Crime et Châtiment",
+      "Orgueil et Préjugés, La Pérégrination vers l’Ouest, Crime et Châtiment"
+    ]
+  ]
+}

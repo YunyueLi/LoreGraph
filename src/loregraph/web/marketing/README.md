@@ -15,8 +15,16 @@ change it on the generating side and re-export.
 
 Because a hand edit here would not survive that re-export, the fixes the current
 export still needs live in [`../marketing-patch.cjs`](../marketing-patch.cjs) and
-are applied as the build copies each page. Read that file for the full list and
-the measurements behind each one. In short:
+are applied as the build copies each page. Two of them are large enough to be
+their own files, in the shape they would take upstream:
+
+| File | What it is |
+|---|---|
+| [`../marketing-corrections.css`](../marketing-corrections.css) | the corrections stylesheet, inlined into each `<head>` after the export's own |
+| [`../marketing-copy-edits.json`](../marketing-copy-edits.json) | the copy edits, keyed by language, the same shape as the upstream copy deck |
+
+Read the patch file for the full list and the measurements behind each one. In
+short:
 
 - **The site's own URL.** The export was built against the old GitHub Pages
   address, so `canonical` pointed crawlers at a stale mirror and `og:image` at a
@@ -107,6 +115,12 @@ caught two mistakes while it was being written — a guard that mistook the cred
 pages for landing pages, and a French colon preceded by U+202F rather than a
 plain space.
 
+One more assertion guards a fix that would otherwise fail invisibly: the header's
+copy of the paper texture is compared against the export's own `body::before`
+rather than trusted, because the two live in different files now and an export
+that re-tuned its texture would leave the copy quietly mismatched — the tone seam
+back, one shade smaller and much harder to see.
+
 Two things the patch step is careful *not* to do. The Chinese and Japanese pages
 carry their own adaptation block — CJK font stacks, `font-synthesis-style: none`
 so an `<em>` gets no synthetic oblique, and 1.2 leading because a Han glyph fills
@@ -114,10 +128,6 @@ its em box where a Latin lowercase fills half of it. The corrections are appende
 after that block, so anything they set has to re-state the CJK value or it
 silently undoes it. And the interpunct removal leaves two dots alone: Japanese's
 中点 inside a word list and Chinese's 间隔号 inside a transliterated name.
-
-Deliberately not patched, because it wants a decision rather than a regex: the
-heading levels that skip from `h2` to `h4`, whose CSS selectors would have to
-move with them.
 
 ## Where it comes from
 

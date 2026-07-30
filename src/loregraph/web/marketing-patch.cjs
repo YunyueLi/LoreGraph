@@ -55,741 +55,61 @@ function appLabel(html) {
   return APP_LABEL[lang] || APP_LABEL.en;
 }
 
-// Every rule here fixes something measured, and nothing here restyles the design
-// for its own sake. Appended after the export's own stylesheet so it wins on
-// order without needing !important.
+// Every rule the corrections stylesheet carries fixes something measured, and
+// nothing in it restyles the design for its own sake. It is authored as real CSS
+// in marketing-corrections.css, so it lints, diffs and reads like a stylesheet
+// instead of like a 640-line string inside a build script — and so the design
+// side can take the file as it is. The build inlines it into each page's <head>,
+// after the export's own stylesheet, so it wins on order without needing
+// !important.
+const CORRECTIONS = fs.readFileSync(path.join(__dirname, "marketing-corrections.css"), "utf8");
+
 // The page's ground is paper seen through a fixed noise-and-gradient layer that
-// body::before paints at z-index 1 under .shell's 2. Anything inside .shell that
+// body::before paints at z-index 1, under .shell's 2. Anything inside .shell that
 // fills itself with the paper colour therefore comes out lighter and flatter than
-// the ground around it. These are the exact three layers, reused so a copy cannot
-// drift from the original.
-const TEXTURE_LAYERS = `radial-gradient(circle at 12% 18%, rgba(106, 92, 56, 0.07) 0, transparent 28%),
-    radial-gradient(circle at 88% 72%, rgba(106, 92, 56, 0.06) 0, transparent 32%),
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.18  0 0 0 0 0.16  0 0 0 0 0.12  0 0 0 0.06 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")`;
-
-const CORRECTIONS = `
-/* ---------------------------------------------------------------------------
- * Build-time corrections. See src/loregraph/web/marketing-patch.cjs — edit
- * there, not here; this block is generated.
- * ------------------------------------------------------------------------ */
-
-/* The hero carries two rows of furniture under the copy: three buttons, which
- * need 545px to sit on one line, and three stats, which need 524px. The exported
- * two-column grid gives the copy column 414px at 1200 and 466px at 1440, so it
- * cannot hold either row at any desktop width — and the export's own
- * flex-wrap:nowrap did not fit them, it hid the overflow: the third button and
- * the third stat slid under the plate panel, which paints after them, and were
- * cut in half.
- *
- * Releasing the wrap instead surfaced the same shortfall as a ragged 2 + 1, four
- * rows of furniture where the design has two. Neither setting can win, because
- * the column is too narrow either way. So the column gets the width:
- *
- *   ≤ 700px   the rows genuinely do not fit on one line — wrap them. Without
- *             this the stats' 524px min-content floors the whole document and
- *             every phone scrolls sideways, which is where this started.
- *   ≤ 1100px  one column, the copy at full container width. Both rows fit with
- *             room to spare and the plate stacks beneath, which is what the
- *             export already does below 880.
- *   > 1100px  two columns again, the copy floored at 560px so the rows always
- *             fit, the plate taking what is left. */
-@media (max-width: 1100px) {
-  .hero-grid { grid-template-columns: minmax(0, 1fr); }
-}
-@media (min-width: 1101px) {
-  .hero-grid { grid-template-columns: minmax(560px, 1fr) 1fr; }
-}
-@media (max-width: 700px) {
-  .hero-stats { flex-wrap: wrap; row-gap: 16px; }
-  .hero-actions { flex-wrap: wrap; row-gap: 12px; }
-}
-
-/* Same defect as the numerals, and a whole band of it: the sticky header fills
- * itself with the paper colour, so at rest there is a hard tone seam along its
- * bottom edge — flat paper above, textured ground below. It has to stay opaque,
- * because content scrolls under it, so it takes the texture instead.
- *
- * background-attachment: fixed anchors all three layers to the viewport, the same
- * frame body::before uses, so the noise tiles and both gradients line up rather
- * than restarting inside the header. z-index: -1 inside .nav's own stacking
- * context (position: sticky, z-index: 50) puts the overlay above the header's
- * background and below its content, so the wordmark, the links and the filled
- * button are not multiplied along with it. */
-.nav::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image: ${TEXTURE_LAYERS};
-  background-size: auto, auto, 240px 240px;
-  background-attachment: fixed;
-  mix-blend-mode: multiply;
-  opacity: 0.92;
-}
-
-/* With the interpuncts gone, the language switcher's 7px gap was doing all the
- * separating and the four links ran together. */
-.lang-switch { gap: 14px; }
-
-/* The switcher now lives in the header instead of on its own strip. It has to
- * earn its 211px there, and the header was already tight: at 1281 the brand's
- * second line reappears and the row needs 1345px against 1201px of content.
- *
- * The second line is what goes. "Apache-2.0 / evidence-anchored graphs" repeats
- * the hero label sitting 120px below it and the licence line in the footer, and
- * it is the single widest thing in the header at 227px. Without it the row needs
- * 1100px, which clears from about 1180 up; between 1081 and 1180 the repository
- * pill stands down too, the same way it already does below 1080. */
-.brand-meta { display: none; }
-@media (max-width: 1240px) {
-  .nav-cta { display: none; }
-}
-.lang-switch {
-  display: inline-flex;
-  align-items: center;
-  font-family: var(--sans);
-  font-size: 11px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--ink-mute);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.lang-switch b { color: var(--ink); font-weight: 600; }
-
-/* Nothing declares scroll-margin-top, and the header is sticky, so every anchor
- * jump lands the target's top at viewport 0 — behind the header. On a phone all
- * four section links bury the section's own rule and label under 158px of
- * chrome; on desktop it is "back to top" that lands 60px under. The links were
- * hidden below 1080 until this pass, so the phone case never showed.
- *
- * The offsets are the header's own measured heights plus 15px of air: 85px above
- * 1080, 140 for the two-row band, 158 for the three-row one. */
-:target,
-section[id],
-[id='top'],
-[id='agents'],
-[id='labs'],
-[id='contact'] { scroll-margin-top: 100px; }
-@media (max-width: 1080px) {
-  :target,
-  section[id],
-  [id='top'],
-  [id='agents'],
-  [id='labs'],
-  [id='contact'] { scroll-margin-top: 156px; }
-}
-@media (max-width: 620px) {
-  :target,
-  section[id],
-  [id='top'],
-  [id='agents'],
-  [id='labs'],
-  [id='contact'] { scroll-margin-top: 174px; }
-}
-
-/* Below 1080 the header is already two rows — brand and actions, then the
- * section links. The switcher needs 228px of its own, which at 390 leaves 96px
- * for the links if it shares their row and nothing at all if it shares the
- * first. So it takes a third row from 620 down, right-aligned under the links.
- * Three rows, one job each, and still one band fewer than the strip it
- * replaced — that was two rows of its own on a phone, plus the header's. */
-@media (max-width: 1080px) {
-  .nav-inner {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas:
-      'brand .     side'
-      'links links lang';
-    align-items: center;
-    row-gap: 12px;
+// the ground around it, which is why the corrections give the sticky header those
+// same three layers — otherwise its bottom edge is a tone seam across the page.
+//
+// The header's copy of the layers has to stay identical to the original, and the
+// two now live in different files. So compare them rather than trusting them: if a
+// future export re-tunes its texture, an un-updated copy would stop matching
+// silently and bring the seam back one shade smaller and far harder to see.
+function assertHeaderTextureMatchesGround(html) {
+  const layers = (css, rule, label) => {
+    const start = css.indexOf(rule);
+    if (start < 0) throw new Error(`marketing-patch texture-copy: no ${rule} in ${label}`);
+    const from = css.indexOf("background-image:", start);
+    const to = css.indexOf("background-size:", from);
+    if (from < 0 || to < 0 || to < from) {
+      throw new Error(`marketing-patch texture-copy: ${rule} in ${label} no longer declares background-image then background-size`);
+    }
+    return css
+      .slice(from + "background-image:".length, to)
+      .replace(/\s+/g, " ")
+      .replace(/;\s*$/, "")
+      .trim();
+  };
+  const ground = layers(html, "body::before {", "the export");
+  const header = layers(CORRECTIONS, ".nav::after {", "marketing-corrections.css");
+  if (ground !== header) {
+    throw new Error(
+      "marketing-patch texture-copy: .nav::after no longer paints the same layers as body::before.\n" +
+        `  body::before   ${ground}\n  .nav::after    ${header}`,
+    );
   }
-  .nav-inner > .brand { grid-area: brand; }
-  .nav-inner > .nav-side { grid-area: side; }
-  .nav-inner > nav { grid-area: links; min-width: 0; }
-  .nav-inner > .lang-switch { grid-area: lang; justify-self: end; padding-top: 11px; }
-}
-@media (max-width: 620px) {
-  .nav-inner {
-    grid-template-areas:
-      'brand .     side'
-      'links links links'
-      'lang  lang  lang';
-  }
-  .nav-inner > .lang-switch { justify-self: start; padding-top: 0; }
-  /* Three rows at 22px of padding is a 178px sticky header on a 844px phone,
-   * 48px more sticky chrome than the two bands this replaced. The rows are the
-   * price of four languages and a real call to action on a 342px line; the
-   * padding is not. */
-  .nav { padding: 12px 0; }
-  .nav-inner { row-gap: 10px; }
 }
 
-/* The corpus section's 90px against every other section's 130px is not an
- * inconsistency and is deliberately left alone: it wraps the dark panel, which
- * carries 110px of its own, so 90 + 110 comes out ahead of a plain 130. The
- * class is called .tight for that reason.
- *
- * The radii are a system: 50% for every ring, 999px for every pill,
- * 18px for both card types, 12px for the image frame inside a card, 4px for the
- * small chips, and 32px for the one big panel. Two values sit 2px off the family
- * they belong to and nowhere else — an image frame at 14 and a chip at 6. */
-.lab-img { border-radius: 12px; }
-.hero-art .index { border-radius: 4px; }
-
-/* The bibliography row moved here from the section that used to restate the rule.
- * It was laid out inside a narrow copy column; here it spans the section, so it
- * gets its own breathing room and the partner list can use the width. */
-.merged-bibliography { margin-top: 64px; }
-.merged-bibliography .partners-text { max-width: 58ch; }
-.merged-bibliography .partners { margin-top: 22px; }
-.merged-bibliography .read-more { display: inline-block; margin-top: 26px; }
-
-/* The app entry, styled from .nav-cta's own declarations but deliberately NOT
- * given that class: the export's star-count script does
- * querySelector('a.nav-cta:not(.ghost)') and rewrote this button's label to
- * "Star · 5" the first time it shared it. Its own class also keeps it out of the
- * rule that hides .nav-cta below 1080px, which is how a phone ended up with no
- * navigation and no way into the app at all. */
-.nav-app {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 16px;
-  border-radius: 999px;
-  background: var(--ink);
-  color: var(--paper);
-  font-family: var(--sans);
-  font-size: 13px;
-  font-weight: 500;
-  text-decoration: none;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.nav-app:hover { background: #2a2620; }
-
-/* With the app filled and primary, the repository steps back to outlined. Its
- * ★ was mustard on the dark fill; on paper that is 1.48:1, so it takes the ink
- * tone instead. */
-.nav-cta-repo {
-  background: transparent;
-  color: var(--ink);
-  border: 1px solid rgba(21, 20, 15, 0.22);
-}
-.nav-cta-repo:hover { background: rgba(21, 20, 15, 0.05); }
-.nav-cta-repo::after { color: var(--ink-mute); }
-
-/* The count is appended after the label and the ★ comes from ::after, so the
- * button read "Star on GitHub 5 ★" with the number stranded between the two
- * things it belongs to. Both are flex items, so order puts the star back in
- * front of its own number. */
-.nav-cta::after { order: 1; }
-.nav-cta [data-github-stars] { order: 2; margin-left: -12px; }
-
-/* The top bar is a space-between row whose children are all white-space:nowrap,
- * so below ~430px the language switcher simply hung off the right edge — 117px
- * past it at 360. */
-@media (max-width: 880px) {
-  .topbar-inner { flex-wrap: wrap; gap: 6px 14px; }
-  .topbar-inner .right { flex-wrap: wrap; gap: 6px 12px; }
-  .lang-switch { flex-wrap: wrap; }
-}
-
-/* These four frames took their width from their content, which is one lazy
- * plate. Until that plate loads its intrinsic size is 0x0, so the frame
- * collapsed to 0 wide — and each frame anchors an absolutely-positioned caption,
- * which then had nothing to be positioned against and printed straight over the
- * body copy in the next column. That is the overlap of
- * "Closed-world extraction: every claim goes back to a line in the book" across
- * "It is told, explicitly, to forget the Elizabeth Bennet it already knows."
- *
- * Sizing them from the column instead of from the image fixes the cause: the
- * frame is the right size before the plate arrives, so the caption has a box to
- * sit in and the plate fades into a space already reserved for it. (The earlier
- * pass was wrong to conclude no image needed dimensions — true for .lab-img and
- * the card frames, which set their own aspect-ratio, false for these four.) */
-.about-art,
-.capabilities-art,
-.cta-art,
-.testimonial-art { width: 100%; max-width: 100%; }
-
-/* The footer keeps three columns down to the smallest phone. Their min-content
- * adds to 292px inside a 278px track once the two 40px gaps are taken, so the
- * last column hung 27px off the edge at 360. */
-@media (max-width: 560px) {
-  .foot-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px 24px; }
-}
-
-/* At 320 the header cannot hold the wordmark and two pills — 412px of content in
- * 288px. The app button is the one that matters there; the repository is still
- * linked from the top bar and the footer. The hero's install line does not break
- * either, partly because of a non-breaking space and 0.18em of tracking. */
-@media (max-width: 400px) {
-  .foot-grid { grid-template-columns: minmax(0, 1fr); }
-  .nav-cta-repo { display: none; }
-  /* Uppercase tracked labels, the section rules and inline code are all
-   * unbreakable runs: "uv sync -> loregraph extract" and "evidence_span" are
-   * single tokens as far as the line breaker is concerned. */
-  .meta,
-  .sec-rule,
-  .topbar-inner > span,
-  .topbar-inner .right > span,
-  .topbar-inner .right > a { white-space: normal; overflow-wrap: anywhere; letter-spacing: 0.1em; }
-  .sec-rule .meta-grp { flex-wrap: wrap; gap: 4px 12px; }
-  .code-inline { overflow-wrap: anywhere; }
-
-  /* Everything above this fixes a named cause. This is the backstop for 320px,
-   * a width nothing in the export was laid out for: releasing every remaining
-   * nowrap (the stylesheet sets no pre / pre-wrap anywhere, so nothing depends
-   * on preserved whitespace) and clipping the shell, because a page that scrolls
-   * sideways is worse than one whose ornament is cropped. Without it each fix
-   * just uncovers the next unbreakable label. */
-  [class] { white-space: normal; }
-  .shell * { overflow-wrap: anywhere; }
-  .shell { overflow-x: clip; }
-
-  /* …except the short atomic marks, which that blanket rule mangled: the roman
-   * numeral "I." broke between the letter and the period, and the section
-   * counter "001 / 008" split across two lines. None of these is long enough to
-   * overflow anything. */
-  .roman,
-  .dot-mark,
-  .sec-rule > span:last-child,
-  .work-rule > span:last-child,
-  .hero-stats .stat-label b { white-space: nowrap; }
-  /* 320px (an SE) leaves 288px of content, and the wordmark plus the app pill
-   * plus two 18px gaps plus the status dot came to exactly that or more. The dot
-   * is ornament and goes; the gaps tighten. */
-  .nav-inner { gap: 12px; }
-  .nav-side { gap: 10px; }
-  .nav-side .status-dot { display: none; }
-}
-
-@media (max-width: 1080px) {
-  /* Rotated ornament pinned 32-42px outside the art frame, with no margin to
-   * hang it in below desktop. Hiding it also clears a real overlap: the closing
-   * section's "VIII" numeral sat on top of the "LOREGRAPH · APACHE-2.0" ribbon. */
-  .capabilities-art .ribbon,
-  .cta-art .ribbon { display: none; }
-}
-
-/* NOTHING here repositions .about-side-note, and that is deliberate. An earlier
- * pass made it position:static below 1080px to stop it hanging 20px past the
- * viewport — but that 20px was measured mid-transition, while the reveal was
- * still animating, and does not exist in the settled layout. The rule was
- * therefore fixing nothing, and it dropped the note into .about-art's flow
- * directly on top of the absolutely-positioned .about-caption: four overlapping
- * text runs, "It is told, explicitly, to forget the Elizabeth Bennet it already
- * knows" printed straight through "Closed-world extraction: every claim goes
- * back to a line in the book." Measure the settled layout, and measure overlap
- * as well as overflow. */
-
-/* White on the bright coral is 2.99:1, under the 4.5:1 floor — and these are
- * the two buttons carrying the page's main actions. The darker tone reads the
- * same and measures 5.66:1. */
-.btn-primary,
-.btn-app {
-  background: var(--coral-text);
-  box-shadow: 0 14px 26px -16px rgba(164, 77, 63, 1);
-}
-.btn-primary:hover,
-.btn-app:hover { background: #8f4235; transform: translateY(-1px); }
-
-/* The other three places white type sits on the bright fill: the active filter
- * pill, the card's hover mark and the section's active arrow. */
-.pill.active,
-.card:hover .arrow-mark,
-.work-arrows .nav-btn.active { background: var(--coral-text); border-color: var(--coral-text); }
-
-@media (max-width: 880px) {
-  /* 28px arrow buttons are well under the 44px touch minimum, and they are the
-   * links into the app. Grown on touch widths only; the desktop mark is a
-   * deliberate size in a deliberate corner. */
-  .card .arrow-mark,
-  .lab .arrow-mark { width: 44px; height: 44px; }
-  .card .arrow-mark svg,
-  .lab .arrow-mark svg { width: 14px; height: 14px; }
-}
-
-@media (max-width: 880px) {
-  /* The language switcher's four links were 13-32px wide and 15px tall. */
-  .topbar-inner .lang-switch a,
-  .topbar-link { display: inline-flex; align-items: center; min-height: 34px; padding: 0 5px; }
-}
-
-/* The small end of the scale ran 9 / 9.5 / 10 / 10.5 / 11 / 11.5 / 12 — seven
- * sizes inside three pixels, which is not a scale, just seven components that
- * fail to match. An earlier pass floored them at 11px on phones only, on the
- * reasoning that the desktop scale was deliberate. It is not: 9px is below the
- * legibility floor on any screen, and the two smallest are carrying real
- * content, not ornament — .about-caption is the museum credit for the plate and
- * .about-side-note states the closed-world rule. Same floor everywhere. */
-.topbar-inner,
-.about-caption,
-.card .num .tag,
-.lab-img .badge,
-.annot,
-.annot.coord,
-.brand-meta,
-.coord,
-.partner small,
-.pill .count,
-.about-side-note,
-.capabilities-art .ribbon,
-.cta-art .ribbon,
-.hero-art .index,
-.lab .num-row,
-.labs-meta .meta-text,
-.meta,
-.credits-foot,
-.plate-head,
-.plate-slot,
-.sec-rule,
-.side-rail .rail-text,
-.wire-item .wire-coord,
-.wire-item .wire-role,
-.wire-title span,
-.work-card .small-label,
-.work-rule { font-size: 11px; }
-
-/* The four superscript counters on the nav links go, at every width.
- *
- * They cannot be decoded. 04 counts the engineering cards, 05 the reading-room
- * views, 08 the pipeline passes, 85 the corpus works — four different units, no
- * labels, so 85 reads as the same kind of number as 04. Only four of the five
- * links carry one, so it is not a system either. And every count is already
- * stated where it means something: the hero's stats row, "five views" in the
- * reading room, the numbered passes themselves.
- *
- * They also cost the nav its rhythm. Each one is absolutely positioned at
- * right: -16px, outside its link's box and inside the following gap, so the
- * spacing between links reads as uneven. Removing them makes the 28px gap the
- * real gap, and makes the desktop nav match the phone one, where an earlier
- * pass had already hidden them. */
-.nav-links a .num { display: none; }
-
-/* Seven section headlines came out at seven sizes — 64, 66, 68, 72, 74.9, 77.8
- * and 95px at 1440 — because each one got its own clamp() ramp: three of them
- * differ only in the vw coefficient with identical endpoints. The 95px one is a
- * section heading set larger than the page's own h1, which inverts the
- * hierarchy. Two ramps replace the twelve: one for the hero, one for sections,
- * so the h1 is the largest thing on the page and the seven sections match. */
-.hero h1,
-h1.display { font-size: clamp(40px, 5.2vw, 74px); }
-.section-header h2,
-.about h2.display,
-.capabilities h2.display,
-.labs-head h2,
-.method-head h2,
-.work-copy h2,
-.cta h2.display { font-size: clamp(30px, 4.1vw, 56px); }
-
-/* The closing wordmark is nowrap inside an overflow-hidden band, and its clamp
- * floors at 70px — which needs 300px for "LoreGraph." against 272px of content
- * at 320. The brand name was cropped to "LoreGrap". Nothing else on the page
- * bleeds, so this was the floor being wrong rather than a deliberate crop. */
-.foot-mega .word { font-size: clamp(58px, 13vw, 200px); }
-
-/* line-height equal to font-size, so the descenders of one line and the
- * ascenders of the next clear each other by 4.1px at 72px — 0.06em, which at
- * display size reads as touching.
- *
- * The number is set by ink, not by the em box. Inter Tight descends 0.204em and
- * Playfair's italic ascends 0.795em, so a line of one over a line of the other
- * spends 0.999em before any gap exists at all — which is why 1.06 still left
- * 3.4px between the "p" of "graph" and the "h" of "relationship". 1.12 leaves
- * about 0.12em, and that is the whole reason the value looks loose for a
- * display size: it is paying for the second typeface. */
-.hero h1,
-h1.display,
-h2.display,
-.labs-head h2,
-.work-copy h2,
-.section-header h2 { line-height: 1.12; }
-
-/* Except on the Chinese and Japanese pages. Their own adaptation block sets
- * .display to 1.2, because a Han or Kana glyph fills its em box where a Latin
- * lowercase fills half of it, and this correction is appended after that block
- * — so without saying so it would undo it. 1.2 also reaches the one heading
- * that adaptation missed, the corpus h2, which carries no .display class and
- * was still at 1.0. */
-html[lang='zh-CN'] .display,
-html[lang='zh-CN'] .work-copy h2,
-html[lang='ja'] .display,
-html[lang='ja'] .work-copy h2 { line-height: 1.2; }
-
-/* The four steps stack number, title, copy and plate in flow, and the four
- * copy blocks are 4 to 7 lines long, so the four plates landed at four
- * different heights — a 63px spread across a row that is otherwise aligned to
- * the pixel. The steps are already equal-height grid items; the plate just has
- * to sit at the bottom of one. */
-.method-step { display: flex; flex-direction: column; }
-.method-step .img { margin-top: auto; }
-/* The numeral is an inline-block painted in the paper colour so it knocks a hole
- * in the rule threaded across the row. Turning the step into a flex column made
- * it a flex item, which stretches — so the hole became the full column width and
- * swallowed the rule. It has to keep shrinking to its own glyphs. */
-.method-step .num { align-self: flex-start; }
-
-/* …and that hole was visible as a pale box behind every numeral.
- *
- * The page's ground is not the paper colour. body::before is a fixed noise-and-
- * gradient layer at z-index 1, multiply, 0.92 — and .shell sits at z-index 2, so
- * everything you read as "background" is paper seen through that texture, a few
- * units darker and warmer. The numeral's knockout paints flat #efe7d2 inside
- * .shell, above the texture, so it was the one patch of undarkened paper on the
- * page. Nothing can match it back: the texture varies across the page, so no
- * flat colour is right in more than one spot.
- *
- * So the hole goes and the rule stops short instead. Each step draws its own
- * segment from a fixed 110px in — clear of the widest numeral, 95px, with air to
- * spare — across the 50px gap into the next column. Segments start at the same
- * x in every column, which is steadier than a line hugging four glyphs of
- * different widths, and the last one stops at the grid edge. Above 880 only,
- * which is where the export drew the rule at all. */
-.method-step .num { background: none; padding-right: 0; }
-@media (min-width: 881px) {
-  .method-grid::before { display: none; }
-  .method-step::after {
-    content: '';
-    position: absolute;
-    top: 60px;
-    right: -50px;
-    width: calc(100% - 110px);
-    height: 1px;
-    background: var(--line-soft);
-  }
-  .method-step:last-child::after { right: 0; width: calc(100% - 110px); }
-}
-
-/* Each section rule is a three-part row — roman numeral, plate caption,
- * counter — flexed with align-items:center. Below ~700px the caption wraps to
- * two lines and the numeral centres itself against both of them, landing in the
- * gap between them and hard against the caption's first character. Aligning the
- * numeral to the caption's first baseline puts it back on a line of text. */
-.sec-rule { align-items: baseline; column-gap: 18px; }
-
-/* The rule is three unequal items in a space-between row — numeral, plate
- * caption, counter — so the caption lands wherever the two ends leave it: 26px
- * left of the band's centre at 1150, and a different amount at every width. It
- * is neither centred nor on a column edge, six times down the page. A three
- * column grid with equal outer tracks puts it on the centre line and keeps it
- * there. The outer tracks are minmax(0, 1fr) so a long caption can still push
- * into them rather than overflow.
- *
- * Only from 700 up. Below that the caption is wider than the third of the band
- * a centred layout would leave it, the outer minmax(0, 1fr) tracks collapse to
- * nothing, and the counter ends up printed over "THE MET". There is no centre
- * to find on a phone — the export's own space-between, with the caption allowed
- * to wrap, is the right behaviour there. */
-@media (min-width: 700px) {
-  .sec-rule {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  }
-  .sec-rule > :first-child { justify-self: start; }
-  .sec-rule > :last-child { justify-self: end; }
-  .sec-rule .meta-grp { justify-self: center; }
-}
-
-/* This row summarises the whole section, but it sits inside the left column of
- * the section's two-column grid — 495px, and its three children need exactly
- * that, so every one of them is at its minimum width. The four claims wrap to
- * two ragged lines and "One rule / ≥ 95%" is crushed into 58px, which is three
- * words over five lines. Letting the row wrap gives the claims their own line,
- * and the stamp keeps its two parts whole. */
-.about .footer-row { flex-wrap: wrap; row-gap: 16px; }
-.about .footer-row > span:not(.mark) { letter-spacing: 0.08em; }
-/* The stamp is a two-line stack by design — "One rule" over "≥ 95%" — but at
- * 0.18em it needed 90px for the first line inside the 57px the squeezed row
- * gave it, so that line broke too and the stamp came out as three. It keeps its
- * two lines and stops shrinking. */
-.about .footer-row .stamp { flex: 0 0 auto; white-space: nowrap; }
-
-/* The five section links were never given nowrap, so whenever the header runs
- * short of room they break inside the word: "Reading / room", "Quick / start".
- * Above 1280 the brand's second line reappears and takes the room, which is the
- * band where it showed. Links are labels, not copy — they do not wrap. The 38px
- * gap pays for it; 28px is still twice the word space. */
-.nav-links a { white-space: nowrap; }
-@media (min-width: 1081px) {
-  .nav-links { gap: 28px; }
-}
-
-/* The five filter pills need 522px and their grid column was 488px, so
- * "Catalogue" wrapped alone onto a second row while 684px of headline column
- * sat half empty beside it. The headline is smaller now and needs less of the
- * split, and the pills themselves come down from 18px of side padding to 14,
- * which is 48px off the row. Together that fits them on one line from about
- * 1200px up. Below that they still wrap — the column cannot be widened far
- * enough without starving the headline — but flex-end keeps the second row
- * flush right instead of ragged. */
-@media (min-width: 1101px) {
-  .labs-head { grid-template-columns: 1.15fr 1fr; }
-  .pills { gap: 8px; }
-  .pill { padding: 9px 14px; }
-}
-
-/* 16 characters wide, right-aligned, absolutely positioned over the plate: five
- * ragged lines averaging three words, two of them a single word. It states the
- * closed-world rule, which is the section's whole argument. Widened to a
- * readable measure — still right-aligned against the plate's edge, which is the
- * design, but no longer a classified ad. */
-.about-side-note { max-width: 30ch; }
-
-/* Same shape: a full sentence set in tracked uppercase inside 28 characters,
- * breaking as "READER, GRAPH," / "TIMELINE," / "INDEX AND ASK ALL READ" / "THE
- * SAME GRAPH." Caps at 0.18em need roughly twice the measure of lowercase. */
-.labs-meta .meta-text { max-width: 44ch; letter-spacing: 0.08em; }
-
-/* Inline code is a background plus 6px of horizontal padding on an inline box,
- * which does two things to the prose it sits in. It breaks across lines, so
- * "loregraph ingest" shipped as a chip fragment ending mid-air; and the padding
- * puts a 6px space between the chip and any punctuation that follows it, so the
- * quick-start paragraph read "uv sync , then" and "loregraph extract . One" —
- * a space before a comma, four times in four lines. The nowrap fixes the first;
- * the second needs the punctuation pulled back over the padding, which is what
- * tuck-punctuation marks up. */
-.code-inline { white-space: nowrap; }
-.punct-tuck { font-style: normal; margin-left: -6px; }
-.code-inline.sm + .punct-tuck { margin-left: -4px; }
-/* Except at 320-400px, where "loregraph extract" and "multilingual-e5-large"
- * are wider than the column and a chip that cannot break is a chip that
- * overflows. The 400px block above already releases every other nowrap for the
- * same reason; this rule comes after it, so it has to say so itself. */
-@media (max-width: 400px) {
-  .code-inline { white-space: normal; overflow-wrap: anywhere; }
-}
-
-/* A comma set in 800-weight Inter Tight immediately after an italic Playfair
- * word: "Strict about <em>evidence</em>, relaxed". It reads as a much heavier
- * mark than the word it belongs to. Only commas are re-set — the full stops
- * after an em are the coral and black terminal dots, which are deliberate. */
-.em-punct { font-family: var(--serif); font-style: italic; font-weight: 500; }
-
-/* The header drops all five section links below 1080px and puts nothing in
- * their place: no menu, no button, no anchors — on every tablet and phone the
- * only way to any section was to scroll the whole 17,000px page. They come back
- * as their own row under the wordmark, scrolling sideways if they have to,
- * which needs no menu state and no script. The superscript counters go: they
- * are ornament, and they are what makes each link too wide. */
-@media (max-width: 1080px) {
-  .nav-inner { flex-wrap: wrap; row-gap: 12px; }
-  .nav-inner > nav { order: 3; width: 100%; }
-  .nav-links {
-    display: flex;
-    gap: 22px;
-    list-style: none;
-    margin: 0;
-    padding: 11px 0 0;
-    border-top: 1px solid var(--line-soft);
-    overflow-x: auto;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-    /* Five links need 407px and a 390px phone gives the row 358px, so the last
-     * one is partly off the end. The fade says so; without it a half-drawn
-     * "Quick start" just looks broken. */
-    mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent);
-    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent);
-  }
-  .nav-links::-webkit-scrollbar { display: none; }
-  .nav-links li { flex: 0 0 auto; }
-  .nav-links a { white-space: nowrap; }
-}
-
-/* Below 1080px the footer hid its fourth and fifth columns outright, so every
- * tablet and phone lost the repository, the issue tracker, the changelog and
- * the licence. The grid already reflows to two columns at 560 and one at 400;
- * it never needed to drop the content. */
-@media (max-width: 1080px) {
-  .foot-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px 32px; }
-  .foot-grid .foot-col:nth-child(4),
-  .foot-grid .foot-col:nth-child(5) { display: block; }
-}
-`;
-
-// Exact-string copy edits, per page language. Every pair must match exactly once
-// on its page or the build fails — these are sentences, and a near-miss would
-// silently ship half an edit. See the copy-edits patch for what each one is for.
-const SPAN = "<code class='code-inline'>evidence_span</code>";
-// The spec strip closed four fragments with four full stops, none of them a
-// sentence — the same tic as the interpuncts, with a different glyph. Spacing
-// separates them, the way it now does everywhere else on the page.
-const GAP = "&nbsp;&nbsp;&nbsp;";
-const COPY_EDITS = {
-  en: [
-    [
-      `Every claim carries an ${SPAN}, a literal substring of the source. Click any relation and you land on the sentence it came from.`,
-      `Every claim carries an ${SPAN}, so clicking any relation lands you on the sentence it came from.`,
-    ],
-    ["Source text stays in its original script. Entity resolution runs on", "Entity resolution runs on"],
-    [
-      "The engineering was researched against Splink, ComEM and GraphRAG:",
-      "Reading Splink, ComEM and GraphRAG settled four things:",
-    ],
-    ["Pride and Prejudice, 西游记, Crime and Punishment", "Pride and Prejudice, Journey to the West, Crime and Punishment"],
-    [
-      "<span>Closed world. Literal match. Multilingual. Resumable.</span>",
-      `<span>Closed world${GAP}Literal match${GAP}Multilingual${GAP}Resumable</span>`,
-    ],
-  ],
-  "zh-CN": [
-    [
-      "<span>闭世界。字面匹配。多语种。可续跑。</span>",
-      `<span>闭世界${GAP}字面匹配${GAP}多语种${GAP}可续跑</span>`,
-    ],
-
-    [
-      `每条断言都带一个 ${SPAN}，也就是原文里的一段字面文本。点开任意一条关系，就落到它出处的那一句。`,
-      `每条断言都带一个 ${SPAN}，点开任意一条关系就落到它出处的那一句。`,
-    ],
-    ["源文保留原文字。实体消解跑在", "实体消解跑在"],
-    ["工程实现参考了 Splink、ComEM 与 GraphRAG：", "读 Splink、ComEM 与 GraphRAG 定下了四件事："],
-  ],
-  ja: [
-    [
-      "<span>閉世界。文字列一致。多言語。再開可能。</span>",
-      `<span>閉世界${GAP}文字列一致${GAP}多言語${GAP}再開可能</span>`,
-    ],
-
-    [
-      `どの主張にも ${SPAN}、つまり原文そのままの文字列が付きます。関係をクリックすれば、その出典の一文に着きます。`,
-      `どの主張にも ${SPAN} が付くので、関係をクリックすればその出典の一文に着きます。`,
-    ],
-    ["原文はもとの文字体系のまま保つ。実体解決は", "実体解決は"],
-    [
-      "エンジニアリングは Splink・ComEM・GraphRAG を参照して設計した。",
-      "Splink・ComEM・GraphRAG を読んで、四つのことが決まった。",
-    ],
-  ],
-  fr: [
-    [
-      "<span>Monde clos. Correspondance littérale. Multilingue. Reprise possible.</span>",
-      `<span>Monde clos${GAP}Correspondance littérale${GAP}Multilingue${GAP}Reprise possible</span>`,
-    ],
-
-    [
-      `Chaque assertion porte un ${SPAN}, une sous-chaîne littérale de la source. Cliquez sur une relation, vous atterrissez sur la phrase dont elle vient.`,
-      `Chaque assertion porte un ${SPAN}, donc un clic sur une relation vous mène à la phrase dont elle vient.`,
-    ],
-    [
-      "Le texte source reste dans son écriture d’origine. La résolution d’entités tourne sur",
-      "La résolution d’entités tourne sur",
-    ],
-    // The export sets French punctuation properly: a narrow no-break space
-    // before the colon, U+202F, not a plain one. Escaped so it stays visible
-    // here, and kept in the replacement.
-    [
-      "L\u2019ing\u00e9nierie s\u2019appuie sur les travaux de Splink, ComEM et GraphRAG\u202f:",
-      "Lire Splink, ComEM et GraphRAG a r\u00e9gl\u00e9 quatre points\u202f:",
-    ],
-    [
-      "Orgueil et Préjugés, 西游记, Crime et Châtiment",
-      "Orgueil et Préjugés, La Pérégrination vers l’Ouest, Crime et Châtiment",
-    ],
-  ],
-};
+// Exact-string copy edits, per page language, in marketing-copy-edits.json. Data
+// rather than code, because that is what they are: the copy deck upstream is one
+// JSON file of {en, zh, ja, fr} strings, and these pairs are edits to it that
+// cannot be made there from this repo. Keeping them in the same shape means
+// folding them into the deck is a merge, not a reading of a build script.
+//
+// Every pair must match exactly once on its page or the build fails. These are
+// sentences, and a near-miss would silently ship half an edit.
+const COPY_EDITS = JSON.parse(
+  fs.readFileSync(path.join(__dirname, "marketing-copy-edits.json"), "utf8"),
+);
 
 const IMG_RE = /<img\b[^>]*>/g;
 
@@ -1088,9 +408,14 @@ const PATCHES = [
     // "forget the Elizabeth Bennet or 孫悟空 it already knows" — so nothing is
     // lost by not proving it with a book title.
     //
+    // And the spec strip closed four fragments with four full stops, none of
+    // them a sentence — the same tic as the interpuncts, with a different glyph.
+    // Spacing separates them, the way it now does everywhere else on the page.
+    //
     // This belongs in the copy deck upstream, which is one JSON file of
     // {en, zh, ja, fr} strings. It is here because the deck lives outside this
-    // repo; move it there and delete this patch.
+    // repo — see marketing-copy-edits.json, written in the same shape so that
+    // moving it there is a merge. Then delete this patch.
     run(html) {
       // Landing pages only. The credits pages reuse the head and the chrome but
       // carry none of this prose — and they do have a .lead of their own, so the
@@ -1313,7 +638,8 @@ const PATCHES = [
     why: "the export has no working phone layout — the document floors at 541px wide",
     run(html) {
       if (!html.includes("</head>")) return { html, count: 0 };
-      const tag = `<style>${CORRECTIONS}</style>\n`;
+      assertHeaderTextureMatchesGround(html);
+      const tag = `<style>\n${CORRECTIONS}</style>\n`;
       return { html: html.replace("</head>", tag + "</head>"), count: 1 };
     },
   },
