@@ -26,6 +26,7 @@ from loregraph.models.atoms import Chunk
 from loregraph.models.edges import EdgeCreate
 from loregraph.models.entities import Entity
 from loregraph.models.enums import InferenceDepth, RelationType
+from loregraph.models.predicates import classify
 from loregraph.utils.spans import is_literal_match
 
 log = logging.getLogger(__name__)
@@ -125,6 +126,10 @@ class Pass5RelationExtractor:
             if raw.predicate:
                 # normalise to UPPER_SNAKE so downstream queries are clean
                 attrs["predicate"] = re.sub(r"[\s\-]+", "_", raw.predicate.strip()).upper()
+            # The specific verb is the readable half; on its own it is not
+            # queryable (2627 distinct predicates over 9843 edges, a third of
+            # them singletons). Carry a closed class alongside it.
+            attrs["predicate_class"] = classify(raw.predicate, raw.relation).value
             if raw.weight is not None:
                 attrs["weight"] = raw.weight
             if raw.sentiment and raw.sentiment.lower() in _VALID_SENTIMENTS:

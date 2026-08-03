@@ -27,6 +27,7 @@ from sqlalchemy import select
 
 from loregraph.db import schema as orm
 from loregraph.db.engine import init_engine, session_scope
+from loregraph.models.predicates import classify, coverage
 
 
 async def _quality(session: object, book_id: int) -> dict[str, Any]:
@@ -208,6 +209,12 @@ async def export_book(
                     "dst": id_to_canon.get(e.dst_entity_id),
                     "relation": _v(e.relation),
                     "predicate": attrs.get("predicate"),
+                    # Closed class beside the open verb — the axis you query on.
+                    # Recomputed rather than read from attrs so a vocabulary
+                    # update reaches already-extracted books on re-export.
+                    "predicate_class": classify(
+                        attrs.get("predicate"), str(_v(e.relation) or "")
+                    ).value,
                     "weight": attrs.get("weight"),
                     "sentiment": attrs.get("sentiment"),
                     "evidence_span": e.evidence_span,
@@ -246,6 +253,11 @@ async def export_book(
                 "chunks": len(chunk_list),
             },
             "quality": await _quality(session, book_id),
+            # How much of the graph landed in a queryable predicate class —
+            # the counterpart to `quality`, for structure rather than truth.
+            "predicate_coverage": coverage(
+                [(str(e["predicate"] or ""), str(e["relation"] or "")) for e in edge_list]
+            ),
         }
         payload = {
             "metadata": metadata,
