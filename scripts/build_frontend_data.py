@@ -486,6 +486,8 @@ def _timeline(
 
 def convert(payload: dict) -> dict:
     meta = payload["metadata"]
+    # Pass-7's record, absent on books exported before it ran.
+    quality = meta.get("quality") or {}
     bid = meta["frontend_id"]
     known = KNOWN.get(bid, {})
 
@@ -588,11 +590,17 @@ def convert(payload: dict) -> dict:
         "entities": meta["counts"]["entities"],
         "edges": meta["counts"]["edges"],
         "glucose": meta["counts"]["glucose"],
-        "status": "verified",
-        "matchRate": 0.96,
+        # Run facts come from the export's own Pass-7 record, never from a
+        # constant. `status: "verified"` and `matchRate: 0.96` used to be
+        # hard-coded here, which meant a book was reported as audited at a
+        # specific rate the moment it was exported — before Pass-7 had said
+        # anything. A book that has been extracted but not audited is
+        # "extracted", and its rate is absent.
+        "status": "verified" if quality.get("audited") else "extracted",
+        "matchRate": quality.get("supported_rate"),
         "coverTone": known.get("coverTone", "ink"),
-        "provider": "openrouter",
-        "cost": 0,
+        "provider": None,
+        "cost": None,
         "active": False,
         "fullText": meta.get("full_text_available", False),
         "socialPos": social_pos,

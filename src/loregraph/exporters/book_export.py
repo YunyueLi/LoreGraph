@@ -21,11 +21,45 @@ from __future__ import annotations
 import json
 from collections import defaultdict
 from pathlib import Path
+from typing import Any
 
 from sqlalchemy import select
 
 from loregraph.db import schema as orm
 from loregraph.db.engine import init_engine, session_scope
+from loregraph.models.predicates import classify, coverage
+
+
+async def _quality(session: object, book_id: int) -> dict[str, Any]:
+    """Pass-7's audit result, so the graph's quality number ships with the graph.
+
+    Without this the only number a reader ever sees is a count of edges, which
+    says how much was extracted and nothing about whether it is right. Pass-7
+    computes `supported_rate` — the fraction of sampled claims whose evidence
+    span actually entails them — and used to leave it in `pass_runs.stats`,
+    where no consumer could reach it.
+    """
+    row = (
+        await session.execute(  # type: ignore[attr-defined]
+            select(orm.PassRun).where(orm.PassRun.book_id == book_id, orm.PassRun.pass_num == 7)
+        )
+    ).scalar_one_or_none()
+    if row is None:
+        return {"audited": False, "reason": "pass-7 has not run for this book"}
+    stats = dict(row.stats or {})
+    return {
+        "audited": _v(row.status) == "done",
+        "status": _v(row.status),
+        "ran_at": row.finished_at.isoformat() if row.finished_at else None,
+        # The number that measures quality.
+        "supported_rate": stats.get("supported_rate"),
+        # The invariant tripwire. 1.0 by construction on a healthy pipeline —
+        # kept for completeness, but it is not a quality signal.
+        "literal_match_rate": stats.get("literal_match_rate"),
+        "sampled": (stats.get("edges_sampled") or 0) + (stats.get("glucose_sampled") or 0),
+        "claims": (stats.get("edges_total") or 0) + (stats.get("glucose_total") or 0),
+        "weakest_strata": stats.get("weakest_strata") or [],
+    }
 
 
 def _v(x: object) -> object:
@@ -40,7 +74,7 @@ def _v(x: object) -> object:
 
 async def export_book(
     book_id: int, frontend_id: str, license_: str, out_path: Path, max_entities: int = 0
-) -> dict:
+) -> dict[str, Any]:
     include_text = license_ == "public-domain"
     init_engine()
     async with session_scope() as session:
@@ -175,6 +209,12 @@ async def export_book(
                     "dst": id_to_canon.get(e.dst_entity_id),
                     "relation": _v(e.relation),
                     "predicate": attrs.get("predicate"),
+                    # Closed class beside the open verb — the axis you query on.
+                    # Recomputed rather than read from attrs so a vocabulary
+                    # update reaches already-extracted books on re-export.
+                    "predicate_class": classify(
+                        attrs.get("predicate"), str(_v(e.relation) or "")
+                    ).value,
                     "weight": attrs.get("weight"),
                     "sentiment": attrs.get("sentiment"),
                     "evidence_span": e.evidence_span,
@@ -197,23 +237,30 @@ async def export_book(
             for g in glucose
         ]
 
-        payload = {
-            "metadata": {
-                "frontend_id": frontend_id,
-                "book_id": book_id,
-                "title": book.title,
-                "author": book.author,
-                "language": book.language,
-                "license": license_,
-                "full_text_available": include_text,
-                "counts": {
-                    "entities": len(entity_list),
-                    "edges": len(edge_list),
-                    "glucose": len(glucose_list),
-                    "chapters": len(chapters),
-                    "chunks": len(chunk_list),
-                },
+        metadata: dict[str, Any] = {
+            "frontend_id": frontend_id,
+            "book_id": book_id,
+            "title": book.title,
+            "author": book.author,
+            "language": book.language,
+            "license": license_,
+            "full_text_available": include_text,
+            "counts": {
+                "entities": len(entity_list),
+                "edges": len(edge_list),
+                "glucose": len(glucose_list),
+                "chapters": len(chapters),
+                "chunks": len(chunk_list),
             },
+            "quality": await _quality(session, book_id),
+            # How much of the graph landed in a queryable predicate class —
+            # the counterpart to `quality`, for structure rather than truth.
+            "predicate_coverage": coverage(
+                [(str(e["predicate"] or ""), str(e["relation"] or "")) for e in edge_list]
+            ),
+        }
+        payload = {
+            "metadata": metadata,
             "chapters": chapters,
             "chunks": chunk_list,
             "entities": entity_list,
@@ -223,4 +270,4 @@ async def export_book(
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    return payload["metadata"]
+    return metadata

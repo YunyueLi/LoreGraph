@@ -42,6 +42,7 @@ window.LG_I18N = {
   "acct.signOut": { "en": "Sign out", "zh-CN": "退出登录", "zh-TW": "登出", "ja": "サインアウト", "ko": "로그아웃", "fr": "Déconnexion", "es": "Cerrar sesión", "de": "Abmelden" },
   "user.plan":      { "en": "Researcher", "zh-CN": "研究者", "zh-TW": "研究者", "ja": "研究者", "ko": "연구자", "fr": "Chercheur", "es": "Investigador", "de": "Forscher" },
   "budget.title":   { "en": "BUDGET", "zh-CN": "预算", "zh-TW": "預算", "ja": "予算", "ko": "예산", "fr": "BUDGET", "es": "PRESUPUESTO", "de": "BUDGET" },
+  "budget.none":    { "en": "—", "zh-CN": "—", "zh-TW": "—", "ja": "—", "ko": "—", "fr": "—", "es": "—", "de": "—" },
   "budget.used":    { "en": "USED", "zh-CN": "已用", "zh-TW": "已用", "ja": "使用", "ko": "사용", "fr": "UTILISÉ", "es": "USADO", "de": "GENUTZT" },
   "budget.cap":     { "en": "CAP",  "zh-CN": "上限", "zh-TW": "上限", "ja": "上限", "ko": "한도", "fr": "PLAFOND", "es": "TOPE", "de": "LIMIT" },
 
@@ -67,6 +68,8 @@ window.LG_I18N = {
   "status.ingested":  { "en": "INGESTED",  "zh-CN": "已导入", "zh-TW": "已匯入", "ja": "取り込み済", "ko": "수집됨", "fr": "INGÉRÉ",   "es": "INGERIDO",   "de": "EINGELESEN" },
   "status.failed":    { "en": "FAILED",    "zh-CN": "失败",   "zh-TW": "失敗",   "ja": "失敗",      "ko": "실패",     "fr": "ÉCHEC",    "es": "FALLIDO",    "de": "FEHLER" },
   "status.queued":    { "en": "QUEUED",    "zh-CN": "排队中", "zh-TW": "排隊中", "ja": "待機中",    "ko": "대기 중",  "fr": "EN ATTENTE","es": "EN COLA",   "de": "WARTET" },
+  "status.extracted": { "en": "EXTRACTED", "zh-CN": "已抽取", "zh-TW": "已抽取", "ja": "抽出済み", "ko": "추출됨", "fr": "EXTRAIT", "es": "EXTRAÍDO", "de": "EXTRAHIERT" },
+  "bar.cited":        { "en": "cited", "zh-CN": "有引证", "zh-TW": "有引證", "ja": "引用あり", "ko": "인용됨", "fr": "cité", "es": "citado", "de": "belegt" },
   "status.done":      { "en": "DONE",      "zh-CN": "已完成", "zh-TW": "已完成", "ja": "完了",      "ko": "완료",     "fr": "TERMINÉ",  "es": "HECHO",      "de": "FERTIG" },
 
   // ===== Library =====
@@ -74,6 +77,7 @@ window.LG_I18N = {
   "lib.title.em":      { "en": "Library", "zh-CN": "图书馆", "zh-TW": "圖書館", "ja": "ライブラリ", "ko": "라이브러리", "fr": "Bibliothèque", "es": "Biblioteca", "de": "Bibliothek" },
   "lib.subtitle":      { "en": "All your closed-world texts in one shelf — graphs, evidence, and provenance carried with them.", "zh-CN": "所有封闭世界文本汇集于此 —— 图谱、证据与溯源链一同携带。", "zh-TW": "所有封閉世界文本匯集於此 —— 圖譜、證據與溯源鏈一同攜帶。", "ja": "閉鎖世界のテキストを一棚に。グラフ・証拠・出典を伴います。", "ko": "닫힌 세계의 텍스트를 한 곳에 — 그래프, 증거, 출처를 함께.", "fr": "Tous vos textes en monde clos sur une seule étagère — graphes, preuves, provenance.", "es": "Todos tus textos en una estantería — grafos, evidencia y procedencia incluidos.", "de": "Alle Texte in einem Regal — mit Graphen, Belegen und Herkunft." },
   "lib.stat.books":    { "en": "BOOKS",     "zh-CN": "书目",     "zh-TW": "書目",     "ja": "書籍",     "ko": "도서",     "fr": "LIVRES",     "es": "LIBROS",     "de": "BÜCHER" },
+  "lib.stat.extracted": { "en": "Extracted", "zh-CN": "已抽取", "zh-TW": "已抽取", "ja": "抽出済み", "ko": "추출됨", "fr": "Extraits", "es": "Extraídos", "de": "Extrahiert" },
   "lib.stat.entities": { "en": "ENTITIES",  "zh-CN": "实体",     "zh-TW": "實體",     "ja": "実体",     "ko": "엔티티",   "fr": "ENTITÉS",    "es": "ENTIDADES",  "de": "ENTITÄTEN" },
   "lib.stat.edges":    { "en": "EDGES",     "zh-CN": "边",       "zh-TW": "邊",       "ja": "エッジ",   "ko": "엣지",     "fr": "ARÊTES",     "es": "ARISTAS",    "de": "KANTEN" },
   "lib.stat.cost":     { "en": "TOTAL COST","zh-CN": "总成本",   "zh-TW": "總成本",   "ja": "総コスト", "ko": "총 비용",  "fr": "COÛT TOTAL", "es": "COSTE TOTAL","de": "GESAMTKOSTEN" },
@@ -187,6 +191,7 @@ window.LG_I18N = {
   "pv.totalTokens":    { "en": "TOTAL TOKENS",     "zh-CN": "总 tokens",  "zh-TW": "總 tokens",  "ja": "総トークン",       "ko": "총 토큰",      "fr": "TOTAL TOKENS","es": "TOTAL TOKENS",   "de": "GESAMT-TOKENS" },
   "pv.cacheHit":       { "en": "CACHE HIT",        "zh-CN": "缓存命中",   "zh-TW": "快取命中",   "ja": "キャッシュ率",     "ko": "캐시 적중",    "fr": "CACHE",       "es": "ACIERTOS CACHE", "de": "CACHE-TREFFER" },
   "pv.duration":       { "en": "DURATION",         "zh-CN": "总时长",     "zh-TW": "總時長",     "ja": "所要時間",         "ko": "총 시간",      "fr": "DURÉE",       "es": "DURACIÓN",       "de": "DAUER" },
+  "pv.demoNote":       { "en": "Illustration — this run is sample data, not a recorded run.", "zh-CN": "示意图：本次运行为示例数据，不是真实运行记录。", "zh-TW": "示意圖：本次執行為範例資料，不是真實執行紀錄。", "ja": "図示のためのサンプルであり、実際の実行記録ではありません。", "ko": "예시입니다 — 실제 실행 기록이 아닌 샘플 데이터입니다.", "fr": "Illustration — données d'exemple, pas un run enregistré.", "es": "Ilustración: datos de ejemplo, no un run registrado.", "de": "Illustration — Beispieldaten, kein aufgezeichneter Lauf." },
   "pv.matchRate":      { "en": "MATCH RATE",       "zh-CN": "字面匹配率", "zh-TW": "字面匹配率", "ja": "一致率",           "ko": "일치율",       "fr": "TAUX MATCH",  "es": "TASA COINC.",    "de": "TREFFER-RATE" },
   "pv.tokensIn":       { "en": "INPUT",            "zh-CN": "输入",       "zh-TW": "輸入",       "ja": "入力",             "ko": "입력",         "fr": "ENTRÉE",      "es": "ENTRADA",        "de": "EINGABE" },
   "pv.tokensOut":      { "en": "OUTPUT",           "zh-CN": "输出",       "zh-TW": "輸出",       "ja": "出力",             "ko": "출력",         "fr": "SORTIE",      "es": "SALIDA",         "de": "AUSGABE" },

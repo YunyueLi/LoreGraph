@@ -16,8 +16,10 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Protocol, TypeVar
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from sqlalchemy import func, select, update
@@ -78,7 +80,8 @@ _jinja_env = Environment(
 # How many characters around a mention to show as snippet context.
 _SNIPPET_PAD = 40
 # Hard cap on per-entity LLM context — keeps cost predictable on huge entities
-# like "Elizabeth" in a 60-chapter book.
+# like "Elizabeth" in a 60-chapter book. The cap is a budget, not a prefix:
+# see `_spread`.
 _MAX_MENTIONS = 30
 _MAX_EDGES = 25
 _MAX_GLUCOSE = 15
@@ -93,6 +96,87 @@ _STUB_NOTE = (
     "[GAPS]\n- (none recorded)\n\n"
     "[EVIDENCE]\n- (none recorded)\n"
 )
+
+
+_ATOM_CHAPTER_RE = re.compile(r"^ch(\d+)", re.I)
+
+
+class _HasAtom(Protocol):
+    atom_id: str
+
+
+_T = TypeVar("_T", bound=_HasAtom)
+
+
+def _atom_chapter(atom_id: str) -> int:
+    """Chapter number out of a Pass-1 atom id (`ch{N}_p{seq}`). -1 if unparsable."""
+    m = _ATOM_CHAPTER_RE.match(atom_id or "")
+    return int(m.group(1)) if m else -1
+
+
+def _spread(items: list[_T], limit: int) -> list[_T]:
+    """Pick at most `limit` items spread across the chapters they come from.
+
+    The obvious `items[:limit]` reads as "the first N" — and since the rows
+    arrive in book order, that means the opening chapters only. It bites
+    hardest on the entity with the most evidence, i.e. the protagonist, who
+    then gets a note synthesised from the first third of the book. Pass-8 is
+    told to report what the source does not say, so the unseen chapters come
+    back as [GAPS]: a confident false claim about the work, in the voice of
+    evidence. Round-robin over chapters instead, so a capped entity still
+    sees its whole arc. Input order is book order; output preserves it.
+    """
+    if len(items) <= limit:
+        return items
+    buckets: dict[int, list[int]] = {}
+    for i, item in enumerate(items):
+        buckets.setdefault(_atom_chapter(item.atom_id), []).append(i)
+    order = sorted(buckets)
+    picked: list[int] = []
+    while len(picked) < limit:
+        before = len(picked)
+        for chapter in order:
+            if not buckets[chapter]:
+                continue
+            picked.append(buckets[chapter].pop(0))
+            if len(picked) == limit:
+                break
+        if len(picked) == before:  # every bucket drained
+            break
+    return [items[i] for i in sorted(picked)]
+
+
+def _chapters_of(*groups: Sequence[_HasAtom]) -> set[int]:
+    return {_atom_chapter(item.atom_id) for group in groups for item in group} - {-1}
+
+
+def _coverage_note(
+    *,
+    shown: int,
+    total: int,
+    chapters_shown: set[int],
+    chapters_total: set[int],
+) -> str | None:
+    """One sentence telling the model how much of the entity's evidence it has.
+
+    Returns None when nothing was dropped — a complete view needs no caveat.
+    """
+    if shown >= total and chapters_shown >= chapters_total:
+        return None
+    missing = sorted(chapters_total - chapters_shown)
+    parts = [
+        f"You are seeing {shown} of {total} evidence items for this entity, "
+        f"sampled across chapters so the whole arc is represented."
+    ]
+    if chapters_shown:
+        parts.append(f"Chapters represented: {', '.join(str(c) for c in sorted(chapters_shown))}.")
+    if missing:
+        parts.append(
+            f"This entity also appears in chapter(s) {', '.join(str(c) for c in missing)}, "
+            "which are not shown."
+        )
+    parts.append("The evidence below is therefore a sample of the source, not the whole of it.")
+    return " ".join(parts)
 
 
 @dataclass(slots=True)
@@ -139,12 +223,29 @@ class Pass8NoteSynth:
         glucose = await self._collect_glucose(session, entity.id)
         if not mentions and not outgoing and not incoming and not glucose:
             return None
+
+        kept_mentions = _spread(mentions, _MAX_MENTIONS)
+        kept_outgoing = _spread(outgoing, _MAX_EDGES)
+        kept_incoming = _spread(incoming, _MAX_EDGES)
+        kept_glucose = _spread(glucose, _MAX_GLUCOSE)
+
         return self._user_template.render(
             entity=entity,
-            mentions=mentions[:_MAX_MENTIONS],
-            outgoing=outgoing[:_MAX_EDGES],
-            incoming=incoming[:_MAX_EDGES],
-            glucose=glucose[:_MAX_GLUCOSE],
+            mentions=kept_mentions,
+            outgoing=kept_outgoing,
+            incoming=kept_incoming,
+            glucose=kept_glucose,
+            coverage=_coverage_note(
+                shown=len(kept_mentions)
+                + len(kept_outgoing)
+                + len(kept_incoming)
+                + len(kept_glucose),
+                total=len(mentions) + len(outgoing) + len(incoming) + len(glucose),
+                chapters_shown=_chapters_of(
+                    kept_mentions, kept_outgoing, kept_incoming, kept_glucose
+                ),
+                chapters_total=_chapters_of(mentions, outgoing, incoming, glucose),
+            ),
         )
 
     async def synthesise(self, session: AsyncSession, entity: Entity) -> str:
