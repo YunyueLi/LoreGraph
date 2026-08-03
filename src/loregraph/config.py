@@ -91,6 +91,18 @@ class Settings(BaseSettings):
     price_per_mtok_input: float = Field(0.435, alias="LOREGRAPH_PRICE_INPUT_PER_MTOK")
     price_per_mtok_output: float = Field(0.87, alias="LOREGRAPH_PRICE_OUTPUT_PER_MTOK")
 
+    # ── Pass-7 audit gate ───────────────────────────────────────────
+    # How many claims of each family (edges, glucose facts) Pass-7 samples.
+    # The sample is stratified by relation|dimension x inference_depth.
+    cove_sample_size: int = Field(150, alias="LOREGRAPH_COVE_SAMPLE_SIZE")
+    # Floor on the fraction of sampled claims the judge finds *supported* by
+    # their evidence span. This is the gate that actually measures extraction
+    # quality — the literal-match rate is an upstream invariant and cannot
+    # fail. PROVISIONAL: no calibrated distribution exists yet; run
+    # `loregraph eval entailment` to measure a book before trusting a number.
+    # 0 disables the gate (records the rate without enforcing it).
+    cove_supported_floor: float = Field(0.85, alias="LOREGRAPH_COVE_SUPPORTED_FLOOR")
+
     # ── Provider lookup helpers ─────────────────────────────────────
     def resolved_api_key(self, provider: str) -> str | None:
         """Pick the API key for `provider`, with this precedence:
