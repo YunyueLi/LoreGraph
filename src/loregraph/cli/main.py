@@ -200,5 +200,66 @@ def status(book_id: int = typer.Option(..., "--book-id", help="ID of the book.")
     console.print(table)
 
 
+@app.command(name="eval")
+def eval_(
+    which: str = typer.Argument(
+        "all",
+        help="graph · gaps · perturbation · contamination · entailment · all",
+    ),
+    book: str = typer.Option("all", "--book", "-b", help="Book id from data/exports, or 'all'."),
+    as_json: bool = typer.Option(False, "--json", help="Machine-readable output."),
+    budget: int = typer.Option(150, "--budget", help="Claims to sample for entailment."),
+    probes: int = typer.Option(24, "--probes", help="Questions for contamination."),
+    examples: int = typer.Option(3, "--examples", help="Example findings to print."),
+) -> None:
+    """Score the extraction, not just count it.
+
+    `graph` and `gaps` need no model or credentials. The other three run a dry
+    preview without a provider — showing exactly what would be sent — and the
+    full comparison with one.
+    """
+    from loregraph.evals import contamination, entailment, gaps, graph_usability, perturbation
+    from loregraph.evals.corpus import available_books, load_book
+    from loregraph.evals.report import render
+
+    books = available_books() if book == "all" else [book]
+    if not books:
+        console.print(
+            "[yellow]No exports found in data/exports.[/yellow] "
+            "Run `loregraph export --book-id N --frontend-id NAME --out data/exports/NAME.json` "
+            "first."
+        )
+        raise typer.Exit(1)
+
+    from collections.abc import Callable
+
+    from loregraph.evals.corpus import BookUnderTest
+    from loregraph.evals.report import EvalResult
+
+    registry: dict[str, Callable[[BookUnderTest], EvalResult]] = {
+        # No model, no credentials.
+        "graph": graph_usability.run,
+        "gaps": gaps.run,
+        # These fall back to a dry preview when no provider is configured,
+        # printing exactly what would be sent rather than failing or, worse,
+        # silently scoring a subset.
+        "perturbation": perturbation.dry_run,
+        "contamination": lambda b: asyncio.run(contamination.run(b, limit=probes)),
+        "entailment": lambda b: asyncio.run(entailment.run(b, budget=budget)),
+    }
+    if which != "all" and which not in registry:
+        console.print(f"[red]Unknown eval {which!r}.[/red] Choose: {', '.join(registry)}, all")
+        raise typer.Exit(2)
+    chosen = list(registry) if which == "all" else [which]
+
+    results = []
+    for book_id in books:
+        loaded = load_book(book_id)
+        for name in chosen:
+            results.append(registry[name](loaded))
+
+    typer.echo(render(results, as_json=as_json, examples=examples))
+
+
 if __name__ == "__main__":
     app()
