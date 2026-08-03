@@ -31,6 +31,12 @@ function ViewPipeline({ ctx }) {
 
   return (
     <div className="pv">
+      {/* `data.runs` is a hand-written illustration of what a run looks like —
+          per-pass timings, token counts and gleaning rounds that no run
+          produced. Every other figure in the app now comes from a real
+          export; this one does not, and has to say so rather than sit next
+          to them looking equally sourced. */}
+      <div className="pv-demo-note" role="note">{tt("pv.demoNote")}</div>
       <div className="pv-head">
         <div>
           <div className="eyebrow-s" style={{marginBottom:6}}>{tt("pv.title").toUpperCase()}</div>
@@ -47,7 +53,9 @@ function ViewPipeline({ ctx }) {
             <div className={"bar-pill " + run.status}>
               <span className="dot" />
               {run.status === "running" && `${tt("status.running")} · Pass-${run.currentPass}`}
-              {run.status === "verified" && `${tt("status.verified")} · ${(run.matchRate*100).toFixed(1)}%`}
+              {run.status === "verified" && (run.matchRate != null
+                ? `${tt("status.verified")} · ${(run.matchRate*100).toFixed(1)}%`
+                : tt("status.verified"))}
               {run.status === "failed" && tt("status.failed")}
             </div>
           </div>

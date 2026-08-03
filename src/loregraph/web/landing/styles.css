@@ -7062,3 +7062,31 @@ a { color: inherit; }
   .cover-skeleton::after,
   .shelf-skeleton::after { animation: none; opacity: 0.5; }
 }
+
+/* Pipeline view carries hand-written sample data; it has to read as an
+   illustration rather than sit alongside the real figures unlabelled. */
+.pv-demo-note {
+  margin: 0 0 18px;
+  padding: 9px 14px;
+  border: 1px dashed var(--rule);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--gold-deep) 7%, transparent);
+  color: var(--paper-text-mute);
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* The three card stats are a 3-up grid whose labels (CHARACTERS / RELATIONS /
+   WORDS) need ~222px between them. Below 720px the grid dropped to 160px
+   columns, so the labels ran past the card edge and collided with the next
+   card's. Give the columns room for the labels they carry, and let the label
+   itself wrap rather than overhang if a translation is longer still. */
+@media (max-width: 720px) {
+  .lib-grid { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+}
+.lib-card-stat { min-width: 0; }
+.lib-card-stat-lbl {
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}

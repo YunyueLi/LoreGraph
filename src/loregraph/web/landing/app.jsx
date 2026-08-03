@@ -372,13 +372,20 @@ function Sidebar({ ctx, collapsed, setCollapsed, navOpen, closeNav, goToSettings
       </div>
 
       <div className="sb-foot">
+        {/* Spend is a real number the orchestrator records per run, and none
+            has been recorded — so show the ceiling that is actually in force
+            and leave the used figure absent, rather than inventing $14.27. */}
         <div className="sb-budget">
           <div className="sb-budget-row">
             <span>{tt("budget.title")}</span>
-            <span style={{color:"var(--gold)"}}>{data.user.budgetUsed.toFixed(2)} / {data.user.budgetCap.toFixed(0)}$</span>
+            <span style={{color:"var(--gold)"}}>
+              {data.user.budgetUsed != null
+                ? `${data.user.budgetUsed.toFixed(2)} / ${data.user.budgetCap.toFixed(0)}$`
+                : `${tt("budget.none")} / ${data.user.budgetCap.toFixed(0)}$`}
+            </span>
           </div>
           <div className="sb-budget-bar">
-            <div style={{width: (data.user.budgetUsed/data.user.budgetCap*100)+"%"}} />
+            <div style={{width: ((data.user.budgetUsed || 0)/data.user.budgetCap*100)+"%"}} />
           </div>
         </div>
         <div className="sb-user">
@@ -489,8 +496,14 @@ function Topbar({ ctx, openNav }) {
 
       <div className="bar-spacer" />
 
-      {showBook && activeBook.status === "verified" && (
-        <div className="bar-pill verified"><span className="dot" />{(activeBook.matchRate*100).toFixed(0)}% cited</div>
+      {/* Only claim a citation rate when Pass-7 produced one. A book can be
+          fully extracted and not yet audited; that reads as "extracted", not
+          as a percentage we do not have. */}
+      {showBook && activeBook.matchRate != null && (
+        <div className="bar-pill verified"><span className="dot" />{(activeBook.matchRate*100).toFixed(0)}% {tt("bar.cited")}</div>
+      )}
+      {showBook && activeBook.matchRate == null && activeBook.status === "extracted" && (
+        <div className="bar-pill"><span className="dot" />{tt("status.extracted")}</div>
       )}
       {showBook && activeBook.status === "running" && (
         <div className="bar-pill running"><span className="dot" />running</div>

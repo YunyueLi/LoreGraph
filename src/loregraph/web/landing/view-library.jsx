@@ -18,12 +18,16 @@ function ViewLibrary({ ctx }) {
   });
   const filtered = filter === "all" ? books : books.filter(b => (b.type || "novel") === filter);
 
-  // global stats
-  const totals = books.reduce((acc, b) => ({
+  // Global stats, over the books that have actually been extracted. Summing
+  // `|| 0` across the whole catalog reads as a total for 85 works when it is
+  // a total for 2 — so count the contributors and say so.
+  const extracted = books.filter(b => b.entities != null);
+  const totals = extracted.reduce((acc, b) => ({
     entities: acc.entities + (b.entities||0),
     edges:    acc.edges    + (b.edges||0),
     cost:     acc.cost     + (b.cost||0),
   }), { entities: 0, edges: 0, cost: 0 });
+  const anyCost = extracted.some(b => b.cost != null);
 
   const formatDate = (s) => {
     if (!s) return tt("lib.card.never");
@@ -52,6 +56,10 @@ function ViewLibrary({ ctx }) {
             <div className="lib-stat-label">{tt("lib.stat.books")}</div>
           </div>
           <div className="lib-stat">
+            <div className="lib-stat-num">{extracted.length}</div>
+            <div className="lib-stat-label">{tt("lib.stat.extracted")}</div>
+          </div>
+          <div className="lib-stat">
             <div className="lib-stat-num">{totals.entities.toLocaleString()}</div>
             <div className="lib-stat-label">{tt("lib.stat.entities")}</div>
           </div>
@@ -59,10 +67,12 @@ function ViewLibrary({ ctx }) {
             <div className="lib-stat-num">{totals.edges.toLocaleString()}</div>
             <div className="lib-stat-label">{tt("lib.stat.edges")}</div>
           </div>
-          <div className="lib-stat">
-            <div className="lib-stat-num">${totals.cost.toFixed(2)}</div>
-            <div className="lib-stat-label">{tt("lib.stat.cost")}</div>
-          </div>
+          {anyCost && (
+            <div className="lib-stat">
+              <div className="lib-stat-num">${totals.cost.toFixed(2)}</div>
+              <div className="lib-stat-label">{tt("lib.stat.cost")}</div>
+            </div>
+          )}
         </div>
       </div>
 
