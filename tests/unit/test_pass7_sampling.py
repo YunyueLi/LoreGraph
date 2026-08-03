@@ -189,3 +189,79 @@ def test_stats_dict_carries_the_breakdown() -> None:
     payload = stats.to_dict()
     assert payload["by_stratum"] == {"INTERACTS/explicit": {"supported": 0, "sampled": 1}}
     assert payload["weakest_strata"][0]["stratum"] == "INTERACTS/explicit"
+
+
+# ---- the two gates -------------------------------------------------------
+# These need no database. The integration suite covers the same paths through
+# Postgres, but a gate this load-bearing should not be reachable only via a
+# testcontainer.
+
+
+def _verifier(**kwargs: object):
+    from loregraph.llm.client import LLMClient
+    from loregraph.pipeline.pass7_cove import Pass7CoVeVerifier
+
+    stub = LLMClient.__new__(LLMClient)
+    stub.model = "stub"
+    stub._settings = None  # type: ignore[assignment]
+    stub._client = None  # type: ignore[assignment]
+    return Pass7CoVeVerifier(stub, **kwargs)  # type: ignore[arg-type]
+
+
+def _stats(*, literal: int, supported: int, sampled: int) -> CoVeStats:
+    stats = CoVeStats(edges_sampled=sampled, edges_literal_match=literal, edges_supported=supported)
+    for i in range(sampled):
+        stats.record("INTERACTS/explicit", supported=i < supported)
+    return stats
+
+
+@pytest.mark.unit
+def test_literal_gate_says_it_points_at_a_bug_not_at_quality() -> None:
+    from loregraph.pipeline.pass7_cove import CoVeGateError
+
+    with pytest.raises(CoVeGateError) as caught:
+        _verifier(rng_seed=1)._enforce(_stats(literal=0, supported=0, sampled=4))
+    message = str(caught.value)
+    assert "literal_match_rate" in message
+    assert "invariant" in message and "quality" in message
+
+
+@pytest.mark.unit
+def test_entailment_gate_fires_when_spans_do_not_support() -> None:
+    """Literal match is perfect and the run still aborts — the case the old
+    single-gate Pass-7 waved through."""
+    from loregraph.pipeline.pass7_cove import CoVeGateError
+
+    with pytest.raises(CoVeGateError) as caught:
+        _verifier(supported_floor=0.85, rng_seed=1)._enforce(
+            _stats(literal=4, supported=0, sampled=4)
+        )
+    message = str(caught.value)
+    assert "supported_rate" in message
+    assert "literal_match_rate" not in message
+    assert "does not support" in message
+
+
+@pytest.mark.unit
+def test_entailment_gate_passes_at_the_floor() -> None:
+    _verifier(supported_floor=0.5, rng_seed=1)._enforce(_stats(literal=4, supported=2, sampled=4))
+
+
+@pytest.mark.unit
+def test_a_zero_floor_records_without_enforcing() -> None:
+    """Same convention as the cost ceiling: 0 disables. The rate must still
+    be recorded, or disabling the gate would disable the measurement."""
+    stats = _stats(literal=4, supported=0, sampled=4)
+    _verifier(supported_floor=0, rng_seed=1)._enforce(stats)
+    assert stats.supported_rate() == 0.0
+    assert stats.to_dict()["supported_rate"] == 0.0
+
+
+@pytest.mark.unit
+def test_settings_supply_the_defaults_when_not_passed() -> None:
+    from loregraph.config import get_settings
+
+    settings = get_settings()
+    verifier = _verifier()
+    assert verifier.sample_size == settings.cove_sample_size
+    assert verifier.supported_floor == settings.cove_supported_floor

@@ -206,7 +206,70 @@ async def test_pass7_fails_gate_when_literal_match_below_floor(
 
     msg = str(exc_info.value)
     assert "literal_match_rate" in msg
-    assert "gate fails" in msg
+    assert "0.000" in msg
+    # The literal gate points at a span-handling bug upstream, not at poor
+    # extraction. The message has to say which, or the number gets quoted as
+    # a quality figure — which is how it came to be trusted as one.
+    assert "invariant" in msg
+    assert "quality" in msg
+
+
+@pytest.mark.integration
+async def test_pass7_fails_the_entailment_gate_when_spans_do_not_support(
+    session: AsyncSession,
+) -> None:
+    """The gate that actually measures anything.
+
+    Every span here is a literal substring, so the literal check passes at
+    1.0 — exactly the case the old single-gate Pass-7 waved through. The
+    judge says none of the claims are supported, and that must abort.
+    """
+    seeded = await _seed_book_with_edge_and_fact(session)
+    verifier = Pass7CoVeVerifier(_fake_llm(), sample_size=10, supported_floor=0.85, rng_seed=1)
+    with (
+        patch.object(LLMClient, "complete", new=AsyncMock(return_value=_judge(False))),
+        pytest.raises(CoVeGateError) as exc_info,
+    ):
+        await verifier.verify_book(session=session, book_id=seeded["book_id"])
+
+    msg = str(exc_info.value)
+    assert "supported_rate" in msg
+    assert "literal_match_rate" not in msg, "the literal gate must not be what fired"
+    assert "cite a real quote that does not support them" in msg
+
+
+@pytest.mark.integration
+async def test_pass7_entailment_gate_can_be_disabled_but_still_records(
+    session: AsyncSession,
+) -> None:
+    """`supported_floor=0` records the rate without enforcing it.
+
+    Same convention as the cost ceiling. The rate must still reach the stats,
+    or turning the gate off would also turn the measurement off.
+    """
+    seeded = await _seed_book_with_edge_and_fact(session)
+    verifier = Pass7CoVeVerifier(_fake_llm(), sample_size=10, supported_floor=0, rng_seed=1)
+    with patch.object(LLMClient, "complete", new=AsyncMock(return_value=_judge(False))):
+        stats = await verifier.verify_book(session=session, book_id=seeded["book_id"])
+
+    assert stats.supported_rate() == 0.0
+    assert stats.literal_match_rate() == 1.0
+    assert stats.to_dict()["supported_rate"] == 0.0
+
+
+@pytest.mark.integration
+async def test_pass7_reports_which_stratum_is_failing(session: AsyncSession) -> None:
+    """A pooled rate hides the stratum that is wrong; the breakdown is the
+    point of stratifying in the first place."""
+    seeded = await _seed_book_with_edge_and_fact(session)
+    verifier = Pass7CoVeVerifier(_fake_llm(), sample_size=10, supported_floor=0, rng_seed=1)
+    with patch.object(LLMClient, "complete", new=AsyncMock(return_value=_judge(True))):
+        stats = await verifier.verify_book(session=session, book_id=seeded["book_id"])
+
+    payload = stats.to_dict()
+    assert payload["by_stratum"], "per-stratum counts must reach the stats"
+    assert all("/" in name for name in payload["by_stratum"]), "labelled kind/depth"
+    assert payload["weakest_strata"]
 
 
 @pytest.mark.integration
