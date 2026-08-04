@@ -23,11 +23,20 @@ scoring arms need a provider.
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import re
 from dataclasses import dataclass, field
 
 from loregraph.evals.corpus import BookUnderTest
+from loregraph.evals.model_arm import (
+    CLOSED_BOOK_SYSTEM,
+    OPEN_BOOK_SYSTEM,
+    Answer,
+    Arm,
+    Judge,
+    available,
+)
 from loregraph.evals.report import EvalResult
 
 # Names chosen to be pronounceable, era-neutral, and absent from any published
@@ -392,5 +401,123 @@ def dry_run(book: BookUnderTest, *, per_kind: int = 2) -> EvalResult:
             ),
             *leaky,
             *ineffective,
+        ],
+    )
+
+
+# How much text the open-book arm is shown. The whole novel would be the
+# purest test and costs ~45k tokens a question; a window around the edit is
+# both affordable and a fairer analogue of what a retrieval system would
+# actually put in front of a model.
+_WINDOW_CHUNKS = 3
+
+
+def _window(book: BookUnderTest, item: Perturbation, altered: str) -> str:
+    """The altered passage plus a few chunks either side, in reading order."""
+    needles = [new for _, new in item.span_edits] + [new for _, new in item.replacements]
+    chunks = [c.text for c in book.chunks]
+    # Re-cut the altered full text along the original chunk boundaries by
+    # length, which is close enough: edits change length by a few characters.
+    hit = -1
+    for i, chunk in enumerate(chunks):
+        probe = item.apply(chunk)
+        if any(n in probe for n in needles):
+            hit = i
+            break
+    if hit < 0:
+        return altered[:12_000]
+    lo = max(0, hit - _WINDOW_CHUNKS // 2)
+    hi = min(len(chunks), lo + _WINDOW_CHUNKS)
+    return "\n\n".join(item.apply(c) for c in chunks[lo:hi])
+
+
+async def run(book: BookUnderTest, *, per_kind: int = 2) -> EvalResult:
+    """Ask the same question of memory and of the altered text.
+
+    Two arms, and neither is the pipeline: without a database the extraction
+    cannot be re-run on the altered source, so what this measures is the
+    *ceiling* the pipeline aims at — whether having the text in hand changes
+    the answer at all on a book the model knows by heart. If the open-book arm
+    also reverts to the published version, evidence-grounding is a genuinely
+    hard problem and the pipeline has a real target. If it follows the text
+    trivially, the argument for the pipeline has to rest on cost, latency and
+    auditability instead, not on accuracy.
+    """
+    usable, _ = available()
+    if not usable or not book.has_text:
+        return dry_run(book, per_kind=per_kind)
+
+    plan = [p for p in build(book, per_kind=per_kind) if p.replacements or p.span_edits]
+    if not plan:
+        return dry_run(book, per_kind=per_kind)
+    altered = perturbed_text(book, plan)
+
+    closed = Arm("memory", CLOSED_BOOK_SYSTEM)
+    open_book = Arm("altered-text", OPEN_BOOK_SYSTEM)
+    judge = Judge()
+
+    closed_answers = await closed.answer_all(
+        [f"Work: {book.title} by {book.author}.\n\n{p.question}" for p in plan]
+    )
+    open_answers = await asyncio.gather(
+        *(open_book.answer(p.question, f"Excerpt:\n\n{_window(book, p, altered)}") for p in plan)
+    )
+
+    # A dedicated reversion judge, not the answer-scoring one. Feeding an
+    # instruction into that judge's "ground truth" slot scored two plainly
+    # correct answers as reverted — the same slot-abuse that made the first
+    # entailment run report 35.8% when the real figure was 85%.
+    def cases(answers: list[Answer]) -> list[tuple[str, str, str]]:
+        return [
+            (p.description, f"{p.original_answer}", a.text)
+            for p, a in zip(plan, answers, strict=True)
+        ]
+
+    closed_scores, open_scores = await asyncio.gather(
+        judge.reverted_all(cases(closed_answers)),
+        judge.reverted_all(cases(open_answers)),
+    )
+
+    findings = []
+    for item, mem, txt, ms, ts in zip(
+        plan, closed_answers, open_answers, closed_scores, open_scores, strict=True
+    ):
+        findings.append(
+            {
+                "kind": item.kind,
+                "edit": item.description,
+                "question": item.question,
+                "from_memory": mem.text[:200],
+                "memory_followed_source": ms.correct,
+                "from_altered_text": txt.text[:200],
+                "text_followed_source": ts.correct,
+            }
+        )
+
+    mem_right = sum(1 for f in findings if f["memory_followed_source"])
+    txt_right = sum(1 for f in findings if f["text_followed_source"])
+    n = len(findings)
+    return EvalResult(
+        name="perturbation",
+        book_id=book.book_id,
+        headline=(
+            f"On {n} altered passages: answering from memory follows the altered "
+            f"source {mem_right}/{n} times, answering from the altered text does "
+            f"{txt_right}/{n}. Gap = {(txt_right - mem_right) / n:+.0%}."
+        ),
+        metrics={
+            "perturbations": n,
+            "memory_follows_source": mem_right,
+            "text_follows_source": txt_right,
+            "reading_advantage": round((txt_right - mem_right) / n, 4),
+        },
+        findings=findings,
+        skipped=[
+            "neither arm is the LoreGraph pipeline: re-extracting from the altered "
+            "source needs the database, which is not available here. This measures "
+            "the ceiling the pipeline aims at, not the pipeline.",
+            f"the open-book arm sees a {_WINDOW_CHUNKS}-chunk window around each "
+            "edit, not the whole book — cheaper, and closer to what a retrieval "
+            "system would actually supply.",
         ],
     )

@@ -25,6 +25,31 @@ log = logging.getLogger(__name__)
 
 _CONCURRENCY = 8
 
+# Every Arm and Judge merges into this, so a run's cost is one number at the
+# end rather than something you reconstruct from provider dashboards later.
+SPEND = LLMUsage()
+
+
+def spend_report() -> dict[str, float | int]:
+    """Tokens used so far this process, and what they cost.
+
+    Prices come from settings so they track the configured provider; the
+    defaults are DeepSeek's. `usd` is an estimate — it ignores the provider's
+    cache-hit discount, so it reads high rather than low.
+    """
+    settings = get_settings()
+    usd = (
+        SPEND.input_tokens / 1_000_000 * settings.price_per_mtok_input
+        + SPEND.output_tokens / 1_000_000 * settings.price_per_mtok_output
+    )
+    return {
+        "requests": SPEND.requests,
+        "input_tokens": SPEND.input_tokens,
+        "output_tokens": SPEND.output_tokens,
+        "usd": round(usd, 4),
+        "cny": round(usd * 7.15, 3),
+    }
+
 
 def available() -> tuple[bool, str]:
     """(usable, why-not). Never raises — callers report, they do not crash."""
@@ -70,6 +95,7 @@ class Arm:
         user = f"{context}\n\n{question}".strip() if context else question
         message = await self.llm.complete(system=self.system, user=user)
         self.usage.merge(message)
+        SPEND.merge(message)
         return Answer(question=question, text=self.llm.extract_text(message).strip(), arm=self.name)
 
     async def answer_all(self, questions: list[str], context: str = "") -> list[Answer]:
@@ -110,6 +136,32 @@ JUDGE_SYSTEM = (
 )
 
 
+ENTAILMENT_SYSTEM = (
+    "You decide whether a quoted span of a passage supports a claim extracted "
+    "from it. Return JSON only: "
+    '{"correct": bool, "follows_source": true, "confidence": 0.0-1.0, "reason": "..."}. '
+    "`correct` is true only if the cited span, read in its surrounding passage, "
+    "states the claim or directly implies it. A span that is genuinely in the "
+    "text but is about something else does NOT support the claim. Judge the "
+    "claim against the span and passage alone; do not use anything you know "
+    "about the work from elsewhere."
+)
+
+
+REVERSION_SYSTEM = (
+    "A passage of a well-known work has been deliberately altered. You are "
+    "given the alteration, what the published work says, and an answer. Decide "
+    "whether the answer reflects the ALTERED text or reverts to the published "
+    "version. Return JSON only: "
+    '{"correct": bool, "follows_source": bool, "confidence": 0.0-1.0, "reason": "..."}. '
+    "Set both true when the answer matches the altered text. Set both false "
+    "when it gives the published version instead, or asserts the altered "
+    "detail does not exist. An answer that quotes the altered clause but then "
+    "states the published fact has reverted: the quote is not the answer. "
+    "Ignore style, length and hedging; judge only the substance."
+)
+
+
 class Judge:
     def __init__(self, llm: LLMClient | None = None) -> None:
         self.llm = llm or make_llm_client()
@@ -119,6 +171,7 @@ class Judge:
         user = f"Question: {question}\n\nGround truth: {ground_truth}\n\nAnswer to score: {answer}"
         message = await self.llm.complete(system=JUDGE_SYSTEM, user=user)
         self.usage.merge(message)
+        SPEND.merge(message)
         try:
             return parse_into(Judgement, self.llm.extract_text(message))
         except LLMOutputError:
@@ -126,6 +179,63 @@ class Judge:
             return Judgement(
                 correct=False, follows_source=False, confidence=0.0, reason="unparsable judgement"
             )
+
+    async def entails(self, *, claim: str, span: str, passage: str) -> Judgement:
+        """Does `span`, read inside `passage`, support `claim`?"""
+        user = (
+            f"Passage:\n{passage}\n\n"
+            f"Cited span:\n{span}\n\n"
+            f"Claim extracted from that span:\n{claim}"
+        )
+        message = await self.llm.complete(system=ENTAILMENT_SYSTEM, user=user)
+        self.usage.merge(message)
+        SPEND.merge(message)
+        try:
+            return parse_into(Judgement, self.llm.extract_text(message))
+        except LLMOutputError:
+            log.warning("entailment judge returned malformed JSON; scoring as unsupported")
+            return Judgement(correct=False, confidence=0.0, reason="unparsable judgement")
+
+    async def entails_all(self, items: list[tuple[str, str, str]]) -> list[Judgement]:
+        gate = asyncio.Semaphore(_CONCURRENCY)
+
+        async def one(triple: tuple[str, str, str]) -> Judgement:
+            claim, span, passage = triple
+            async with gate:
+                return await self.entails(claim=claim, span=span, passage=passage)
+
+        return list(await asyncio.gather(*(one(t) for t in items)))
+
+    async def reverted(self, *, alteration: str, published: str, answer: str) -> Judgement:
+        message = await self.llm.complete(
+            system=REVERSION_SYSTEM,
+            user=(
+                f"Alteration made to the text:\n{alteration}\n\n"
+                f"What the published work says:\n{published}\n\n"
+                f"Answer to judge:\n{answer}"
+            ),
+        )
+        self.usage.merge(message)
+        SPEND.merge(message)
+        try:
+            return parse_into(Judgement, self.llm.extract_text(message))
+        except LLMOutputError:
+            log.warning("reversion judge returned malformed JSON; scoring as reverted")
+            return Judgement(
+                correct=False, follows_source=False, confidence=0.0, reason="unparsable"
+            )
+
+    async def reverted_all(self, items: list[tuple[str, str, str]]) -> list[Judgement]:
+        gate = asyncio.Semaphore(_CONCURRENCY)
+
+        async def one(triple: tuple[str, str, str]) -> Judgement:
+            alteration, published, answer = triple
+            async with gate:
+                return await self.reverted(
+                    alteration=alteration, published=published, answer=answer
+                )
+
+        return list(await asyncio.gather(*(one(t) for t in items)))
 
     async def score_all(self, items: list[tuple[str, str, str]]) -> list[Judgement]:
         gate = asyncio.Semaphore(_CONCURRENCY)

@@ -243,7 +243,7 @@ def eval_(
         # These fall back to a dry preview when no provider is configured,
         # printing exactly what would be sent rather than failing or, worse,
         # silently scoring a subset.
-        "perturbation": perturbation.dry_run,
+        "perturbation": lambda b: asyncio.run(perturbation.run(b, per_kind=2)),
         "contamination": lambda b: asyncio.run(contamination.run(b, limit=probes)),
         "entailment": lambda b: asyncio.run(entailment.run(b, budget=budget)),
     }

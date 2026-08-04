@@ -73,6 +73,25 @@ def sample(book: BookUnderTest, *, budget: int = 150, seed: int = 7) -> list[Cla
     )
 
 
+# How much of the chunk the judge sees. A blind head-truncation is a trap: the
+# evidence span often sits past it, the judge correctly reports "that quote is
+# not in the passage you gave me", and the eval scores the truncation instead
+# of the extraction. Centre the window on the span so it is always included.
+_PASSAGE_CHARS = 2400
+
+
+def _passage_around(claim: Claim) -> str:
+    text = claim.chunk_text
+    if len(text) <= _PASSAGE_CHARS:
+        return text
+    at = text.find(claim.evidence_span)
+    if at < 0:  # should not happen — spans are literal by construction
+        return text[:_PASSAGE_CHARS]
+    half = (_PASSAGE_CHARS - len(claim.evidence_span)) // 2
+    lo = max(0, at - half)
+    return text[lo : lo + _PASSAGE_CHARS]
+
+
 def preview(book: BookUnderTest, *, budget: int = 150) -> EvalResult:
     picked = sample(book, budget=budget)
     strata: dict[str, int] = {}
@@ -116,19 +135,8 @@ async def run(book: BookUnderTest, *, budget: int = 150) -> EvalResult:
         )
 
     judge = Judge()
-    verdicts = await judge.score_all(
-        [
-            (
-                f"Does this passage support the claim?\n\nPassage: {c.chunk_text[:1500]}",
-                f"Claim: {c.statement}\nCited span: {c.evidence_span}",
-                (
-                    "The claim is supported only if the cited span, read in the "
-                    "passage, states or directly implies it. A span that is real "
-                    "but about something else is NOT support."
-                ),
-            )
-            for c in picked
-        ]
+    verdicts = await judge.entails_all(
+        [(c.statement, c.evidence_span, _passage_around(c)) for c in picked]
     )
 
     by_stratum: dict[str, list[int]] = {}
