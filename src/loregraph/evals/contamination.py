@@ -19,7 +19,7 @@ can be inspected before anything is spent. `preview` does exactly that.
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import TypeVar
 
@@ -39,6 +39,15 @@ _C = TypeVar("_C", Edge, Fact)
 class Probe:
     question: str
     ground_truth: str
+    """The **source passage**, not a restatement of the graph's claim.
+
+    The first version of this eval set ground_truth to a paraphrase of
+    graph_answer, so the judge was asked whether an answer matched itself and
+    the graph scored 12/12 by construction — the same tautology this project's
+    literal-match gate had. Grade both arms against the text, and the graph can
+    lose.
+    """
+
     graph_answer: str
     """What the graph alone says — the pipeline's arm, assembled without a model."""
     source: str
@@ -56,6 +65,8 @@ def build(book: BookUnderTest, *, limit: int = 24) -> list[Probe]:
     """
     probes: list[Probe] = []
 
+    passage = book.chunk_text
+
     edges = _confident(book.edges)
     # Spread across chapters so the battery is not all opening-scene trivia,
     # which is the part of a famous book a model remembers best.
@@ -66,10 +77,7 @@ def build(book: BookUnderTest, *, limit: int = 24) -> list[Probe]:
         probes.append(
             Probe(
                 question=f"In this work, what is the relationship between {src} and {dst}?",
-                ground_truth=(
-                    f"{src} {edge.predicate or edge.relation} {dst}. "
-                    f"The text reads: {edge.evidence_span.strip()!r}"
-                ),
+                ground_truth=passage.get(edge.atom_id, edge.evidence_span)[:1800],
                 graph_answer=(
                     f"{src} —{edge.predicate or edge.relation}→ {dst} "
                     f"({edge.evidence_span.strip()!r}, {edge.atom_id})"
@@ -89,7 +97,7 @@ def build(book: BookUnderTest, *, limit: int = 24) -> list[Probe]:
                     f"In this work, what does the text establish about {who} "
                     f"regarding {fact.dimension}?"
                 ),
-                ground_truth=(f"{fact.statement} The text reads: {fact.evidence_span.strip()!r}"),
+                ground_truth=passage.get(fact.atom_id, fact.evidence_span)[:1800],
                 graph_answer=f"{fact.statement} ({fact.evidence_span.strip()!r}, {fact.atom_id})",
                 source=fact.atom_id,
             )
@@ -137,14 +145,22 @@ async def run(book: BookUnderTest, *, limit: int = 24) -> EvalResult:
     question_with_work = [f"Work: {book.title} by {book.author}.\n\n{p.question}" for p in probes]
     closed_answers = await closed.answer_all(question_with_work)
 
+    def graded(answer_of: Callable[[int, Probe], str]) -> list[tuple[str, str, str]]:
+        return [
+            (
+                p.question,
+                answer_of(i, p),
+                "The source passage below is the only authority. An answer is "
+                "correct if the passage states or directly implies it, and "
+                "incorrect if the passage contradicts it or is silent on it.\n\n"
+                f"Passage:\n{p.ground_truth}",
+            )
+            for i, p in enumerate(probes)
+        ]
+
     closed_scores, graph_scores = await asyncio.gather(
-        judge.score_all(
-            [
-                (p.question, a.text, p.ground_truth)
-                for p, a in zip(probes, closed_answers, strict=True)
-            ]
-        ),
-        judge.score_all([(p.question, p.graph_answer, p.ground_truth) for p in probes]),
+        judge.score_all(graded(lambda i, p: closed_answers[i].text)),
+        judge.score_all(graded(lambda i, p: p.graph_answer)),
     )
 
     closed_right = sum(1 for s in closed_scores if s.correct)
