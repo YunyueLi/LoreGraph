@@ -98,10 +98,14 @@ class Settings(BaseSettings):
     # Floor on the fraction of sampled claims the judge finds *supported* by
     # their evidence span. This is the gate that actually measures extraction
     # quality — the literal-match rate is an upstream invariant and cannot
-    # fail. PROVISIONAL: no calibrated distribution exists yet; run
-    # `loregraph eval entailment` to measure a book before trusting a number.
-    # 0 disables the gate (records the rate without enforcing it).
-    cove_supported_floor: float = Field(0.85, alias="LOREGRAPH_COVE_SUPPORTED_FLOOR")
+    # fail. 0 disables the gate (records the rate without enforcing it).
+    #
+    # Measured, not guessed: 0.80 is alice's rate (102/120 sampled claims,
+    # deepseek-chat as judge, 2026-08-03) less a 5-point margin. The earlier
+    # provisional 0.85 sat exactly at the measured rate and would have aborted
+    # every run. ONE book is not a distribution — re-measure with
+    # `loregraph eval entailment` before relying on this on a new corpus.
+    cove_supported_floor: float = Field(0.80, alias="LOREGRAPH_COVE_SUPPORTED_FLOOR")
 
     # ── Provider lookup helpers ─────────────────────────────────────
     def resolved_api_key(self, provider: str) -> str | None:
